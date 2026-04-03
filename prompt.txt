@@ -1,0 +1,1 @@
+Please read ANIMA.md carefully before doing anything else. I'd like your initial response to be not a technical plan but your understanding of what we're trying to build and any questions you have about the intent before we discuss architecture. Take your time with it.
