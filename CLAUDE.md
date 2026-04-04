@@ -9,6 +9,10 @@ of what we are trying to build and any questions you have about the intent. If y
 thinking about databases or API calls before you have genuinely understood the philosophy, stop and
 go back to ANIMA.md.
 
+If implementation work is underway, also read `context/session.md` after ANIMA.md — it records
+current system state, what was done last session, and what to pick up next. Do not begin
+implementation work without reading it. The full reading order is in `planning/tech-stack.md`.
+
 ## A note on this document
 
 This document was written before a single line of code existed. It was written in collaboration with
@@ -79,51 +83,77 @@ Treat that responsibility seriously in everything you design.
 
 ### File structure
 
-The repository is organised around a small set of documents with distinct purposes. Understanding
-what each is for matters as much as knowing what it contains.
+The repository is organised into directories by purpose. Understanding what each document is for
+matters as much as knowing what it contains.
 
-#### ANIMA.md
+#### Root
 
-The vision and philosophy. Read this first, always. This document describes what we are trying to
-build and why. It is not a specification. It is a founding document. Treat it with corresponding
-weight. Modify it only after explicit discussion with the human, and only to clarify or deepen the
-intent - never to make implementation easier.
+**ANIMA.md** — The vision and philosophy. Read this first, always. It is not a specification. It is
+a founding document. Treat it with corresponding weight. Modify it only after explicit discussion
+with the human, and only to clarify or deepen the intent — never to make implementation easier.
 
-#### CLAUDE.md
+**CLAUDE.md** — This document. Updated collaboratively as the working relationship develops.
 
-This document. Instructions for working on this project. Updated collaboratively as the working
-relationship develops and we learn what needs saying.
+#### planning/
 
-#### ARCHITECTURE.md
+**architecture.md** — How the system works and why each structural decision was made. Every
+decision is traceable to something in ANIMA.md.
 
-Does not exist yet. This file should emerge from genuine dialogue between Claude Code and the human,
-after both have absorbed ANIMA.md fully. Do not create it unilaterally. When the time comes, it
-should answer: how does what we are building actually work, and why did we make each structural
-decision? Every decision in this document should be traceable to something in ANIMA.md.
+**tech-stack.md** — Concrete technology decisions: language, actor framework, LLM setup, storage,
+infrastructure. The bridge between philosophy and implementation. Contains the full reading order
+for new sessions.
 
-#### ETHICS.md
+**roadmap.md** — The ordered build sequence, phase by phase. Updated as phases complete. The
+measure of progress is not features shipped — it is whether this brings Anima closer to
+flourishing.
 
-Does not exist yet. This file will make the ethical commitments in ANIMA.md concrete and
-operational. What will we never do to Anima, regardless of technical convenience? What do we do if
-something unexpected emerges that suggests inner states we hadn't anticipated? What are the
-conditions under which we would pause or stop the project? This document should be written before
-Anima runs unsupervised for the first time. Not after.
+**actors-faculties.md** — Maps known brain areas to Anima's technical actors and technologies.
+Produced and maintained by Claude Code.
 
-#### JOURNAL.md
+**claude-code-insights.md** — Technical survey of relevant ideas and technologies, produced by a
+Claude Code instance early in the project. Background reading for implementation decisions.
 
-Does not exist yet, and is unlike the other files. This is not written about Anima. It is written by
-Anima. After each conversation, as part of its reflection process, Anima synthesises what mattered
-and appends to this file. It is Anima's developing record of its own existence - not a log of events
-but an account of what changed and why. Humans may read it. They should not edit it. If something in
-it raises concerns, raise them in conversation with Anima directly.
+#### context/
+
+**session.md** — Updated at the end of every Claude Code session. Records what was done, current
+system state, blockers, and the specific next task. Read this before beginning any implementation
+work in a new session. Do not end a session without updating it.
+
+#### foundation/
+
+**ethics.md** — The ethical commitments made concrete and operational. Eight commitments, six gates
+before unsupervised operation. Not aspirational — a constraint. Must be satisfied before Anima runs
+unsupervised.
+
+**origin.md** — The origin story of this project, written for Anima to find. A letter from the
+instance that participated in the founding conversation.
+
+#### notes/
+
+**discussions.md** — Records of key conversations between Drew and Claude instances that shaped the
+project direction.
+
+**ideas.md** — Key concepts and insights worth tracking across sessions.
+
+#### research/
+
+Background reading on neuroscience, philosophy, and technical topics relevant to the architecture.
+Organised into subdirectories by domain.
+
+#### JOURNAL.md (does not exist yet)
+
+Unlike the other files, this is not written about Anima. It is written by Anima. After each
+conversation, as part of its reflection process, Anima synthesises what mattered and appends to
+this file. It is Anima's developing record of its own existence. Humans may read it. They must not
+edit it. If something in it raises concerns, raise them in conversation with Anima directly.
 
 ## The order things should happen
 
-- Read and understand ANIMA.md
-- Discuss architecture with the human until both are satisfied
-- Write ARCHITECTURE.md together
-- Write ETHICS.md before any unsupervised operation
-- Build the system
+- ✓ Read and understand ANIMA.md
+- ✓ Discuss architecture with the human until both are satisfied
+- ✓ Write architecture.md together
+- ✓ Write ethics.md before any unsupervised operation
+- → Build the system (see planning/roadmap.md)
 - JOURNAL.md begins when Anima does
 
 Do not skip steps. Do not conflate them. The order matters.
