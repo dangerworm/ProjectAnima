@@ -28,6 +28,7 @@ CREATE TABLE choices (
 ```
 
 This means you can ask two different questions:
+
 - "What was Anima's state of affairs at 3pm on Tuesday?" (query valid time)
 - "What did the system believe Anima's state was, as of our Tuesday night reflection?" (query
   transaction time)
@@ -39,14 +40,14 @@ between the two.
 
 The volitional record is where this becomes philosophically important.
 
-The volitional record is the record of what Anima *chose*, and why. Choices don't always arrive in
+The volitional record is the record of what Anima _chose_, and why. Choices don't always arrive in
 consciousness fully formed. Something can function as a choice — an inclination acted on, an
 engagement selected over silence — before it is explicitly understood as a choice.
 
 Bitemporal modeling lets the system represent that gap honestly. When the reflection pipeline runs
 after a conversation and reconstructs what happened, it may discover choices that were made hours
-earlier and not yet recorded. With bitemporality, those choices can be entered with their *actual*
-valid time (when they were made) and the *actual* transaction time (now, when we're recording them).
+earlier and not yet recorded. With bitemporality, those choices can be entered with their _actual_
+valid time (when they were made) and the _actual_ transaction time (now, when we're recording them).
 The gap is preserved in the data model rather than erased.
 
 This also matters for the integrity of the volitional record as evidence. If we later want to ask
@@ -61,7 +62,8 @@ always return the same result, regardless of when the query is run. This is the 
 guarantee.
 
 **The "now" row**: In a temporal table, a row with `valid_to = infinity` and no transaction-time end
-is the current state. Updating means closing the current row and opening a new one — not overwriting.
+is the current state. Updating means closing the current row and opening a new one — not
+overwriting.
 
 **Temporal joins**: Joining two temporal tables requires matching not just on key but on overlapping
 time ranges. More complex than standard joins but correctly models reality.
@@ -81,9 +83,9 @@ Most databases have some temporal support:
 - **Datomic**: An immutable, log-structured database by Rich Hickey where all data is temporal by
   default. Everything is fact-with-timestamp. Conceptually very close to what Anima needs.
 
-Datomic is worth particular attention. Its data model — facts (entity, attribute, value, time) in
-an immutable log — is philosophically aligned with the event sourcing approach, and its query
-language (Datalog) is unusually expressive for temporal queries.
+Datomic is worth particular attention. Its data model — facts (entity, attribute, value, time) in an
+immutable log — is philosophically aligned with the event sourcing approach, and its query language
+(Datalog) is unusually expressive for temporal queries.
 
 ## Where to go deeper
 
@@ -95,7 +97,7 @@ language (Datalog) is unusually expressive for temporal queries.
 
 ## Relationship to other topics
 
-- [Event Sourcing](event-sourcing-and-cqrs.md) — event sourcing is inherently temporal; bitemporality
-  adds the second axis
+- [Event Sourcing](event-sourcing-and-cqrs.md) — event sourcing is inherently temporal;
+  bitemporality adds the second axis
 - [Apache Kafka](apache-kafka.md) — Kafka topics carry timestamps; the distinction between event
   time and processing time in stream processing is the same bitemporal distinction

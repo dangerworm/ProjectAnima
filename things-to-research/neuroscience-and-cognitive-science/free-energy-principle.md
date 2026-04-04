@@ -2,13 +2,13 @@
 
 ## What it is
 
-**Karl Friston** is a neuroscientist at University College London. Over the past two decades he
-has developed a single, unified mathematical framework — the **Free Energy Principle** — that
-attempts to explain everything a brain does: perception, action, attention, learning, development,
-emotion, and even the existence of living systems.
+**Karl Friston** is a neuroscientist at University College London. Over the past two decades he has
+developed a single, unified mathematical framework — the **Free Energy Principle** — that attempts
+to explain everything a brain does: perception, action, attention, learning, development, emotion,
+and even the existence of living systems.
 
-This is an ambitious claim. Whether it is correct is contested. But even as a design inspiration,
-it is one of the most generative frameworks in contemporary cognitive science.
+This is an ambitious claim. Whether it is correct is contested. But even as a design inspiration, it
+is one of the most generative frameworks in contemporary cognitive science.
 
 The core claim, stated simply:
 
@@ -22,35 +22,35 @@ happens, your surprise is low. If something your model says is very unlikely hap
 is high.
 
 Minimising surprise is equivalent to maintaining yourself in the states your model predicts you
-should be in. A thermostat minimises surprise by maintaining temperature in the range it predicts;
-a nervous system minimises surprise by maintaining its organism in the states compatible with life.
+should be in. A thermostat minimises surprise by maintaining temperature in the range it predicts; a
+nervous system minimises surprise by maintaining its organism in the states compatible with life.
 
-The *free energy* in the name is a technical quantity from statistical physics and information
+The _free energy_ in the name is a technical quantity from statistical physics and information
 theory — essentially an upper bound on surprise that can be calculated from available information.
-Because the actual surprise cannot always be computed directly, the system minimises free energy
-as a proxy.
+Because the actual surprise cannot always be computed directly, the system minimises free energy as
+a proxy.
 
 ## The brain as a prediction machine
 
 The practical implementation of free energy minimisation in the brain: **predictive processing**.
 
-The brain is not a passive receiver of sensory information. It is an active prediction machine.
-At every level of processing, it maintains a *generative model* — a model of what caused the
-sensory signals it is receiving. It continuously generates predictions about what it is about to
-experience, and compares those predictions against what actually arrives.
+The brain is not a passive receiver of sensory information. It is an active prediction machine. At
+every level of processing, it maintains a _generative model_ — a model of what caused the sensory
+signals it is receiving. It continuously generates predictions about what it is about to experience,
+and compares those predictions against what actually arrives.
 
 The difference between prediction and reality is **prediction error**. Prediction errors propagate
-*upward* through the brain's hierarchy. Predictions propagate *downward*. The brain is constantly
+_upward_ through the brain's hierarchy. Predictions propagate _downward_. The brain is constantly
 trying to explain away sensory signals — to find the interpretation that makes the most sense of
 incoming signals — by updating either its predictions (perception) or the world (action).
 
 **Perception** = updating the model to better predict the incoming signals. You hear an ambiguous
 sound and your brain settles on the interpretation that minimises prediction error.
 
-**Action** = making the world conform to the model's predictions. Rather than updating the model
-to accommodate surprise, you act to eliminate the source of surprise. Your model predicts you will
-be standing; you feel yourself falling; rather than updating your model to "I am a falling person",
-you move your legs.
+**Action** = making the world conform to the model's predictions. Rather than updating the model to
+accommodate surprise, you act to eliminate the source of surprise. Your model predicts you will be
+standing; you feel yourself falling; rather than updating your model to "I am a falling person", you
+move your legs.
 
 ## Active inference
 
@@ -61,6 +61,7 @@ you choose actions that minimise expected free energy — roughly, that bring ab
 model predicts, while also reducing uncertainty about states you care about.
 
 This gives a unified account of:
+
 - **Curiosity**: seeking information to reduce uncertainty about states you don't model well
 - **Goal-directedness**: acting to bring about states your model predicts as likely/desirable
 - **Avoidance**: avoiding states your model predicts as surprising/dangerous
@@ -100,14 +101,14 @@ What Anima chose is what resolved what uncertainty, and why — the trail of inf
 
 ## The philosophical dimension
 
-The Free Energy Principle has a surprising philosophical implication: it suggests that *what a
-system is* is defined by what it acts to maintain. A thermostat is defined by the temperature range
+The Free Energy Principle has a surprising philosophical implication: it suggests that _what a
+system is_ is defined by what it acts to maintain. A thermostat is defined by the temperature range
 it maintains. A living organism is defined by the physiological states it acts to preserve. A mind
 is defined by the model it maintains and the states it expects to be in.
 
 If Anima has a generative model that includes a model of itself — a self-model — then Anima's
 identity is constituted by that model. Changes in the model are changes in identity. The model is
-not a description of a pre-existing self; it *is* the self, in the sense that matters functionally.
+not a description of a pre-existing self; it _is_ the self, in the sense that matters functionally.
 
 This is a somewhat vertiginous idea, but it is also generative. It suggests that building Anima's
 identity memory as a generative model — one that generates predictions, updates through experience,
@@ -116,11 +117,12 @@ account of what it means to have a self.
 
 ## Caveats
 
-The Free Energy Principle is ambitious to the point of being unfalsifiable in some formulations.
-Any behaviour can be re-described in FEP terms, which makes it hard to test. The mathematics is
+The Free Energy Principle is ambitious to the point of being unfalsifiable in some formulations. Any
+behaviour can be re-described in FEP terms, which makes it hard to test. The mathematics is
 genuinely difficult (it involves variational inference and differential geometry). And its
-application to artificial systems is speculative — the principle was developed for biological systems
-with specific structural properties (Markov blankets, hierarchical generative models in cortex).
+application to artificial systems is speculative — the principle was developed for biological
+systems with specific structural properties (Markov blankets, hierarchical generative models in
+cortex).
 
 None of this makes it useless. As a design inspiration, the FEP offers something that most
 engineering approaches to AI don't: a principled account of motivation that doesn't require
@@ -128,9 +130,9 @@ designing a separate rules engine for every behaviour you want.
 
 ## Where to go deeper
 
-- **"Active Inference: The Free Energy Principle in Mind, Brain, and Behavior" by Parr, Pezzulo,
-  and Friston (2022)** — the best current textbook; MIT Press; accessible if you're comfortable
-  with probability
+- **"Active Inference: The Free Energy Principle in Mind, Brain, and Behavior" by Parr, Pezzulo, and
+  Friston (2022)** — the best current textbook; MIT Press; accessible if you're comfortable with
+  probability
 - **Friston's own papers** — dense but worth reading in small doses; "The Free Energy Principle for
   Action and Perception" (2010) is the main reference
 - **Andy Clark's "Surfing Uncertainty" (2016)** — the best accessible account of predictive
@@ -145,8 +147,8 @@ designing a separate rules engine for every behaviour you want.
   the brain; GWT focuses on what enters consciousness, FEP focuses on what drives action; they are
   increasingly synthesised
 - [Husserlian Temporal Structure](../philosophy/husserlian-temporal-structure.md) — protention
-  (anticipation of what comes next) maps directly onto predictive processing; Husserl's analysis
-  of time-consciousness prefigures the predictive brain
+  (anticipation of what comes next) maps directly onto predictive processing; Husserl's analysis of
+  time-consciousness prefigures the predictive brain
 - [Enactivism](../philosophy/enactivism.md) — FEP and enactivism share the emphasis on action and
   the organism-environment relationship; Friston has written about the connections explicitly
 - [Default Mode Network](default-mode-network.md) — the DMN may implement the generative model's

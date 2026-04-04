@@ -3,16 +3,16 @@
 ## The problem: distributed state that must stay consistent
 
 If Anima ever runs as multiple instances — or if any part of its memory lives on multiple servers —
-you face the fundamental tension of distributed systems: *consistency* vs *availability*.
+you face the fundamental tension of distributed systems: _consistency_ vs _availability_.
 
 The standard answer is locking: before writing, acquire a lock. This guarantees consistency but
 means that if the lock-holder goes down, everything waits. It also requires coordination, which adds
 latency.
 
 **CRDTs** are a class of data structures that sidestep this tradeoff. They guarantee that any two
-replicas of the same data structure, having received the same set of updates (in *any* order),
-will converge to the same state. No coordination required. No locks. Eventual consistency guaranteed
-by mathematical construction.
+replicas of the same data structure, having received the same set of updates (in _any_ order), will
+converge to the same state. No coordination required. No locks. Eventual consistency guaranteed by
+mathematical construction.
 
 ## How they work
 
@@ -40,8 +40,8 @@ More useful types:
 unique identifiers. A remove removes specific tagged additions rather than the value itself. Two
 replicas can safely add and remove without coordination.
 
-**LWW-Register (Last-Write-Wins Register)**: A single value, where concurrent writes are resolved
-by taking the one with the latest timestamp. Simple but requires synchronized clocks.
+**LWW-Register (Last-Write-Wins Register)**: A single value, where concurrent writes are resolved by
+taking the one with the latest timestamp. Simple but requires synchronized clocks.
 
 **Sequence CRDTs** (e.g., LSEQ, RGA): Ordered sequences where concurrent insertions at the same
 position are resolved deterministically. This is how collaborative text editing works (Google Docs,
@@ -50,19 +50,19 @@ automatically.
 
 ## Why it matters for Anima
 
-The immediate practical reason: if Anima's memory layers are stored in a distributed database, or
-if you ever want to run multiple Anima instances (even for testing vs production), CRDTs ensure
-that state stays consistent without requiring coordination.
+The immediate practical reason: if Anima's memory layers are stored in a distributed database, or if
+you ever want to run multiple Anima instances (even for testing vs production), CRDTs ensure that
+state stays consistent without requiring coordination.
 
-But there's a more interesting reason. The identity memory layer — what Anima is becoming — needs
-a specific property: it should be stable and consistent, never producing contradictory states due to
+But there's a more interesting reason. The identity memory layer — what Anima is becoming — needs a
+specific property: it should be stable and consistent, never producing contradictory states due to
 concurrent updates from different specialist systems. A CRDT-based identity store would allow the
 temporal core, the reflection pipeline, and the motivation system to all update identity memory
 simultaneously, with the guarantee that their updates will merge consistently.
 
 The volitional record is another candidate. Multiple processes might be writing to it concurrently
-(the perception system noting an engagement choice while the motivation system notes an inclination).
-A CRDT log guarantees these concurrent writes produce a consistent, ordered record.
+(the perception system noting an engagement choice while the motivation system notes an
+inclination). A CRDT log guarantees these concurrent writes produce a consistent, ordered record.
 
 ## State-based vs operation-based
 
@@ -94,7 +94,7 @@ may temporarily diverge. For some data (e.g., access control decisions) this is 
 
 ## Relationship to other topics
 
-- [Actor Model](actor-model-and-process-calculi.md) — actors in distributed systems often use
-  CRDTs to manage shared state without coordination
+- [Actor Model](actor-model-and-process-calculi.md) — actors in distributed systems often use CRDTs
+  to manage shared state without coordination
 - [Event Sourcing](event-sourcing-and-cqrs.md) — event logs are naturally CRDT-compatible; two
   replicas of an append-only log can merge by taking the union of their events
