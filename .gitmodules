@@ -1,0 +1,3 @@
+[submodule "anima-core"]
+	path = anima-core
+	url = https://github.com/dangerworm/AnimaCore.git
