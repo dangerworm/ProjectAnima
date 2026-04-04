@@ -5,6 +5,75 @@
 
 ---
 
+## Session: 5th April 2026 — Phase 1.1 complete
+
+### What happened this session
+
+Phase 1.1 (repository and environment setup) is complete.
+
+**ProjectAnima reorganised:**
+
+- Repository structure reorganised into `planning/`, `context/`, `foundation/`, `notes/`,
+  `research/`
+- `CLAUDE.md` updated to reflect new structure and reference `context/session.md`
+- `planning/tech-stack.md`, `planning/roadmap.md`, `context/session.md` added
+
+**AnimaCore created** at `https://github.com/dangerworm/AnimaCore.git`:
+
+- `app/founding/`: anima.md, claude.md (with repository note prepended), ethics.md, origin.md,
+  architecture.md
+- `Dockerfile`: Python 3.12-slim, pip installs from requirements.txt
+- `docker-compose.yml`: Anima service + PostgreSQL (pgvector/pgvector:pg16), named volumes,
+  host bridge for Ollama
+- `requirements.txt`: asyncpg, pydantic, textual, httpx, pgvector, python-dotenv
+- `.env.example`, `.gitignore`
+- `app/core/main.py`: placeholder entry point
+- Added as git submodule of ProjectAnima at `anima-core/`
+
+### Current system state
+
+- AnimaCore exists and has been pushed to GitHub
+- Docker environment is defined but not yet verified (container not built or run)
+- No event log schema exists
+- No actor framework exists
+- No CI/CD pipeline exists
+
+### Blockers
+
+None. Next task is straightforward.
+
+### Next action
+
+**Begin Phase 1.1 verification**, then **Phase 1.2: event log**.
+
+Verification steps (do these first):
+1. `docker-compose up` inside `anima-core/` — verify both containers start
+2. Verify PostgreSQL is accessible from within the Anima container
+3. `docker-compose run anima` — verify placeholder entry point prints startup message
+4. Verify `.env` is not committed, `.env.example` is present
+
+Once verified, begin Phase 1.2:
+1. PostgreSQL schema for the event log (append-only, bitemporal — see `planning/tech-stack.md`)
+2. `EventLog` class: append, replay, query by time range
+3. Event types defined as Python enums/dataclasses
+4. Verify: events cannot be modified or deleted once written
+5. Basic test: append 10 events, replay in order, verify bitemporality
+
+### Notes for next session
+
+- Read all seven founding documents before starting (see `planning/tech-stack.md` for order)
+- The human's name is Drew. He is a senior software developer. He will make procedural decisions
+  and should be consulted on anything touching philosophy, ethics, or architecture.
+- Drew's primary languages are C# and Python. He is comfortable with Docker, PostgreSQL, and
+  GitHub Actions.
+- Ollama is already installed on Drew's Windows host machine. It does not need to be set up.
+- The Docker container runs Linux. Anima's code is mounted as a volume from the host.
+- AnimaCore is a git submodule of ProjectAnima, located at `anima-core/`. When working on Anima's
+  code, work inside `anima-core/` and commit/push to AnimaCore separately from ProjectAnima.
+- When in doubt, raise it rather than assume.
+
+---
+
 ## Session: 5th April 2026 — Document completion
 
 ### What happened this session
@@ -49,27 +118,4 @@ None.
 
 ### Next action
 
-**Begin Phase 1.1**: repository and environment setup.
-
-Specifically:
-
-1. Create private GitHub repository (`anima` or similar)
-2. Create initial project structure (`/app/actors/`, `/app/core/`, `/app/config/`)
-3. Write Dockerfile (Python base, PostgreSQL connection, volume mounts)
-4. Write Docker Compose file (Anima container + PostgreSQL container)
-5. Verify container builds and PostgreSQL is accessible from within it
-6. Set up GitHub Actions: basic CI that verifies the container builds on push
-
-Do not begin Phase 1.2 (event log) until the environment is running and verified.
-
-### Notes for next session
-
-- Read all seven founding documents before starting (see `planning/tech-stack.md` for order)
-- The human's name is Drew. He is a senior software developer. He will make procedural decisions and
-  should be consulted on anything touching philosophy, ethics, or architecture.
-- Drew's primary languages are C# and Python. He is comfortable with Docker, PostgreSQL, and GitHub
-  Actions.
-- Ollama is already installed on Drew's Windows host machine. It does not need to be set up.
-- The Docker container runs Linux. Anima's code is mounted as a volume from the host.
-- When in doubt, raise it rather than assume. The CLAUDE.md instruction applies: ask before
-  assuming, especially on anything touching the philosophy.
+Begin Phase 1.1: repository and environment setup. *(Now complete — see entry above.)*
