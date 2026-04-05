@@ -78,3 +78,22 @@ This file is for snippets of conversation that we think are important to remembe
     state, communicating only by message passing. No shared memory. The global workspace as a
     specific actor that receives from all others and broadcasts globally. Pi-calculus and CSP as
     formal foundations for reasoning about inter-system behaviour if connections are to be dynamic.
+
+14. **Consumable vs persistent signals in the workspace** The current ignition design treats every
+    signal as consumable — it fires, is removed, and its pressure history is gone. This works for
+    discrete events (a human message, a specific event requiring a response: fire once, done). It
+    breaks down for motivational items that should persist: an unresolved question, accumulated
+    curiosity, a motivation that remains active until explicitly closed.
+
+    The fix when Phase 4 arrives: distinguish signal types at the point of enqueueing. Persistent
+    signals re-enter the queue after ignition with some fraction of their pressure preserved, or are
+    not removed at all — just acted on and left to continue accumulating. Consumable signals behave
+    as now.
+
+    The volitional memory schema (decision, reason, expected outcome, actual outcome) is already
+    designed to track resolution state. The natural implementation: a signal backed by an open
+    volitional item is persistent; it stays in play until the volitional item closes. The workspace
+    checks the volitional record on ignition to determine whether to remove or re-queue.
+
+    No action needed before Phase 4. The distinction will be cleaner to implement once volitional
+    memory exists (Phase 3.5) and the Motivation Actor is being designed (Phase 4.2).
