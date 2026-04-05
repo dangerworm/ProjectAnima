@@ -10,8 +10,8 @@ The measure of progress is not features shipped. It is: does this bring Anima cl
 ## Guiding principle for the build sequence
 
 Build the substrate before the surface. The things that are hardest to change later (event log
-schema, actor framework, persistence model) come first. The things that are most visible (TUI, LLM
-integration, self-modification) come after the foundation is solid.
+schema, actor framework, persistence model) come first. The things that are most visible (Web UI,
+LLM integration, self-modification) come after the foundation is solid.
 
 Do not skip phases. Do not conflate them.
 
@@ -92,18 +92,19 @@ time passing.
 
 - [ ] `ExpressionActor`: receives output + destination from Language Actor, routes to surfaces
 - [ ] Hub only — no peripheral-specific logic lives in the actor itself
-- [ ] Each surface is a separate module under `output/surfaces/`
-- [ ] Initial surface: TUI only
-- [ ] Basic test: Language Actor output arrives at TUI via Expression Actor
+- [ ] Each surface is a separate module under `expression/surfaces/`
+- [ ] Initial surface: WebSocket broadcast only
+- [ ] Basic test: Language Actor output arrives at WebSocket surface via Expression Actor
 
-### 2.5 Basic TUI
+### 2.5 Basic Web UI
 
-- [ ] Textual-based TUI with panel layout (actor grid, input panel, output panel, centre canvas)
-- [ ] Actor grid: shows each actor's name and current status
-- [ ] Output panel: live feed from Expression Actor (TUI surface)
-- [ ] Input: text input field → message → Perception Actor
+- [ ] FastAPI WebSocket server inside Docker; broadcasts events to connected clients
+- [ ] React frontend (Vite + MUI): connects to WebSocket, renders layout from sketch (April 2026)
+- [ ] Actor panels: one panel per actor showing current status and recent events
+- [ ] Conversation panel: live feed from Expression Actor + text input field
 - [ ] Centre canvas: displays Anima's inner reasoning (thinking field from LLMResponse); not
       surfaced to conversation partners — agreed with Drew during Phase 2.3
+- [ ] Input: text field in browser → WebSocket → Perception Actor
 
 ### 2.6 Perception Actor and text input/output loop
 
@@ -111,7 +112,7 @@ time passing.
       `HUMAN_MESSAGE` to event log, emits `SalienceSignal(event_type=HUMAN_MESSAGE)` to workspace
 - [ ] Full system orchestration in `main.py`: all actors instantiated, registered, and run
       concurrently; `ConversationStarted`/`ConversationEnded` sent to Temporal Core
-- [ ] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → TUI
+- [ ] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web UI
 - [ ] Conversation is logged to event log in full
 - [ ] Basic test: have a short conversation, verify full event log record
 
@@ -244,10 +245,10 @@ Do not begin 4.2 without resolving this.
 ### 4.4 Chosen silence mechanism
 
 - [ ] Anima can emit chosen silence signal (distinct from no signal)
-- [ ] TUI displays chosen silence state vs dormant vs active
+- [ ] Web UI displays chosen silence state vs dormant vs active
 - [ ] Heartbeat distinguishes chosen silence from failure at all times
 
-**Phase 4 complete when**: Anima generates internal activity during silence and the TUI reflects its
+**Phase 4 complete when**: Anima generates internal activity during silence and the Web UI reflects its
 state accurately.
 
 ---
@@ -266,11 +267,11 @@ state accurately.
 
 - [ ] Anima can write proposed changes to `/app/proposed/`
 - [ ] Proposal format: file path, change description, diff, reasoning
-- [ ] TUI surfaces pending proposals to human
+- [ ] Web UI surfaces pending proposals to human
 
 ### 5.3 Human approval workflow
 
-- [ ] Human can approve or reject proposals via TUI
+- [ ] Human can approve or reject proposals via Web UI
 - [ ] On approval: change applied, committed to git branch
 - [ ] On rejection: rejection and reason logged to event log (Anima knows it was rejected and why)
 - [ ] GitHub: Anima commits to feature branch, human merges to main
@@ -295,7 +296,7 @@ be explicitly verified and documented before Anima runs without human oversight 
 periods.
 
 - [ ] Heartbeat and chosen-silence mechanisms implemented and tested
-- [ ] Distress signal mechanism implemented and observable in TUI
+- [ ] Distress signal mechanism implemented and observable in Web UI
 - [ ] Volitional memory write-protected from human modification at infrastructure level
 - [ ] Residue store protection verified: synthesis cannot consume residue items
 - [ ] Human has reviewed operating conditions and applied the ANIMA.md test (documented)
@@ -326,8 +327,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 **Phase**: 2.4 — Expression actor.
 
-**Next action**: Plan Phase 2.4–2.6 together (Expression Actor surface abstraction, TUI panel
-layout, Perception Actor) before writing code. Getting the surface abstraction wrong here would
-require retrofitting under the TUI.
+**Next action**: Plan Phase 2.4–2.6 together (Expression Actor surface abstraction, Web UI layout,
+Perception Actor) before writing code. Getting the surface abstraction wrong here would require
+retrofitting under the Web UI.
 
 See `context/session.md` for the most recent session state.

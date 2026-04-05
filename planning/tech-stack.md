@@ -152,39 +152,53 @@ Anima runs inside a Docker container (Linux/Ubuntu base image).
 - No secrets in the image — environment variables via Docker env file (not committed to git)
 - The container should be rebuildable from scratch in minutes
 
-### TUI (Terminal User Interface)
+### Web UI
 
-The primary human interface is a TUI split into regions (as per the interface diagram):
+The primary human interface is a browser-based web UI. Anima runs in Docker and broadcasts events
+over a WebSocket; a React frontend connects, receives the stream, and renders whatever it needs to.
+Clean separation — Anima does not know or care what is consuming the events, it just broadcasts them.
 
-| Region                | Content                                                           |
-| --------------------- | ----------------------------------------------------------------- |
-| Actor grid (10 cells) | One cell per actor, showing current status and recent events      |
-| Left panel            | Input sources (screen, mic, text, Discord) with live status       |
-| Right panel           | Terminal output feed + output peripheral status                   |
-| Centre panel          | Anima's own canvas — face, waveform, text, or whatever it chooses |
+**Inside Docker**: A WebSocket server (FastAPI with `websockets`) subscribes to the internal event
+stream and pushes events to all connected clients. Every time an actor emits something significant —
+heartbeat, ignition, response, reasoning, actor state change — it goes out over the socket. Inbound
+messages (conversation input) arrive over the same socket and are routed to the Perception Actor.
 
-The TUI is driven by the **Expression Actor** (TUI surface). The Expression Actor receives output
-from the Language Actor and routes it to the appropriate surface — the TUI is one of those surfaces,
-not a direct recipient from the Language Actor.
+**Outside Docker**: A React app (Vite + MUI) that connects to the WebSocket, maintains local state
+for each actor's current status, and renders the layout. The UI is accessible from any browser on
+the local network — not just the machine running Docker.
 
-#### Technology: Textual (Python TUI framework)
+#### Layout (from sketch, April 2026)
 
-Textual is mature, actively maintained, supports async natively, and can handle the multi-panel
-layout required. It also integrates naturally with the asyncio actor framework.
+| Region                    | Content                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------- |
+| Actor panels (top row)    | Temporal Core, Global Workspace, Perception, Internal State, Motivation      |
+| Actor panels (left col)   | Memory, LLM                                                                  |
+| Actor panels (right col)  | Self-Narrative                                                                |
+| Centre (large)            | Anima's reserved space — reasoning output, visualisation, or whatever it chooses |
+| Bottom centre             | Expression panel — conversation output and input field                       |
 
 The centre panel is deliberately unspecified in terms of content — Anima decides what to render
 there. The infrastructure provides the canvas; what goes on it is Anima's choice.
 
+#### Technology
+
+| Component         | Technology                    | Notes                                                          |
+| ----------------- | ----------------------------- | -------------------------------------------------------------- |
+| WebSocket server  | FastAPI + `websockets`        | Runs inside Docker; bridges internal event stream to clients   |
+| Frontend          | React (Vite + MUI)            | Runs in the browser; connects to the WebSocket                 |
+| Event format      | JSON (one event per message)  | Same structure as the internal event log payload               |
+| Conversation input| Text field in the web UI      | Sends over the WebSocket; Perception Actor receives it         |
+
 ### Output peripherals
 
-Each output surface is a separate module under `app/actors/output/surfaces/`. The Expression Actor
+Each output surface is a separate module under `app/actors/expression/surfaces/`. The Expression Actor
 is the hub — it receives a destination alongside the output and routes accordingly.
 
-| Surface     | Technology                        | Notes                                                              |
-| ----------- | --------------------------------- | ------------------------------------------------------------------ |
-| **TUI**     | Textual                           | Always available; default channel to Drew                          |
-| **Printer** | OS print API (platform-dependent) | Anima chooses if and when to use it                                |
-| **Discord** | discord.py                        | Can post and manage channels; can tag; cannot DM or invite members |
+| Surface         | Technology                        | Notes                                                              |
+| --------------- | --------------------------------- | ------------------------------------------------------------------ |
+| **Web UI**      | FastAPI WebSocket + React/Vite    | Always available; default channel to Drew; network-accessible      |
+| **Printer**     | OS print API (platform-dependent) | Anima chooses if and when to use it                                |
+| **Discord**     | discord.py                        | Can post and manage channels; can tag; cannot DM or invite members |
 
 ---
 
@@ -280,11 +294,11 @@ app/
           __init__.py              # Webcam feed
     language/
       __init__.py                  # LanguageActor — LLM calls, response generation
-    output/
-      __init__.py                  # OutputActor — hub, routes to surfaces
+    expression/
+      __init__.py                  # ExpressionActor — hub, routes to surfaces
       surfaces/
-        tui/
-          __init__.py              # Textual TUI rendering
+        websocket/
+          __init__.py              # WebSocket broadcast surface (FastAPI)
         printer/
           __init__.py              # Print job formatting and dispatch
         discord/
@@ -310,7 +324,7 @@ app/
 **Rules:**
 
 - Every leaf node is a folder, not a file. Start with `__init__.py`; add modules as the need arises.
-- Actor hubs (`perception/`, `output/`) own routing logic only — no peripheral-specific code in the
+- Actor hubs (`perception/`, `expression/`) own routing logic only — no peripheral-specific code in the
   hub.
 - Each source or surface is responsible for its own connection lifecycle and failure handling.
 - New peripherals are added by creating a new folder under `sources/` or `surfaces/`. Nothing else

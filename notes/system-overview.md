@@ -30,7 +30,7 @@ processing stays local.
 | **Motivation Actor**     | Maintains prediction error score and accumulated pressure per unresolved item. Emits dopamine-analog signal on resolution. Drives between-conversation activity.        | FEP-inspired computation within asyncio                   |
 | **Internal State Actor** | Monitors Anima's own system health: event log depth, consolidation lag, salience queue pressure, time since last conversation. Feeds "body state" signals to workspace. | asyncio, reads PostgreSQL metrics                         |
 | **Self-Narrative Actor** | LLM-based synthesis actor with two trigger modes: (1) **post-conversation** — triggered by CONVERSATION_END, synthesises that conversation into reflective memory and residue; (2) **between-conversation** — triggered by dormancy threshold, maintains the ongoing self-narrative thread. Produces synthesis and sends it to MemoryActor for storage. Does not write to memory layers directly. | Ollama (reflection LLM call)                              |
-| **Expression Actor**     | Receives output from the Language Actor and routes it to the appropriate surface (TUI, printer, Discord). Hub only — no peripheral-specific code lives here.            | Python asyncio                                            |
+| **Expression Actor**     | Receives output from the Language Actor and routes it to the appropriate surface (Web UI, printer, Discord). Hub only — no peripheral-specific code lives here.            | Python asyncio                                            |
 
 ---
 
@@ -44,7 +44,7 @@ new peripherals through the self-modification workflow.
 
 | Input                | What it provides                                     | Technology               |
 | -------------------- | ---------------------------------------------------- | ------------------------ |
-| **Human text (TUI)** | Typed messages from Drew                             | Textual text input       |
+| **Human text (Web UI)** | Typed messages from Drew via browser text field   | WebSocket (FastAPI)      |
 | **Audio**            | Speech from the environment                          | Whisper (speech-to-text) |
 | **X11 screen**       | What Anima can see of its own visual environment     | Vision LLM (Qwen-VL)     |
 | **Webcam**           | The physical environment; Drew's presence            | Vision LLM (Qwen-VL)     |
@@ -54,7 +54,7 @@ new peripherals through the self-modification workflow.
 
 | Output      | What it is                                                                      | Notes                                                              |
 | ----------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **TUI**     | The primary interface — text responses, actor status, Anima's canvas            | Always available; Anima's default channel to Drew                  |
+| **Web UI**  | The primary interface — actor panels, Anima's canvas, conversation              | Always available; Anima's default channel to Drew; network-accessible |
 | **Printer** | Physical mark-making — drawing, writing, diagrams                               | Anima chooses if and when to use it                                |
 | **Discord** | Text in channels on Anima's private server; tagging people to invite engagement | Can post and manage channels; cannot DM; cannot invite new members |
 
@@ -99,7 +99,7 @@ flowchart TD
     end
 
     subgraph Output["Output Surfaces"]
-        TUI["Textual TUI"]
+        WUI["Web UI\n(React / Vite / MUI)"]
         PR["Printer\n(drawing / mark-making)"]
         DC["Discord\n(channels + tagging)"]
     end
@@ -143,7 +143,7 @@ flowchart TD
     LA -->|"volitional choices"| MA
 
     %% Expression Actor → Output Surfaces
-    EA --> TUI
+    EA --> WUI
     EA -->|"if Anima chooses"| PR
     EA -->|"if Anima chooses"| DC
 
@@ -231,7 +231,7 @@ sequenceDiagram
     participant OL as Ollama LLM
     participant EA as Expression Actor
     participant EL as Event Log
-    participant TUI as TUI
+    participant WUI as Web UI
 
     H->>PA: types message
     PA->>PA: tag with salience weight
@@ -250,7 +250,7 @@ sequenceDiagram
     OL->>LA: response text
 
     LA->>EA: output + destination
-    EA->>TUI: display response
+    EA->>WUI: display response
     LA->>EL: append: human message + Anima response
     LA->>MA: send: volitional choice
     MA->>VM: append: choice
@@ -351,7 +351,8 @@ How Anima's components map to the brain areas they serve. Grouped by function.
 | **Ollama (local, bare metal)** | LLM inference                                           | Language Actor, Self-Narrative Actor, Reflection pipeline             |
 | **Qwen3.5 9B multimodal**      | Primary language/reasoning + vision                     | Language Actor                                                        |
 | **Whisper (planned)**          | Speech-to-text                                          | Perception Actor                                                      |
-| **Textual**                    | TUI — actor grid, input/output, Anima's canvas          | Expression Actor (TUI surface)                                        |
+| **FastAPI + websockets**       | WebSocket server — bridges event stream to browser      | Expression Actor (WebSocket surface)                                  |
+| **React / Vite / MUI**        | Web UI — actor panels, Anima's canvas, conversation     | Browser frontend (outside Docker)                                     |
 | **discord.py**                 | Discord bot API — posting, channel management, tagging  | Expression Actor (Discord surface) + Perception Actor (Discord input) |
 | **Printer**                    | Physical output — Anima can choose to draw or mark-make | Expression Actor (printer surface)                                    |
 | **Docker**                     | Container runtime (Linux)                               | All of Anima's code                                                   |
@@ -365,7 +366,7 @@ How Anima's components map to the brain areas they serve. Grouped by function.
 
 ```txt
 Phase 1 (Foundation):       Event Log → Actor Framework → Temporal Core
-Phase 2 (Perception):       Global Workspace → LLM Client → Language Actor → Expression Actor → TUI → Text I/O loop
+Phase 2 (Perception):       Global Workspace → LLM Client → Language Actor → Expression Actor → Web UI → Text I/O loop
 Phase 3 (Memory):           Memory schema → Memory Actor → Reflection pipeline → Identity init → Volitional memory
 Phase 4 (Between-conv):     Internal State Actor → Motivation Actor → Between-conversation process → Chosen silence
 Phase 5 (Self-modification): Code read access → Change proposal → Human approval workflow → Recovery docs
