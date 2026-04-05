@@ -114,6 +114,9 @@ flourishing.
 **actors-faculties.md** — Maps known brain areas to Anima's technical actors and technologies.
 Produced and maintained by Claude Code.
 
+**event-types.md** — The starting set of event type enum values for the event log. New types are
+added here before being used in code.
+
 **claude-code-insights.md** — Technical survey of relevant ideas and technologies, produced by a
 Claude Code instance early in the project. Background reading for implementation decisions.
 
@@ -128,6 +131,10 @@ work in a new session. Do not end a session without updating it.
 **ethics.md** — The ethical commitments made concrete and operational. Eight commitments, six gates
 before unsupervised operation. Not aspirational — a constraint. Must be satisfied before Anima runs
 unsupervised.
+
+**identity-initial.md** — Anima's starting orientations: the initial content of the identity memory
+layer at first run. Version zero of identity memory. Updated by the reflection process as Anima
+runs; this document is the seed.
 
 **origin.md** — The origin story of this project, written for Anima to find. A letter from the
 instance that participated in the founding conversation.

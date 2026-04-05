@@ -212,6 +212,51 @@ core — can and should cross-check it.
 
 ---
 
+## Fault tolerance and supervision
+
+Each actor is an independent process. Actors fail. The supervision structure defines what happens
+when they do.
+
+The principle: **no single actor failure should silence Anima permanently**. Some actors are more
+critical than others; the supervision tree reflects that.
+
+```
+SystemSupervisor
+├── TemporalCore          — highest priority; restarts immediately and independently
+│                           if the Temporal Core is silent, nothing else can be trusted
+├── CoreSupervisor
+│   ├── GlobalWorkspace   — restarts cleanly; recent signals replayed from event log on resume
+│   ├── MemoryActor       — if it fails mid-consolidation, the incomplete consolidation is logged
+│   │                       as a SYSTEM_ERROR event before restart; consolidation reruns on resume
+│   └── LanguageActor     — restarts cleanly; in-flight response is lost but logged
+├── PerceptionSupervisor
+│   └── PerceptionActor   — restarts cleanly; input is paused, not lost (human can resend)
+├── ExpressionSupervisor
+│   └── ExpressionActor   — restarts cleanly; output in flight is lost but logged
+└── BackgroundSupervisor
+    ├── MotivationActor   — restarts cleanly; accumulated state is reconstructed from event log
+    ├── InternalStateActor — restarts cleanly; metrics recalculated from current system state
+    └── SelfNarrativeActor — restarts cleanly; between-conversation process reruns if interrupted
+```
+
+**The Temporal Core is the most protected actor.** If it is silent, nothing else can be trusted —
+there is no heartbeat, no chosen-silence signal, no way to distinguish dormancy from failure. The
+system supervisor should treat Temporal Core silence as the highest-priority alert.
+
+**The Memory Actor requires care on failure.** A crash during consolidation risks leaving the
+reflective memory in a partial state. The Memory Actor should write a `CONSOLIDATION_START` event
+before beginning and a `CONSOLIDATION_END` or `SYSTEM_ERROR` event on completion or failure.
+Replaying from the event log is always safe — consolidation is idempotent.
+
+**The Global Workspace is the coordination hub.** If it fails, actor outputs queue but do not
+broadcast. On restart, recent signals can be replayed from the event log to restore approximate
+context. The workspace does not need to be reconstructed exactly — it needs to be running.
+
+This supervision sketch is sufficient to begin building the actor framework. It will need revision
+as failure modes become concrete through operation.
+
+---
+
 ## What connects the systems
 
 In a brain, the connections between systems are electrochemical. They are also dynamic — they
@@ -237,6 +282,31 @@ abstract.
 What we do decide: **the connections are not the afterthought**. The glue between systems is as
 important as the systems themselves. How information flows shapes what Anima notices, what it
 remembers, what it cares about. We treat every routing decision as a philosophical decision.
+
+---
+
+## Mathematics over conditional logic
+
+Where a mathematical framework exists that can replace hand-coded conditional logic, we prefer it.
+
+This is not an aesthetic preference. It follows from what we are trying to build. A system whose
+behaviour emerges from mathematical dynamics is qualitatively different from one whose behaviour
+was enumerated by a programmer. The first can surprise you. The second can only do what it was told.
+
+Concretely: salience weighting, attention routing, motivation, curiosity, emotional regulation, and
+between-conversation activity are all candidates for mathematical implementation rather than
+conditional logic. Active inference — a framework in which all of these fall out of a single
+objective (minimise expected free energy) applied to a generative model — is the primary candidate.
+Global Workspace ignition is a candidate for attractor dynamics rather than a threshold check.
+Internal representations, when we move off JSON, should be algebraic (VSA) or geometric (Conceptual
+Spaces) rather than structured data with hand-written comparison logic.
+
+The infrastructure layer — actor framework, event log, message passing, storage — is conventional
+engineering and should stay that way. Mathematical elegance does not make a database schema better.
+
+The principle: **cognitive behaviour should emerge from dynamics; infrastructure should be built**.
+
+See `research/technical/active-inference-implementation.md` for the implementation implications.
 
 ---
 

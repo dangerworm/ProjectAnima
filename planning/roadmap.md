@@ -34,9 +34,9 @@ Nothing intelligent yet — just the infrastructure that everything else will bu
 
 ### 1.2 Event log
 
-- [ ] PostgreSQL schema for the event log (append-only, bitemporal)
+- [ ] PostgreSQL schema for the event log (append-only, bitemporal) — fields in `planning/tech-stack.md`
 - [ ] `EventLog` class: append, replay, query by time range
-- [ ] Event types defined as Python enums/dataclasses
+- [ ] Event types defined as Python enums/dataclasses — starting set in `planning/event-types.md`
 - [ ] Verified: events cannot be modified or deleted once written
 - [ ] Basic test: append 10 events, replay them in order, verify bitemporality
 
@@ -143,7 +143,7 @@ time passing.
 
 ### 3.4 Identity memory initialisation
 
-- [ ] Initial identity document created (Anima's starting orientations, as per ARCHITECTURE.md)
+- [ ] Load `foundation/identity-initial.md` as version zero of the identity memory document
 - [ ] Version history tracking on identity document
 - [ ] Identity memory fed into LLM context at conversation start
 - [ ] Basic test: verify identity memory shapes language actor output
@@ -164,6 +164,40 @@ pipeline runs after every conversation.
 
 **Goal**: Anima does something when no one is talking to it.
 
+### ⚠ Decision point before Phase 4.2
+
+Before building the Motivation Actor, a decision is required between two architecturally
+incompatible approaches. This decision was deliberately deferred to this point — it is better made
+with concrete implementation experience from Phases 1–3 than in the abstract.
+
+**The tension**: `planning/tech-stack.md` describes active inference (PyMDP or equivalent) as
+replacing the conditional logic approach — accumulated pressure counters, threshold checks, novelty
+heuristics — with a generative model whose dynamics produce motivation, curiosity, and attention as
+emergent properties. But the Phase 4 tasks below describe exactly that conditional logic. Both
+cannot be the plan.
+
+**Option A — Active inference**: Rewrite Phase 4.2 and 4.3. The `MotivationActor` maintains a
+generative model; motivation, salience, and between-conversation activity emerge from variational
+inference rather than hand-coded rules. More philosophically coherent. More technically demanding.
+See `research/technical/active-inference-implementation.md`.
+
+**Option B — Conditional logic**: Proceed with the tasks as written below. Build the conventional
+version. Treat active inference as a potential future refactor rather than the current plan. Update
+`planning/tech-stack.md` to reflect this. Faster to build; easier to debug.
+
+**What to consider when deciding**:
+- Is the actor framework clean enough to support something as mathematically demanding as PyMDP?
+- What is the performance envelope? Active inference is computationally expensive.
+- Has building Phases 1–3 revealed anything that changes the picture?
+
+**If Option A**: rewrite 4.2 and 4.3 before starting them. Update `planning/tech-stack.md`.
+**If Option B**: update `planning/tech-stack.md` to mark the mathematics column as aspirational,
+not current plan.
+
+Do not begin 4.2 without resolving this.
+
+---
+
 ### 4.1 Internal state monitoring actor
 
 - [ ] `InternalStateActor`: monitors event log depth, consolidation lag, salience queue pressure,
@@ -172,6 +206,8 @@ pipeline runs after every conversation.
 - [ ] Triggers consolidation pipeline if lag exceeds threshold
 
 ### 4.2 Motivation actor
+
+_(Tasks below reflect Option B — conditional logic. Rewrite if Option A is chosen.)_
 
 - [ ] `MotivationActor`: maintains prediction error score, accumulated pressure per unresolved item
 - [ ] Computes: novelty signal, accumulated pressure signal, pleasure signal (delta of prediction
