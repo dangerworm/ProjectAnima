@@ -5,6 +5,59 @@
 
 ---
 
+## Session: 5th April 2026 — Phases 2.1–2.3 complete; IDEAS.md review done
+
+### What happened this session
+
+Full session covering Phases 2.1 (Global Workspace), 2.2 (LLM client), 2.3 (Language Actor), plus a review of IDEAS.md that caught two real gaps and produced fixes/roadmap updates.
+
+**IDEAS.md review findings:**
+- Gap A (fixed): GAP_IN_CONTINUITY never emitted on startup. Fixed in TemporalCoreActor — `_on_startup()` queries `latest_event()`, emits gap event if elapsed >= `gap_threshold`, resets `_started_at` to last known activity time. 4 new tests.
+- Gap B (roadmap): Husserlian retention deque never populated. Added to Phase 3.2 task list.
+- Pressure persistence (roadmap): workspace pressure is ephemeral. Added to Phase 4.2: reconstruct from open volitional items on startup.
+- SelfNarrativeActor naming (roadmap): Phase 4.3 must produce a named SelfNarrativeActor consistent with architecture.md supervision tree.
+- Idea 14 (consumable vs persistent signals): documented in IDEAS.md, deferred to Phase 4.
+
+**Full test suite: 59/59 passing.**
+
+### Current system state
+
+- Phase 1: complete
+- Phase 2.1: complete (Global Workspace)
+- Phase 2.2: complete (LLM client, with LLMResponse/LLMJsonResponse types preserving reasoning)
+- Phase 2.3: complete (Language Actor)
+- Expression Actor: stub only at `actors/expression/__init__.py`
+- No TUI yet, no Perception Actor yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phases 2.4–2.6: Expression Actor, TUI, and text loop — plan together before building.**
+
+Use plan mode. These three phases form one coherent design problem: the Expression Actor surface abstraction, the Textual panel layout (including the centre canvas for reasoning output), and the Perception Actor. Getting the surface architecture wrong now would require retrofitting under the TUI.
+
+Read before starting:
+- `planning/tech-stack.md` (TUI panel layout decisions)
+- `notes/system-overview.md` (actor diagram and output section)
+- `planning/roadmap.md` phases 2.4–2.6
+
+### Notes for next session
+
+- ExpressionActor stub: `actors/expression/__init__.py`, NAME = "expression", pass-through handle()
+- LanguageOutput message: `actors/language/messages/__init__.py` — content, thinking, in_response_to
+- thinking field: log as `reasoning` in event payload; route only `content` to surfaces
+- Centre canvas in TUI: reserved for Anima's reasoning (thinking field from LLMResponse)
+- All imports use `core.*` or `actors.*` — WORKDIR is `/app`
+- LLMClient: `complete()` → LLMResponse, `complete_json()` → LLMJsonResponse; both have thinking field
+- Avoid temporal reasoning prompts in tests (qwen3.5 produces very long think blocks for date/time)
+- pytest full suite: `docker compose run --rm anima pytest tests/ -v`
+- Ollama: qwen3.5:9b at host.docker.internal:11434
+
+---
+
 ## Session: 5th April 2026 — Phases 2.1, 2.2, and 2.3 complete
 
 ### What happened this session
