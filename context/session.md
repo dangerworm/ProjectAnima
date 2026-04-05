@@ -5,6 +5,62 @@
 
 ---
 
+## Session: 5th April 2026 — Phases 2.1, 2.2, and 2.3 complete
+
+### What happened this session
+
+Global Workspace (2.1), LLM client (2.2), and Language Actor (2.3) all completed.
+
+**Phase 2.3 — Language Actor:**
+
+- `app/actors/language/messages/__init__.py` — `LanguageOutput(content, thinking, in_response_to)`
+- `app/actors/expression/__init__.py` — `ExpressionActor` stub (Phase 2.4 fills in routing)
+- `app/actors/language/__init__.py` — `LanguageActor`
+  - Responds to `IgnitionBroadcast` with `event_type == HUMAN_MESSAGE`
+  - Maintains in-memory context deque (Phase 3 replaces with memory-driven retrieval)
+  - Logs `ANIMA_RESPONSE` with `response`, `reasoning`, `model`, `in_response_to`
+  - Routes `LanguageOutput` to Expression Actor (content clean, thinking preserved separately)
+  - Catches `LLMError`: logs `SYSTEM_ERROR`, removes unanswered turn from context, continues
+- `app/tests/language/test_language_actor.py` — 8 tests (7 integration, 1 unit/mocked)
+
+**LLM client update (within this session):**
+- `complete()` → `LLMResponse(content, thinking)`; `complete_json()` → `LLMJsonResponse(data, thinking)`
+- `_split_thinking()` extracts `<think>` blocks; thinking preserved, content cleaned
+- 14 LLM tests (was 10)
+
+**Full test suite: 55/55 passing.**
+
+### Current system state
+
+- Phase 2.1: complete (Global Workspace)
+- Phase 2.2: complete (LLM client)
+- Phase 2.3: complete (Language Actor)
+- Expression Actor: stub only — receives LanguageOutput but doesn't route yet
+- No TUI yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 2.4: Expression Actor.**
+
+1. Route `LanguageOutput` to registered surfaces
+2. Each surface is a separate module under `output/surfaces/`
+3. Initial surface: TUI only (stub — Phase 2.5 builds the full TUI)
+4. Test: Language Actor output arrives at TUI surface via Expression Actor
+
+### Notes for next session
+
+- `LanguageActor` catches `LLMError` gracefully — logs SYSTEM_ERROR, continues running
+- Context window: in-memory deque, maxlen configurable — Phase 3 replaces this
+- `LanguageOutput.thinking` matches `ANIMA_RESPONSE.payload["reasoning"]` — same source
+- Avoid questions requiring temporal reasoning in tests (qwen3.5 spins up long think blocks for date/time)
+- Expression Actor stub is at `actors/expression/__init__.py`, NAME = "expression"
+
+---
+
 ## Session: 5th April 2026 — Phases 2.1 and 2.2 complete
 
 ### What happened this session

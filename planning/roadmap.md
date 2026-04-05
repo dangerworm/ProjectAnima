@@ -82,11 +82,11 @@ time passing.
 
 ### 2.3 Language actor
 
-- [ ] `LanguageActor`: receives workspace broadcasts, calls LLM, produces text output
-- [ ] Consumes: workspace ignition signals, current context
-- [ ] Produces: text responses with destination, emits to event log and volitional memory
-- [ ] Routes output to Expression Actor — does not write to surfaces directly
-- [ ] Basic test: send a message, get a response, verify it appears in event log
+- [x] `LanguageActor`: receives workspace broadcasts, calls LLM, produces text output
+- [x] Consumes: workspace ignition signals, current context
+- [x] Produces: text responses with destination, emits to event log and volitional memory
+- [x] Routes output to Expression Actor — does not write to surfaces directly
+- [x] Basic test: send a message, get a response, verify it appears in event log
 
 ### 2.4 Expression actor
 
@@ -309,8 +309,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 2.3 — Language actor.
+**Phase**: 2.4 — Expression actor.
 
-**Next action**: `LanguageActor` receiving workspace broadcasts, calling LLM, routing output to Expression Actor.
+**Next action**: `ExpressionActor` routing `LanguageOutput` to registered surfaces.
 
 See `context/session.md` for the most recent session state.
