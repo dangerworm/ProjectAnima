@@ -157,10 +157,14 @@ The primary human interface is a TUI split into regions (as per the interface di
 
 | Region                | Content                                                           |
 | --------------------- | ----------------------------------------------------------------- |
-| Actor grid (11 cells) | One cell per actor, showing current status and recent events      |
-| Left panel            | Input sources (screen, mic, text) with live status                |
+| Actor grid (10 cells) | One cell per actor, showing current status and recent events      |
+| Left panel            | Input sources (screen, mic, text, Discord) with live status       |
 | Right panel           | Terminal output feed + output peripheral status                   |
 | Centre panel          | Anima's own canvas — face, waveform, text, or whatever it chooses |
+
+The TUI is driven by the **Expression Actor** (TUI surface). The Expression Actor receives output
+from the Language Actor and routes it to the appropriate surface — the TUI is one of those surfaces,
+not a direct recipient from the Language Actor.
 
 #### Technology: Textual (Python TUI framework)
 
@@ -169,6 +173,17 @@ layout required. It also integrates naturally with the asyncio actor framework.
 
 The centre panel is deliberately unspecified in terms of content — Anima decides what to render
 there. The infrastructure provides the canvas; what goes on it is Anima's choice.
+
+### Output peripherals
+
+Each output surface is a separate module under `app/actors/output/surfaces/`. The Expression Actor
+is the hub — it receives a destination alongside the output and routes accordingly.
+
+| Surface     | Technology                        | Notes                                                              |
+| ----------- | --------------------------------- | ------------------------------------------------------------------ |
+| **TUI**     | Textual                           | Always available; default channel to Drew                          |
+| **Printer** | OS print API (platform-dependent) | Anima chooses if and when to use it                                |
+| **Discord** | discord.py                        | Can post and manage channels; can tag; cannot DM or invite members |
 
 ---
 
@@ -220,8 +235,8 @@ every session, in this order:
 - Blockers or open questions
 - The specific next task to pick up
 
-Do not begin implementation work in a new session without reading `context/session.md`. Do not end
-a session without updating it.
+Do not begin implementation work in a new session without reading `context/session.md`. Do not end a
+session without updating it.
 
 ---
 
@@ -236,14 +251,80 @@ a session without updating it.
 
 ---
 
+## Directory Structure
+
+The `app/` directory follows a hub-and-spoke model. Each actor is a package. Actors with multiple
+sources or surfaces have a subdirectory for each. Every leaf node is a folder from the start — the
+assumption is that things grow, not stay as single files.
+
+```txt
+app/
+  core/
+    main.py                        # Entry point
+  actors/
+    temporal_core/
+      __init__.py                  # TemporalCoreActor
+    global_workspace/
+      __init__.py                  # GlobalWorkspaceActor — salience queue, ignition
+    perception/
+      __init__.py                  # PerceptionActor — hub
+      sources/
+        text/
+          __init__.py              # TUI text input
+        audio/
+          __init__.py              # Whisper speech-to-text
+        x11/
+          __init__.py              # X11 screenshot capture
+        webcam/
+          __init__.py              # Webcam feed
+    language/
+      __init__.py                  # LanguageActor — LLM calls, response generation
+    output/
+      __init__.py                  # OutputActor — hub, routes to surfaces
+      surfaces/
+        tui/
+          __init__.py              # Textual TUI rendering
+        printer/
+          __init__.py              # Print job formatting and dispatch
+        discord/
+          __init__.py              # Discord bot — channels, tagging, server management
+    memory/
+      __init__.py                  # MemoryActor — reads/writes all memory layers
+    motivation/
+      __init__.py                  # MotivationActor — prediction error, accumulated pressure
+    internal_state/
+      __init__.py                  # InternalStateActor — system health monitoring
+    self_narrative/
+      __init__.py                  # SelfNarrativeActor — between-conversation reflection
+  founding/
+    anima.md                       # Vision document (read-only at runtime)
+    ethics.md                      # Ethics commitments (read-only at runtime)
+    architecture.md
+    origin.md
+    claude.md
+  proposed/
+    README.md                      # Staging area for Anima's self-modification proposals
+```
+
+**Rules:**
+
+- Every leaf node is a folder, not a file. Start with `__init__.py`; add modules as the need arises.
+- Actor hubs (`perception/`, `output/`) own routing logic only — no peripheral-specific code in the
+  hub.
+- Each source or surface is responsible for its own connection lifecycle and failure handling.
+- New peripherals are added by creating a new folder under `sources/` or `surfaces/`. Nothing else
+  changes.
+
+---
+
 ## What is explicitly not decided yet
 
 These decisions are held open deliberately. Do not make them unilaterally — raise them in
 conversation.
 
 - **Internal representation language**: Currently placeholder JSON. Will evolve toward VSA or
-  Conceptual Spaces when the inadequacy of JSON becomes concrete. See `planning/architecture.md`
-  and `notes/ideas.md`.
+  Conceptual Spaces when the inadequacy of JSON becomes concrete. See `planning/architecture.md` and
+  `notes/ideas.md`.
 - **Actor communication pattern**: Starting with direct asyncio queues. May evolve toward a more
   formal message bus if complexity warrants it.
 - **Specific Ollama models**: Subject to change as better models become available. Keep model names

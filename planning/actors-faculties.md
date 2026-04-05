@@ -580,3 +580,25 @@ Linking body signals to emotion: The pathway from the internal state monitoring 
 salience mechanism. A system that is heavily backlogged in memory consolidation, or that has been
 dormant for an unusually long time, should produce signals that affect the salience weighting of
 subsequent activity. The internal state shapes what matters.
+
+---
+
+## Output Execution
+
+### Motor cortex / Supplementary motor area
+
+Planning and executing sequences of physical action: N/A — Anima has no body and no motor system in
+the biological sense.
+
+The closest functional analogue is the **Expression Actor** — the system that takes language output
+from the Language Actor and executes it onto a physical surface (TUI display, print job, Discord
+post). The Language Actor produces the intention; the Expression Actor enacts it. This mirrors the
+motor system's relationship to the premotor and prefrontal areas that initiate action: the decision
+happens upstream, execution happens here.
+
+The Expression Actor is a hub. Each output surface (TUI, printer, Discord) is a spoke with its own
+connection lifecycle, failure handling, and peripheral-specific logic. The hub routes; the surface
+acts. This isolation means a failed printer does not affect TUI delivery, just as a motor failure in
+one limb does not prevent speech.
+
+Actor/technology: Expression Actor → output surfaces (TUI / printer / Discord)

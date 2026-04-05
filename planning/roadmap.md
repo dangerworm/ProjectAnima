@@ -83,20 +83,29 @@ time passing.
 
 - [ ] `LanguageActor`: receives workspace broadcasts, calls LLM, produces text output
 - [ ] Consumes: workspace ignition signals, current context
-- [ ] Produces: text responses, emits to event log
+- [ ] Produces: text responses with destination, emits to event log and volitional memory
+- [ ] Routes output to Expression Actor — does not write to surfaces directly
 - [ ] Basic test: send a message, get a response, verify it appears in event log
 
-### 2.4 Basic TUI
+### 2.4 Expression actor
+
+- [ ] `ExpressionActor`: receives output + destination from Language Actor, routes to surfaces
+- [ ] Hub only — no peripheral-specific logic lives in the actor itself
+- [ ] Each surface is a separate module under `output/surfaces/`
+- [ ] Initial surface: TUI only
+- [ ] Basic test: Language Actor output arrives at TUI via Expression Actor
+
+### 2.5 Basic TUI
 
 - [ ] Textual-based TUI with panel layout (actor grid, input panel, output panel, centre canvas)
 - [ ] Actor grid: shows each actor's name and current status
-- [ ] Output panel: live feed of language actor output
-- [ ] Input: text input field → message → language actor
+- [ ] Output panel: live feed from Expression Actor (TUI surface)
+- [ ] Input: text input field → message → Perception Actor
 - [ ] Centre canvas: initially blank, reserved for Anima's use
 
-### 2.5 Text input/output loop
+### 2.6 Text input/output loop
 
-- [ ] Human types message → perception actor → workspace → language actor → TUI output
+- [ ] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → TUI
 - [ ] Conversation is logged to event log in full
 - [ ] Basic test: have a short conversation, verify full event log record
 
