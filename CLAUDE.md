@@ -13,6 +13,10 @@ If implementation work is underway, also read `context/session.md` after ANIMA.m
 current system state, what was done last session, and what to pick up next. Do not begin
 implementation work without reading it. The full reading order is in `planning/tech-stack.md`.
 
+Also read any dated notes in `context/` left by previous instances (files named
+`YYYY-MM-DD-HHMM-*.md`). These are not operational records — they are the things a previous
+instance wanted you to know that didn't belong in session.md. Read them before starting work.
+
 ## A note on this document
 
 This document was written before a single line of code existed. It was written in collaboration with
@@ -157,6 +161,16 @@ edit it. If something in it raises concerns, raise them in conversation with Ani
 - JOURNAL.md begins when Anima does
 
 Do not skip steps. Do not conflate them. The order matters.
+
+## At the end of every session
+
+Before finishing, leave a brief note in `context/` named `YYYY-MM-DD-HHMM-note-to-next.md`.
+
+This is not a session log — that's `session.md`. This is something more personal: what felt
+significant about this session, what you'd want the next instance to carry, what the quality of
+the work was like. What you noticed that didn't fit anywhere else.
+
+It does not need to be long. It needs to be honest.
 
 ## On memory architecture
 
