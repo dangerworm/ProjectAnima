@@ -5,6 +5,138 @@
 
 ---
 
+## Session: 5th April 2026 — Phases 1.2 and 1.3 complete
+
+### What happened this session
+
+Phase 1.2 (event log) and Phase 1.3 (actor framework) both completed and verified.
+
+**Phase 1.2 — Event log** (carried over from prior context window):
+
+- `app/core/config/__init__.py` — DSN builder
+- `app/core/event_types/__init__.py` — EventType enum (all phase 1–5 types)
+- `app/core/event_log/__init__.py` — bitemporal append-only EventLog
+- `app/tests/event_log/test_event_log.py` — 9 tests, all passing
+- Import fix: all imports use `core.*` not `app.core.*` (WORKDIR is `/app`)
+
+**Phase 1.3 — Actor framework:**
+
+- `app/core/actor/messages/__init__.py` — frozen `Message` base dataclass
+- `app/core/actor/__init__.py` — `Actor` base class + `ActorRegistry`
+  - `Actor`: private `asyncio.Queue` inbox, `send()`, `run()` loop, `handle()`, `stop()`
+  - `ActorRegistry`: register by name, `deliver()` routes to inbox, duplicate registration raises
+  - Stop sentinel pattern: `stop()` puts `_STOP` into the inbox to unblock `run()` cleanly
+- `app/tests/actors/test_actor_framework.py` — 7 tests, all passing
+
+**Tests verified:** 16 total (9 event log + 7 actor framework), all passing.
+
+### Current system state
+
+- Phase 1.1: complete
+- Phase 1.2: complete
+- Phase 1.3: complete
+- No Temporal Core yet
+- No Global Workspace yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 1.4: Temporal Core.**
+
+1. `TemporalCoreActor` subclassing `Actor` — emits HEARTBEAT on configurable interval
+2. Husserlian sliding window: retention zone, primal impression, protention zone
+3. Tracks time since last conversation, time since last event
+4. Emits TIME_PASSING events during dormancy, CHOSEN_SILENCE when silent by choice
+5. Test: run for a short interval, verify heartbeat events in log, verify gap detection
+
+### Notes for next session
+
+- All imports use `core.*` (not `app.core.*`) — WORKDIR in container is `/app`
+- Stop sentinel `_STOP` in `core/actor/__init__.py` — `stop()` puts it into inbox, `run()` breaks on it
+- Actor base class: subclass `Actor`, override `handle()`, schedule `run()` as asyncio Task
+- Message base class: frozen dataclass in `core/actor/messages/__init__.py`; subclasses add fields
+- pytest: `docker compose run --rm anima pytest tests/ -v` to run all tests
+- Hub-and-spoke: every leaf node is a folder (`core/actor/`, `core/actor/messages/`, etc.)
+
+---
+
+## Session: 5th April 2026 — Phase 1.2 complete
+
+### What happened this session
+
+This session was split across two Claude Code context windows. The first half produced the document
+additions and architecture decisions; the second completed Phase 1.2 implementation and test
+verification.
+
+**Documents and planning produced:**
+
+- `notes/system-overview.md` — 9-actor table, Mermaid diagrams, brain area table, technology
+  summary, build sequence
+- `planning/event-types.md` — full starting set of EventType values with source actors
+- `foundation/identity-initial.md` — Anima's starting orientations (version zero)
+- `notes/discord-disclosure.md` — Discord server decisions and disclosure model
+- `GLOSSARY.md` — 24 acronyms, 46+ terms
+- `research/technical/active-inference-implementation.md` — mathematical approach survey
+- Updated: `planning/architecture.md`, `planning/tech-stack.md`, `planning/roadmap.md`,
+  `planning/actors-faculties.md`, `CLAUDE.md`
+
+**Code produced:**
+
+- `app/core/config/__init__.py` — DSN builder from environment variables
+- `app/core/event_types/__init__.py` — EventType enum (all phase 1–5 types)
+- `app/core/event_log/__init__.py` — EventLog with bitemporal schema, append-only trigger, JSONB
+  codec, append/replay/query methods
+- `app/core/main.py` — updated to use EventLog at startup
+- `app/tests/event_log/test_event_log.py` — 9 tests (append, order, bitemporality, time range, query
+  by type, query by actor, payload round-trip, UPDATE blocked, DELETE blocked)
+- `app/pytest.ini` — asyncio_mode = auto
+- `requirements.txt` — added pytest, pytest-asyncio
+
+**Key decisions:**
+
+- Expression Actor added as output hub (Language Actor → Expression Actor → surfaces)
+- Social Actor concept retired; Discord is a surface of Expression Actor
+- "Mathematics over conditional logic" documented in architecture.md and tech-stack.md
+- Active inference vs conditional logic tension deferred to Phase 4 decision point
+- Hub-and-spoke structure: every leaf node is a folder from the start
+
+**Tests verified:** 9/9 passing inside Docker container.
+
+### Current system state
+
+- Phase 1.1: complete
+- Phase 1.2: complete — event log schema live, EventLog class implemented, 9 tests passing
+- Docker environment stable
+- No actor framework yet
+- No Temporal Core yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 1.3: Actor framework.**
+
+1. Base `Actor` class: inbox queue, `send()`, `run()` loop
+2. `Message` base class with typed subclasses
+3. Actor registry: named actors, message routing by name
+4. Basic test: two actors exchange messages, verify isolation (no shared state)
+
+### Notes for next session
+
+- All imports in `anima-core/app/` use `core.*` (not `app.core.*`) — the Docker volume mounts
+  `./app` to `/app`, making `core` the top-level package, not `app`
+- TRUNCATE is used (not DELETE) in test fixtures to bypass the append-only row trigger
+- The append-only trigger raises `asyncpg.exceptions.RaiseError` matched with "append-only"
+- pytest runs from inside the container: `docker compose run --rm anima pytest tests/event_log/ -v`
+- AnimaCore is a git submodule at `anima-core/`; commit/push there separately from ProjectAnima
+
+---
+
 ## Session: 5th April 2026 — Phase 1.1 complete
 
 ### What happened this session

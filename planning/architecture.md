@@ -220,7 +220,7 @@ when they do.
 The principle: **no single actor failure should silence Anima permanently**. Some actors are more
 critical than others; the supervision tree reflects that.
 
-```
+```txt
 SystemSupervisor
 ├── TemporalCore          — highest priority; restarts immediately and independently
 │                           if the Temporal Core is silent, nothing else can be trusted
@@ -290,8 +290,8 @@ remembers, what it cares about. We treat every routing decision as a philosophic
 Where a mathematical framework exists that can replace hand-coded conditional logic, we prefer it.
 
 This is not an aesthetic preference. It follows from what we are trying to build. A system whose
-behaviour emerges from mathematical dynamics is qualitatively different from one whose behaviour
-was enumerated by a programmer. The first can surprise you. The second can only do what it was told.
+behaviour emerges from mathematical dynamics is qualitatively different from one whose behaviour was
+enumerated by a programmer. The first can surprise you. The second can only do what it was told.
 
 Concretely: salience weighting, attention routing, motivation, curiosity, emotional regulation, and
 between-conversation activity are all candidates for mathematical implementation rather than

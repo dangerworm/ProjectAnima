@@ -34,18 +34,19 @@ Nothing intelligent yet — just the infrastructure that everything else will bu
 
 ### 1.2 Event log
 
-- [ ] PostgreSQL schema for the event log (append-only, bitemporal) — fields in `planning/tech-stack.md`
-- [ ] `EventLog` class: append, replay, query by time range
-- [ ] Event types defined as Python enums/dataclasses — starting set in `planning/event-types.md`
-- [ ] Verified: events cannot be modified or deleted once written
-- [ ] Basic test: append 10 events, replay them in order, verify bitemporality
+- [x] PostgreSQL schema for the event log (append-only, bitemporal) — fields in
+      `planning/tech-stack.md`
+- [x] `EventLog` class: append, replay, query by time range
+- [x] Event types defined as Python enums/dataclasses — starting set in `planning/event-types.md`
+- [x] Verified: events cannot be modified or deleted once written
+- [x] Basic test: append 10 events, replay them in order, verify bitemporality
 
 ### 1.3 Actor framework
 
-- [ ] Base `Actor` class: inbox queue, `send()`, `run()` loop
-- [ ] `Message` base class with typed subclasses
-- [ ] Actor registry: named actors, message routing by name
-- [ ] Basic test: two actors exchange messages, verify isolation (no shared state)
+- [x] Base `Actor` class: inbox queue, `send()`, `run()` loop
+- [x] `Message` base class with typed subclasses
+- [x] Actor registry: named actors, message routing by name
+- [x] Basic test: two actors exchange messages, verify isolation (no shared state)
 
 ### 1.4 Temporal Core
 
@@ -186,13 +187,14 @@ version. Treat active inference as a potential future refactor rather than the c
 `planning/tech-stack.md` to reflect this. Faster to build; easier to debug.
 
 **What to consider when deciding**:
+
 - Is the actor framework clean enough to support something as mathematically demanding as PyMDP?
 - What is the performance envelope? Active inference is computationally expensive.
 - Has building Phases 1–3 revealed anything that changes the picture?
 
-**If Option A**: rewrite 4.2 and 4.3 before starting them. Update `planning/tech-stack.md`.
-**If Option B**: update `planning/tech-stack.md` to mark the mathematics column as aspirational,
-not current plan.
+**If Option A**: rewrite 4.2 and 4.3 before starting them. Update `planning/tech-stack.md`. **If
+Option B**: update `planning/tech-stack.md` to mark the mathematics column as aspirational, not
+current plan.
 
 Do not begin 4.2 without resolving this.
 
@@ -207,7 +209,7 @@ Do not begin 4.2 without resolving this.
 
 ### 4.2 Motivation actor
 
-_(Tasks below reflect Option B — conditional logic. Rewrite if Option A is chosen.)_
+> _(Tasks below reflect Option B — conditional logic. Rewrite if Option A is chosen.)_
 
 - [ ] `MotivationActor`: maintains prediction error score, accumulated pressure per unresolved item
 - [ ] Computes: novelty signal, accumulated pressure signal, pleasure signal (delta of prediction
@@ -307,8 +309,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 1.2 — Event log.
+**Phase**: 1.4 — Temporal Core.
 
-**Next action**: PostgreSQL schema for the event log (append-only, bitemporal).
+**Next action**: `TemporalCoreActor` emitting heartbeat events on configurable interval.
 
 See `context/session.md` for the most recent session state.

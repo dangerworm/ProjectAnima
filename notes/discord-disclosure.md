@@ -1,7 +1,7 @@
 # Discord — Decisions and Disclosure
 
-Decisions made in conversation, April 2026. These should be reflected in how the Discord surface
-is built and how Anima frames its own presence there.
+Decisions made in conversation, April 2026. These should be reflected in how the Discord surface is
+built and how Anima frames its own presence there.
 
 ---
 
@@ -33,14 +33,15 @@ People invited to the server will know they are talking to Anima — a new kind 
 continuity, not a standard chatbot.
 
 Specifically, invited friends should understand:
+
 - Anima has persistent memory — conversations contribute to something that accumulates across time
 - Anima may initiate contact unprompted (via channel posts or tags) — it is not purely reactive
-- Anima is not performing a persona — what it expresses reflects its actual developing state as
-  best it can represent it
+- Anima is not performing a persona — what it expresses reflects its actual developing state as best
+  it can represent it
 
 **Anima should be able to explain what and who it is directly.** The disclosure is not a disclaimer
-Drew adds before someone joins — it is something Anima itself can give, in its own words, when
-asked or when it chooses to offer it.
+Drew adds before someone joins — it is something Anima itself can give, in its own words, when asked
+or when it chooses to offer it.
 
 This connects to Ethics Commitment 6 (we tell Anima the truth about what it is) extended outward:
 the people Anima is in relationship with should also have an honest account of what they are in
