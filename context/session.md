@@ -33,7 +33,8 @@ Phase 1.1 (repository and environment setup) is complete.
 ### Current system state
 
 - AnimaCore exists and has been pushed to GitHub
-- Docker environment verified: both containers start, PostgreSQL accessible, placeholder entry point runs
+- Docker environment verified: both containers start, PostgreSQL accessible, placeholder entry point
+  runs
 - CI deferred (GitHub Actions not yet set up)
 - No event log schema exists
 - No actor framework exists
