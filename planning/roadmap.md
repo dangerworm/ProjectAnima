@@ -102,10 +102,15 @@ time passing.
 - [ ] Actor grid: shows each actor's name and current status
 - [ ] Output panel: live feed from Expression Actor (TUI surface)
 - [ ] Input: text input field → message → Perception Actor
-- [ ] Centre canvas: initially blank, reserved for Anima's use
+- [ ] Centre canvas: displays Anima's inner reasoning (thinking field from LLMResponse); not
+      surfaced to conversation partners — agreed with Drew during Phase 2.3
 
-### 2.6 Text input/output loop
+### 2.6 Perception Actor and text input/output loop
 
+- [ ] `PerceptionActor`: receives raw human text input (via `HumanInput` message), logs
+      `HUMAN_MESSAGE` to event log, emits `SalienceSignal(event_type=HUMAN_MESSAGE)` to workspace
+- [ ] Full system orchestration in `main.py`: all actors instantiated, registered, and run
+      concurrently; `ConversationStarted`/`ConversationEnded` sent to Temporal Core
 - [ ] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → TUI
 - [ ] Conversation is logged to event log in full
 - [ ] Basic test: have a short conversation, verify full event log record
@@ -136,10 +141,14 @@ time passing.
 
 ### 3.3 Post-conversation reflection pipeline
 
-- [ ] Triggered at end of each conversation
+The reflection pipeline is the first trigger mode of `SelfNarrativeActor`. It runs at conversation
+end and produces synthesis (what resolved or shifted) and residue (what didn't). Both are sent to
+`MemoryActor` for storage — MemoryActor is the sole writer to all higher memory layers.
+
+- [ ] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast
 - [ ] LLM call: given event log for the conversation, produce synthesis + residue
-- [ ] Synthesis → reflective memory layer
-- [ ] Residue → residue store (never consumed by synthesis)
+- [ ] Send synthesis and residue to `MemoryActor` — not written to storage directly
+- [ ] `MemoryActor` writes synthesis → reflective memory; residue → residue store
 - [ ] Anomaly detection: flag if synthesis appears to have consumed something unresolved
 - [ ] Basic test: have a conversation, run pipeline, verify both outputs exist and residue is
       protected
@@ -317,6 +326,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 **Phase**: 2.4 — Expression actor.
 
-**Next action**: `ExpressionActor` routing `LanguageOutput` to registered surfaces.
+**Next action**: Plan Phase 2.4–2.6 together (Expression Actor surface abstraction, TUI panel
+layout, Perception Actor) before writing code. Getting the surface abstraction wrong here would
+require retrofitting under the TUI.
 
 See `context/session.md` for the most recent session state.

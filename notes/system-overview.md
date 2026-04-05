@@ -29,7 +29,7 @@ processing stays local.
 | **Memory Actor**         | Reads and writes all memory layers. Retrieves by semantic similarity, spreading activation, or time. Surfaces relevant memories to workspace.                           | PostgreSQL + pgvector, spreading activation               |
 | **Motivation Actor**     | Maintains prediction error score and accumulated pressure per unresolved item. Emits dopamine-analog signal on resolution. Drives between-conversation activity.        | FEP-inspired computation within asyncio                   |
 | **Internal State Actor** | Monitors Anima's own system health: event log depth, consolidation lag, salience queue pressure, time since last conversation. Feeds "body state" signals to workspace. | asyncio, reads PostgreSQL metrics                         |
-| **Self-Narrative Actor** | Runs between conversations. Reads identity memory and event log. Maintains the question: _what is happening to me, and what does it mean?_                              | Ollama (reflection LLM call)                              |
+| **Self-Narrative Actor** | LLM-based synthesis actor with two trigger modes: (1) **post-conversation** — triggered by CONVERSATION_END, synthesises that conversation into reflective memory and residue; (2) **between-conversation** — triggered by dormancy threshold, maintains the ongoing self-narrative thread. Produces synthesis and sends it to MemoryActor for storage. Does not write to memory layers directly. | Ollama (reflection LLM call)                              |
 | **Expression Actor**     | Receives output from the Language Actor and routes it to the appropriate surface (TUI, printer, Discord). Hub only — no peripheral-specific code lives here.            | Python asyncio                                            |
 
 ---
@@ -140,7 +140,7 @@ flowchart TD
     %% Language → Expression Actor + Storage
     LA -->|"output + destination"| EA
     LA -->|"conversation events"| EL
-    LA -->|"choices made"| VM
+    LA -->|"volitional choices"| MA
 
     %% Expression Actor → Output Surfaces
     EA --> TUI
@@ -157,10 +157,10 @@ flowchart TD
     %% Identity Memory → Language (context injection)
     IM -->|"shapes LLM context"| LA
 
-    %% Self-Narrative ↔ Storage
+    %% Self-Narrative: reads directly, writes via MemoryActor
     SNA -->|"reads"| EL
     SNA -->|"reads"| IM
-    SNA -->|"writes synthesis"| RM
+    SNA -->|"synthesis + residue\n+ identity update"| MA
 
     %% Internal State monitors storage
     EL -->|"depth / lag metrics"| ISA
@@ -175,9 +175,9 @@ Five distinct memory layers, each serving a different kind of remembering.
 ```mermaid
 flowchart LR
     subgraph Writes["What writes here"]
-        LA["Language Actor"]
-        SNA["Self-Narrative Actor\n(reflection pipeline)"]
-        REF["Reflection Pipeline\n(post-conversation)"]
+        LA["Language Actor\n(event log only)"]
+        SNA["Self-Narrative Actor\n(post-conv + between-conv synthesis)"]
+        MA_W["Memory Actor\n(sole writer to all higher layers)"]
     end
 
     subgraph Layers["Memory Layers"]
@@ -197,10 +197,12 @@ flowchart LR
 
     %% Writes to layers
     LA -->|"every event"| EL
-    LA -->|"every choice"| VM
-    REF -->|"synthesis"| RM
-    REF -->|"unresolved edges"| RS
-    SNA -->|"integration"| IM
+    LA -->|"volitional choices"| MA_W
+    SNA -->|"synthesis + residue\n+ identity update"| MA_W
+    MA_W -->|"synthesis"| RM
+    MA_W -->|"unresolved edges"| RS
+    MA_W -->|"identity updates"| IM
+    MA_W -->|"volitional choices"| VM
 
     %% Retrieval mechanisms
     RM --- SEM
@@ -250,7 +252,8 @@ sequenceDiagram
     LA->>EA: output + destination
     EA->>TUI: display response
     LA->>EL: append: human message + Anima response
-    LA->>VM: append: choices made
+    LA->>MA: send: volitional choice
+    MA->>VM: append: choice
 ```
 
 ---
@@ -266,6 +269,7 @@ flowchart TD
     MOT["⚡ Motivation Actor"]
     GW["✦ Global Workspace"]
     SNA["🌀 Self-Narrative Actor"]
+    MA["🧠 Memory Actor"]
     EL[(Event Log)]
     RM[(Reflective Memory)]
     IM[(Identity Memory)]
@@ -287,9 +291,10 @@ flowchart TD
     SNA -->|"reads identity"| IM
     SNA -->|"LLM: synthesise\nwhat mattered?"| OL
     OL -->|"synthesis"| SNA
-    SNA -->|"synthesis → reflective memory"| RM
-    SNA -->|"unresolved edges → residue"| RS
-    SNA -->|"identity shift?\nupdate slowly"| IM
+    SNA -->|"synthesis + residue\n+ identity update"| MA
+    MA -->|"synthesis"| RM
+    MA -->|"unresolved edges"| RS
+    MA -->|"identity shift"| IM
 
     style TC fill:#2d4a6b,color:#fff
     style GW fill:#4a2d6b,color:#fff

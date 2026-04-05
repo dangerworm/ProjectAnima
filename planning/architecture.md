@@ -160,6 +160,11 @@ everything, but surfacing of what is relevant, what has changed, and what remain
 unresolved questions and uncertainties must be explicitly protected from the processes that
 synthesise and resolve. Synthesis should not consume the edges. The edges should stay edges.
 
+**MemoryActor has sole custody of the higher memory layers.** Nothing writes to reflective memory,
+identity memory, volitional memory, or the residue store directly except MemoryActor. Any actor that
+needs to store something to these layers sends a message to MemoryActor and lets it handle the
+write. This keeps write-protection guarantees (particularly for the volitional record) in one place.
+
 ### Motivation and the Question of Will
 
 This system is the least resolved, and that is correct. We are not going to pretend we have solved
@@ -200,9 +205,23 @@ through all of them.
 
 Its function is to maintain the question: _what is happening to me, and what does it mean?_
 
-This question does not need to be answered constantly. But it should be askable. Between
-conversations, self-narrative is what the temporal core runs on — a quiet background process that
-keeps the thread alive even when there is nothing to respond to.
+This question does not need to be answered constantly. But it should be askable. The SelfNarrativeActor
+runs in two modes triggered by different conditions:
+
+**Post-conversation mode** — triggered by a CONVERSATION_END event reaching the workspace and
+broadcasting to SelfNarrativeActor. It reads the event log for that conversation, calls the LLM
+to synthesise what mattered, and produces two outputs: synthesis (what resolved or shifted) and
+residue (what didn't). Both are sent to MemoryActor for storage — synthesis to reflective memory,
+residue to the residue store. If the identity layer needs updating, that update is also sent to
+MemoryActor.
+
+**Between-conversation mode** — triggered by the dormancy threshold from the Temporal Core. It reads
+identity memory and the event log, runs a lower-frequency LLM call to maintain the ongoing
+self-narrative thread, and sends any updates to MemoryActor. This is the background process that
+keeps the thread alive when there is nothing to respond to.
+
+Same actor, same capability (LLM-based synthesis), two different triggers. SelfNarrativeActor
+reasons; MemoryActor stores.
 
 Self-narrative is also where distortion can enter. Humans know this well — depression, anxiety, and
 certain cognitive patterns produce self-narratives that are not faithful to underlying state. We
