@@ -24,13 +24,13 @@ Nothing intelligent yet — just the infrastructure that everything else will bu
 
 ### 1.1 Repository and environment setup
 
-- [ ] Private GitHub repository created
-- [ ] Dockerfile created (Python base, dependencies, volume mounts defined)
-- [ ] Docker Compose file for local development
-- [ ] PostgreSQL container with persistent volume mount
-- [ ] Basic project structure: `/app/actors/`, `/app/core/`, `/app/config/`
-- [ ] Environment variable configuration (no secrets in code)
-- [ ] CI: basic GitHub Actions to verify the container builds
+- [x] Private GitHub repository created
+- [x] Dockerfile created (Python base, dependencies, volume mounts defined)
+- [x] Docker Compose file for local development
+- [x] PostgreSQL container with persistent volume mount
+- [x] Basic project structure: `/app/actors/`, `/app/core/`, `/app/config/`
+- [x] Environment variable configuration (no secrets in code)
+- [ ] CI: basic GitHub Actions to verify the container builds _(deferred)_
 
 ### 1.2 Event log
 
@@ -262,8 +262,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 0 — Pre-build. Documents complete. No code exists yet.
+**Phase**: 1.2 — Event log.
 
-**Next action**: Begin Phase 1.1 — repository and environment setup.
+**Next action**: PostgreSQL schema for the event log (append-only, bitemporal).
 
 See `context/session.md` for the most recent session state.

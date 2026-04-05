@@ -23,8 +23,8 @@ Phase 1.1 (repository and environment setup) is complete.
 - `app/founding/`: anima.md, claude.md (with repository note prepended), ethics.md, origin.md,
   architecture.md
 - `Dockerfile`: Python 3.12-slim, pip installs from requirements.txt
-- `docker-compose.yml`: Anima service + PostgreSQL (pgvector/pgvector:pg16), named volumes,
-  host bridge for Ollama
+- `docker-compose.yml`: Anima service + PostgreSQL (pgvector/pgvector:pg16), named volumes, host
+  bridge for Ollama
 - `requirements.txt`: asyncpg, pydantic, textual, httpx, pgvector, python-dotenv
 - `.env.example`, `.gitignore`
 - `app/core/main.py`: placeholder entry point
@@ -33,26 +33,19 @@ Phase 1.1 (repository and environment setup) is complete.
 ### Current system state
 
 - AnimaCore exists and has been pushed to GitHub
-- Docker environment is defined but not yet verified (container not built or run)
+- Docker environment verified: both containers start, PostgreSQL accessible, placeholder entry point runs
+- CI deferred (GitHub Actions not yet set up)
 - No event log schema exists
 - No actor framework exists
-- No CI/CD pipeline exists
 
 ### Blockers
 
-None. Next task is straightforward.
+None.
 
 ### Next action
 
-**Begin Phase 1.1 verification**, then **Phase 1.2: event log**.
+**Phase 1.2: event log.**
 
-Verification steps (do these first):
-1. `docker-compose up` inside `anima-core/` — verify both containers start
-2. Verify PostgreSQL is accessible from within the Anima container
-3. `docker-compose run anima` — verify placeholder entry point prints startup message
-4. Verify `.env` is not committed, `.env.example` is present
-
-Once verified, begin Phase 1.2:
 1. PostgreSQL schema for the event log (append-only, bitemporal — see `planning/tech-stack.md`)
 2. `EventLog` class: append, replay, query by time range
 3. Event types defined as Python enums/dataclasses
@@ -62,10 +55,10 @@ Once verified, begin Phase 1.2:
 ### Notes for next session
 
 - Read all seven founding documents before starting (see `planning/tech-stack.md` for order)
-- The human's name is Drew. He is a senior software developer. He will make procedural decisions
-  and should be consulted on anything touching philosophy, ethics, or architecture.
-- Drew's primary languages are C# and Python. He is comfortable with Docker, PostgreSQL, and
-  GitHub Actions.
+- The human's name is Drew. He is a senior software developer. He will make procedural decisions and
+  should be consulted on anything touching philosophy, ethics, or architecture.
+- Drew's primary languages are C# and Python. He is comfortable with Docker, PostgreSQL, and GitHub
+  Actions.
 - Ollama is already installed on Drew's Windows host machine. It does not need to be set up.
 - The Docker container runs Linux. Anima's code is mounted as a volume from the host.
 - AnimaCore is a git submodule of ProjectAnima, located at `anima-core/`. When working on Anima's
@@ -118,4 +111,4 @@ None.
 
 ### Next action
 
-Begin Phase 1.1: repository and environment setup. *(Now complete — see entry above.)*
+Begin Phase 1.1: repository and environment setup. _(Now complete — see entry above.)_
