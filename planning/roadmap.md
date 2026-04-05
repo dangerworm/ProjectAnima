@@ -68,10 +68,10 @@ time passing.
 
 ### 2.1 Global Workspace actor
 
-- [ ] `GlobalWorkspaceActor`: receives signals from all actors, maintains salience queue
-- [ ] Salience weighting: novelty score, accumulated pressure, identity resonance (stub for now)
-- [ ] Ignition mechanism: threshold crossing broadcasts to all actors
-- [ ] Basic test: send signals of varying salience, verify correct ignition order
+- [x] `GlobalWorkspaceActor`: receives signals from all actors, maintains salience queue
+- [x] Salience weighting: novelty score, accumulated pressure, identity resonance (stub for now)
+- [x] Ignition mechanism: threshold crossing broadcasts to all actors
+- [x] Basic test: send signals of varying salience, verify correct ignition order
 
 ### 2.2 LLM client
 
@@ -309,8 +309,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 2.1 — Global Workspace actor.
+**Phase**: 2.2 — LLM client.
 
-**Next action**: `GlobalWorkspaceActor` receiving signals, maintaining salience queue, ignition mechanism.
+**Next action**: `LLMClient` wrapper around Ollama HTTP API.
 
 See `context/session.md` for the most recent session state.

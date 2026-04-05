@@ -5,6 +5,62 @@
 
 ---
 
+## Session: 5th April 2026 — Phase 2.1 complete
+
+### What happened this session
+
+Phase 2.1 (Global Workspace actor) completed and verified.
+
+**Phase 2.1 — Global Workspace:**
+
+- `app/actors/global_workspace/messages/__init__.py` — `SalienceSignal`, `IgnitionBroadcast`
+- `app/actors/global_workspace/__init__.py` — `GlobalWorkspaceActor` and `QueuedSignal`
+  - Receives `SalienceSignal` messages; queues them as `QueuedSignal` entries
+  - Tick loop adds `pressure_rate * tick_interval` to all queued signals each tick
+  - Ignition: on each tick, the highest-salience signal above threshold fires
+  - Fire: writes `WORKSPACE_IGNITION` to event log; delivers `IgnitionBroadcast` to all other actors
+  - Novelty: `base_novelty_boost / (n + 1)` for nth occurrence of (event_type, sender) pair
+  - Identity resonance: stub returning 0.0 (Phase 3)
+  - `actor_names()` added to `ActorRegistry` to support broadcast iteration
+- `app/tests/global_workspace/test_global_workspace.py` — 9 tests, all passing
+
+**Key design decision:** Ignition decisions are made only in the tick loop, not immediately on signal
+arrival. This allows multiple signals delivered in the same asyncio turn to compete fairly — the
+highest-salience one wins on the next tick rather than the first-delivered one winning immediately.
+
+**Full test suite: 33/33 passing.**
+
+### Current system state
+
+- Phase 1: complete
+- Phase 2.1: complete
+- No LLM client yet
+- No Language Actor yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 2.2: LLM client.**
+
+1. `LLMClient` wrapper around Ollama HTTP API
+2. Configurable model name and endpoint
+3. Handles: text completion, structured JSON output, error/retry
+4. Basic test: call local Ollama, get response, verify latency is acceptable
+
+### Notes for next session
+
+- Global Workspace tick loop is the sole decision point for ignition — signals accumulate between ticks
+- `ActorRegistry.actor_names()` added; workspace iterates this to broadcast ignitions
+- `SalienceSignal.sender` (not a separate `source_actor` field) is used as the novelty key
+- `IgnitionBroadcast` carries: event_type, originating_actor, content, final_salience
+- Ollama is running on Drew's Windows host at `host.docker.internal:11434`
+- Model: Qwen3.5 9B (or equivalent — verify what's installed before testing)
+
+---
+
 ## Session: 5th April 2026 — Phase 1 complete
 
 ### What happened this session
