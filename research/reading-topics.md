@@ -23,6 +23,9 @@ Software patterns, data structures, systems architecture.
   coordination
 - [Apache Kafka](technical/apache-kafka.md) — distributed persistent log; event streaming
   infrastructure
+- [Active Inference — Implementation](technical/active-inference-implementation.md) — PyMDP;
+  replacing conditional logic with variational inference; attractor dynamics for GWT ignition;
+  precision weighting as emotional regulation
 
 ---
 

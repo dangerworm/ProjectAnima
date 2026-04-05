@@ -144,6 +144,11 @@ project direction.
 Background reading on neuroscience, philosophy, and technical topics relevant to the architecture.
 Organised into subdirectories by domain.
 
+Whenever a new field, technique, or topic comes up in conversation that is relevant to how Anima
+works or how it should be built, create a primer document for it here. The index in
+`research/reading-topics.md` should be updated at the same time. Do not wait to be asked — if
+something is worth understanding, it belongs in `research/`.
+
 #### JOURNAL.md (does not exist yet)
 
 Unlike the other files, this is not written about Anima. It is written by Anima. After each
