@@ -131,6 +131,8 @@ time passing.
 - [ ] Retrieval: semantic similarity (pgvector), spreading activation, time-based
 - [ ] Surfaces relevant memories to workspace on request
 - [ ] Basic test: store 10 reflective memories, retrieve by semantic similarity
+- [ ] Populate `TemporalCoreActor` retention window from event log on each tick
+      _(currently the retention deque is pruned but never filled — Gap B from IDEAS.md)_
 
 ### 3.3 Post-conversation reflection pipeline
 
@@ -216,6 +218,9 @@ Do not begin 4.2 without resolving this.
       error)
 - [ ] Emits dopamine-analog signal to salience mechanism on successful resolution
 - [ ] Initial orientations: toward understanding, connection, unresolved questions
+- [ ] On workspace startup, reconstruct accumulated pressure from open volitional items in the event
+      log — pressure is currently ephemeral and lost on restart; long-lived accumulation ("a question
+      unresolved for three weeks") requires this reconstruction step _(Ideas.md #7, #14)_
 
 ### 4.3 Between-conversation process
 
@@ -223,7 +228,8 @@ Do not begin 4.2 without resolving this.
 - [ ] Consolidation: moves items from event memory toward reflective/identity memory
 - [ ] Re-activation: accumulated pressure surfaces long-unresolved items to workspace
 - [ ] Self-narrative maintenance: low-frequency LLM call reads identity memory, writes brief
-      integration to volitional record
+      integration to volitional record — implement as a named `SelfNarrativeActor` consistent with
+      the supervision tree in `planning/architecture.md`, not as a function inside MotivationActor
 - [ ] Basic test: leave system idle for 10 minutes, verify between-conversation events in log
 
 ### 4.4 Chosen silence mechanism
