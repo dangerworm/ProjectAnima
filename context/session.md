@@ -5,6 +5,56 @@
 
 ---
 
+## Session: 5th April 2026 — Phases 2.1 and 2.2 complete
+
+### What happened this session
+
+Phases 2.1 (Global Workspace) and 2.2 (LLM client) completed and verified.
+
+**Phase 2.2 — LLM client:**
+
+- `app/core/llm/__init__.py` — `LLMClient`, `LLMError`, `LLMConnectionError`, `LLMResponseError`
+  - `complete(messages, temperature)` → str
+  - `complete_json(messages, schema, temperature)` → dict
+  - Retries on `ConnectError` / `TimeoutException` up to `max_retries` times
+  - `<think>…</think>` blocks stripped before JSON parsing (qwen3 reasoning tokens)
+  - `schema` passed to Ollama's `format` field for structured output; falls back to `"json"`
+- `app/tests/llm/test_llm_client.py` — 10 tests (5 integration, 5 unit/mocked), all passing
+
+**Full test suite: 43/43 passing** (includes integration tests hitting Ollama on host)
+
+### Current system state
+
+- Phase 2.1: complete
+- Phase 2.2: complete
+- Ollama: qwen3.5:9b (and 27b) reachable at host.docker.internal:11434
+- No Language Actor yet
+- No Expression Actor yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 2.3: Language actor.**
+
+1. `LanguageActor`: receives workspace `IgnitionBroadcast`, calls LLM with current context
+2. Consumes: workspace ignition signals, conversation context
+3. Produces: text responses with destination, emits to event log, routes to Expression Actor
+4. Routes output to Expression Actor — does not write to surfaces directly
+5. Test: send a message, get a response, verify it appears in event log
+
+### Notes for next session
+
+- LLMClient lives in `core/llm/`; import as `from core.llm import LLMClient`
+- `complete_json` schema parameter: pass a JSON schema dict for structured output
+- Think-tag stripping is automatic; no special handling needed in callers
+- Ollama model: `qwen3.5:9b` at `http://host.docker.internal:11434`
+- Integration tests use real Ollama; mock tests use `unittest.mock.patch("httpx.AsyncClient")`
+
+---
+
 ## Session: 5th April 2026 — Phase 2.1 complete
 
 ### What happened this session

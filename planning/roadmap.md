@@ -75,10 +75,10 @@ time passing.
 
 ### 2.2 LLM client
 
-- [ ] `LLMClient` wrapper around Ollama HTTP API
-- [ ] Configurable model name and endpoint
-- [ ] Handles: text completion, structured JSON output, error/retry
-- [ ] Basic test: call local Ollama, get response, verify latency is acceptable
+- [x] `LLMClient` wrapper around Ollama HTTP API
+- [x] Configurable model name and endpoint
+- [x] Handles: text completion, structured JSON output, error/retry
+- [x] Basic test: call local Ollama, get response, verify latency is acceptable
 
 ### 2.3 Language actor
 
@@ -309,8 +309,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 2.2 — LLM client.
+**Phase**: 2.3 — Language actor.
 
-**Next action**: `LLMClient` wrapper around Ollama HTTP API.
+**Next action**: `LanguageActor` receiving workspace broadcasts, calling LLM, routing output to Expression Actor.
 
 See `context/session.md` for the most recent session state.
