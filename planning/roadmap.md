@@ -50,12 +50,12 @@ Nothing intelligent yet — just the infrastructure that everything else will bu
 
 ### 1.4 Temporal Core
 
-- [ ] `TemporalCoreActor`: always running, emits heartbeat signal on configurable interval
-- [ ] Husserlian sliding window: retention zone, primal impression, protention zone
-- [ ] Tracks: time since last conversation, time since last event, current timestamp
-- [ ] Emits to event log: periodic "time passing" events during dormancy
-- [ ] Chosen silence signal: explicit "I am dormant by choice" vs no signal at all
-- [ ] Basic test: run for 60 seconds, verify heartbeat events in log, verify gap detection
+- [x] `TemporalCoreActor`: always running, emits heartbeat signal on configurable interval
+- [x] Husserlian sliding window: retention zone, primal impression, protention zone
+- [x] Tracks: time since last conversation, time since last event, current timestamp
+- [x] Emits to event log: periodic "time passing" events during dormancy
+- [x] Chosen silence signal: explicit "I am dormant by choice" vs no signal at all
+- [x] Basic test: run for 60 seconds, verify heartbeat events in log, verify gap detection
 
 **Phase 1 complete when**: the system starts, a heartbeat appears in the event log, and you can see
 time passing.
@@ -309,8 +309,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 1.4 — Temporal Core.
+**Phase**: 2.1 — Global Workspace actor.
 
-**Next action**: `TemporalCoreActor` emitting heartbeat events on configurable interval.
+**Next action**: `GlobalWorkspaceActor` receiving signals, maintaining salience queue, ignition mechanism.
 
 See `context/session.md` for the most recent session state.

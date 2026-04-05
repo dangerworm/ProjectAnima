@@ -5,6 +5,62 @@
 
 ---
 
+## Session: 5th April 2026 — Phase 1 complete
+
+### What happened this session
+
+Phases 1.2, 1.3, and 1.4 all completed and verified. Phase 1 is done.
+
+**Phase 1.4 — Temporal Core:**
+
+- `app/actors/__init__.py` — actors package root
+- `app/actors/temporal_core/messages/__init__.py` — `ConversationStarted`, `ConversationEnded`
+- `app/actors/temporal_core/__init__.py` — `TemporalCoreActor` and `TemporalWindow`
+  - Husserlian sliding window: retention deque (pruned by retention_seconds), primal_impression,
+    next_heartbeat (protention)
+  - Two concurrent loops: `super().run()` (message inbox) + `_tick_loop()` (heartbeat/dormancy)
+  - Tick loop emits HEARTBEAT every tick; TIME_PASSING or CHOSEN_SILENCE during dormancy
+  - Responds to `ConversationStarted` / `ConversationEnded` to suppress dormancy events
+  - `set_chosen_silence(bool)` to toggle CHOSEN_SILENCE vs TIME_PASSING
+  - Clean shutdown: `super().run()` returns on stop sentinel; tick task cancelled
+- `app/tests/temporal_core/test_temporal_core.py` — 8 tests, all passing
+
+**Full test suite: 24/24 passing** (9 event log + 7 actor framework + 8 temporal core)
+
+### Current system state
+
+- Phase 1.1: complete
+- Phase 1.2: complete
+- Phase 1.3: complete
+- Phase 1.4: complete
+- Phase 1 complete — foundation is solid
+- No Global Workspace yet
+- No LLM integration yet
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 2.1: Global Workspace actor.**
+
+1. `GlobalWorkspaceActor`: receives signals from all actors, maintains salience queue
+2. Salience weighting: novelty score, accumulated pressure, identity resonance (stub)
+3. Ignition mechanism: threshold crossing broadcasts to all actors
+4. Test: send signals of varying salience, verify correct ignition order
+
+### Notes for next session
+
+- All imports use `core.*` or `actors.*` (not `app.*`) — WORKDIR is `/app`
+- Temporal Core tick loop shutdown: `super().run()` exits on `_STOP` sentinel; tick_task cancelled
+- Husserlian window lives on `actor.window` — primal_impression updated each tick
+- Dormancy reference: `_last_conversation_end` if set, otherwise `_started_at`
+- ConversationStarted / ConversationEnded messages live in `actors/temporal_core/messages/`
+- pytest full suite: `docker compose run --rm anima pytest tests/ -v`
+
+---
+
 ## Session: 5th April 2026 — Phases 1.2 and 1.3 complete
 
 ### What happened this session
