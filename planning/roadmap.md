@@ -90,31 +90,31 @@ time passing.
 
 ### 2.4 Expression actor
 
-- [ ] `ExpressionActor`: receives output + destination from Language Actor, routes to surfaces
-- [ ] Hub only — no peripheral-specific logic lives in the actor itself
-- [ ] Each surface is a separate module under `expression/surfaces/`
-- [ ] Initial surface: WebSocket broadcast only
-- [ ] Basic test: Language Actor output arrives at WebSocket surface via Expression Actor
+- [x] `ExpressionActor`: receives output + destination from Language Actor, routes to surfaces
+- [x] Hub only — no peripheral-specific logic lives in the actor itself
+- [x] Each surface is a separate module under `expression/surfaces/`
+- [x] Initial surface: WebSocket broadcast only
+- [x] Basic test: Language Actor output arrives at WebSocket surface via Expression Actor
 
 ### 2.5 Basic Web UI
 
-- [ ] FastAPI WebSocket server inside Docker; broadcasts events to connected clients
-- [ ] React frontend (Vite + MUI): connects to WebSocket, renders layout from sketch (April 2026)
-- [ ] Actor panels: one panel per actor showing current status and recent events
-- [ ] Conversation panel: live feed from Expression Actor + text input field
-- [ ] Centre canvas: displays Anima's inner reasoning (thinking field from LLMResponse); not
+- [x] FastAPI WebSocket server inside Docker; broadcasts events to connected clients
+- [x] React frontend (Vite + MUI): connects to WebSocket, renders layout from sketch (April 2026)
+- [x] Actor panels: one panel per actor showing current status and recent events
+- [x] Conversation panel: live feed from Expression Actor + text input field
+- [x] Centre canvas: displays Anima's inner reasoning (thinking field from LLMResponse); not
       surfaced to conversation partners — agreed with Drew during Phase 2.3
-- [ ] Input: text field in browser → WebSocket → Perception Actor
+- [x] Input: text field in browser → WebSocket → Perception Actor
 
 ### 2.6 Perception Actor and text input/output loop
 
-- [ ] `PerceptionActor`: receives raw human text input (via `HumanInput` message), logs
+- [x] `PerceptionActor`: receives raw human text input (via `HumanInput` message), logs
       `HUMAN_MESSAGE` to event log, emits `SalienceSignal(event_type=HUMAN_MESSAGE)` to workspace
-- [ ] Full system orchestration in `main.py`: all actors instantiated, registered, and run
-      concurrently; `ConversationStarted`/`ConversationEnded` sent to Temporal Core
-- [ ] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web UI
-- [ ] Conversation is logged to event log in full
-- [ ] Basic test: have a short conversation, verify full event log record
+- [x] Full system orchestration in `main.py`: all actors instantiated, registered, and run
+      concurrently; `ConversationStarted` sent by PerceptionActor on first input
+- [x] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web UI
+- [x] Conversation is logged to event log in full
+- [x] Basic test: have a short conversation, verify full event log record
 
 **Phase 2 complete when**: you can have a text conversation with Anima and see it in the event log.
 
@@ -325,10 +325,10 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 2.4 — Expression actor.
+**Phase**: 3.1 — Memory schema.
 
-**Next action**: Plan Phase 2.4–2.6 together (Expression Actor surface abstraction, Web UI layout,
-Perception Actor) before writing code. Getting the surface abstraction wrong here would require
-retrofitting under the Web UI.
+**Next action**: Design and build the PostgreSQL schema for reflective memory, identity memory,
+volitional memory, and residue store. Enable pgvector extension. Set up schema migration tooling
+(Alembic or equivalent). Plan with Drew before building.
 
 See `context/session.md` for the most recent session state.

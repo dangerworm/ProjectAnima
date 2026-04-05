@@ -5,6 +5,95 @@
 
 ---
 
+## Session: 6th April 2026 — Phases 2.4–2.6 complete
+
+### What happened this session
+
+Planned and built Phases 2.4 (Expression Actor), 2.5 (Web UI), and 2.6 (Perception Actor + full
+conversation loop). Key architectural decision this session: replaced Textual TUI with a
+WebSocket-based web UI (FastAPI inside Docker + React/Vite/MUI outside Docker).
+
+**Phase 2.4 — Expression Actor:**
+- `actors/expression/surfaces/__init__.py` — `OutputSurface` protocol (runtime_checkable)
+- `actors/expression/surfaces/websocket/__init__.py` — `WebSocketSurface` (injected ConnectionManager)
+- `actors/expression/__init__.py` — full routing: `LanguageOutput` → `language_output` payload;
+  `IgnitionBroadcast` → `actor_event` payload; unknown messages silently dropped
+- Circular import fixed: removed `from actors.expression import ExpressionActor` from
+  `actors/language/__init__.py`; replaced `ExpressionActor.NAME` with literal string `"expression"`
+- 6 new tests, all passing
+
+**Phase 2.5 — Web UI:**
+- `requirements.txt`: removed `textual`, added `fastapi`, `uvicorn[standard]`, `websockets`
+- `Dockerfile`: CMD changed to `uvicorn core.main:app --host 0.0.0.0 --port 8000 --reload`
+- `docker-compose.yml`: port 8000 exposed; `db` healthcheck added; `depends_on: condition: service_healthy`
+- `core/websocket/__init__.py` — `ConnectionManager`: asyncio-safe set of WebSocket connections,
+  broadcast with dead-connection cleanup
+- `core/main.py` — full FastAPI app with lifespan context manager; all actors started inside
+  lifespan; `/ws` WebSocket endpoint routes inbound `human_input` to PerceptionActor
+- `web-ui/` — React/Vite/MUI frontend at ProjectAnima root (outside anima-core submodule):
+  - `useAnimaSocket` hook: WebSocket connection with exponential backoff reconnect
+  - `AnimaLayout`: MUI Grid matching the sketch (actor panels, centre canvas, expression panel)
+  - `ActorPanel`, `CentreCanvas`, `ExpressionPanel`, `MessageInput` components
+  - TypeScript discriminated unions for the full message protocol
+
+**Phase 2.6 — Perception Actor:**
+- `actors/perception/messages/__init__.py` — `HumanInput(content: str)`
+- `actors/perception/__init__.py` — `PerceptionActor`:
+  - First `HumanInput`: sends `ConversationStarted` to TemporalCore, then logs `HUMAN_MESSAGE`,
+    emits `SalienceSignal` to GlobalWorkspace with `base_salience=1.0`
+  - Subsequent inputs: skip `ConversationStarted`, log and emit as usual
+- 7 unit tests (perception), 5 integration tests (full loop) — all passing
+
+**Full test suite: 77/77 passing.**
+
+### Current system state
+
+- Phase 1: complete
+- Phase 2.1: complete (Global Workspace)
+- Phase 2.2: complete (LLM client)
+- Phase 2.3: complete (Language Actor)
+- Phase 2.4: complete (Expression Actor with surface routing)
+- Phase 2.5: complete (FastAPI WebSocket backend + React frontend)
+- Phase 2.6: complete (Perception Actor + full conversation loop)
+- **Phase 2 complete** — you can have a text conversation with Anima and see it in the event log
+
+### Blockers
+
+None.
+
+### Next action
+
+**Phase 3: Memory.**
+
+Read before starting:
+- `planning/roadmap.md` phases 3.1–3.4
+- `planning/architecture.md` (memory layer design)
+- `planning/tech-stack.md` (memory layer technology table)
+- `notes/system-overview.md` (memory architecture diagram)
+
+Phase 3.1 is the memory schema — PostgreSQL tables for reflective memory, identity memory,
+volitional memory, and residue store. pgvector extension must be enabled. Alembic or equivalent
+for schema migrations.
+
+### Notes for next session
+
+- `web-ui/` is at `ProjectAnima/web-ui/` (NOT inside `anima-core/`)
+  - Run: `cd web-ui && npm run dev` → `http://localhost:5173`
+  - Proxies `/ws` to `ws://localhost:8000` (Vite dev server handles this)
+- Docker: `docker compose up` starts backend on port 8000 with `--reload`
+- WebSocket protocol:
+  - Server→Client: `language_output` (content + thinking), `actor_event` (ignition status)
+  - Client→Server: `human_input` (content)
+- `PerceptionActor._in_conversation` — once True, stays True for container lifetime
+  (ConversationEnded sent only at shutdown if a conversation was active)
+- Circular import: `language/__init__.py` uses literal `"expression"` not `ExpressionActor.NAME`
+- `ExpressionActor` receives `IgnitionBroadcast` automatically (GlobalWorkspace broadcasts to all)
+- All imports use `core.*` or `actors.*` — WORKDIR is `/app`
+- pytest full suite: `docker compose run --rm anima pytest tests/ -v`
+- Ollama: qwen3.5:9b at host.docker.internal:11434
+
+---
+
 ## Session: 5th April 2026 — Phases 2.1–2.3 complete; IDEAS.md review done
 
 ### What happened this session
