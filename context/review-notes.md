@@ -136,15 +136,40 @@ The reflection pipeline (Phase 3.3) lives in SelfNarrativeActor, not as a separa
 ## Known deferred gaps (already documented elsewhere)
 
 These are real but have homes in the roadmap — listed here for completeness.
+Status updated April 2026 (Phase 4 complete).
 
 - **Husserlian retention window empty**: `TemporalWindow.retention` is pruned but never populated.
   Phase 3.2 will populate it from the event log on each tick.
+  **→ Fixed (Phase 3.2).** `_refresh_retention()` now queries the event log on each tick and fills
+  the deque. Gap B from IDEAS.md is closed.
 
 - **Workspace pressure ephemeral**: Accumulated salience pressure is lost on restart. Phase 4.2 will
   reconstruct from open volitional items.
+  **→ Still deferred.** MotivationActor warm start uses residue count and time-since-conversation
+  as a proxy. The workspace queue itself (`_queue: list[QueuedSignal]`) is still in-memory only.
+  True pressure reconstruction from volitional items is not yet implemented.
 
 - **Identity resonance stub**: `GlobalWorkspaceActor._identity_resonance()` returns 0.0. Phase 3
   connects this to the identity memory layer.
+  **→ Still deferred.** Phase 3 built MemoryStore and identity retrieval, but GlobalWorkspaceActor
+  was not given a MemoryStore dependency. Two options for Phase 5: (1) inject MemoryStore into
+  GlobalWorkspaceActor, (2) surface identity bias via MotivationActor's salience signals instead.
+  Decision deferred — documented in `planning/architecture.md` Open Decisions section.
 
 - **In-memory context window**: `LanguageActor._context` is a simple deque. Phase 3 replaces this
   with memory-driven retrieval from the event log and reflective memory layers.
+  **→ Fixed (Phase 3).** LanguageActor now retrieves relevant reflective memories per-message via
+  pgvector similarity (or recency fallback) and injects them into context. The short-term `_context`
+  deque still exists for within-conversation turns — that is correct and intentional.
+
+## Code smells (status update April 2026)
+
+- **Mutable dict in frozen dataclass** (`IgnitionBroadcast.content`): Still present. No actor
+  mutates `content` today. Decision: document and trust actors. A comment was added to
+  `GlobalWorkspaceActor._fire()` naming this precondition explicitly. If Phase 5 adds actors that
+  consume IgnitionBroadcast and might mutate it, wrap in `types.MappingProxyType`.
+
+- **Unbounded workspace queue** (`GlobalWorkspaceActor._queue`): Still present. Not a problem at
+  current scale. The MotivationActor's active inference model provides external pressure regulation,
+  which reduces the risk of unbounded growth in practice. Revisit if queue grows unexpectedly in
+  long-running sessions.

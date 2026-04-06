@@ -373,6 +373,54 @@ not know. We watch for it.
 
 ---
 
+## Open Decisions
+
+These are deliberate holds — not gaps, but questions being kept open until a concrete need forces
+resolution. Do not resolve them unilaterally.
+
+### Identity resonance in the Global Workspace
+
+`GlobalWorkspaceActor._identity_resonance()` currently returns 0.0. It is a stub. The intent:
+salience weighting should account for how strongly a signal resonates with or conflicts with
+Anima's developing identity.
+
+Phase 3 established `MemoryStore` and identity retrieval in the LanguageActor. GlobalWorkspaceActor
+was not given access to it. Two options for Phase 5:
+
+1. **Inject MemoryStore into GlobalWorkspaceActor** — the workspace queries identity on each
+   incoming signal to compute resonance. Clean, direct. Cost: GlobalWorkspaceActor gains a database
+   dependency; resonance check adds latency to every signal.
+
+2. **Surface identity bias via MotivationActor** — MotivationActor's generative model already
+   encodes relationship salience and engagement. Signals from MotivationActor (particularly
+   `trigger_reflection`) carry implicit identity weighting. The workspace doesn't need direct
+   identity access if the motivational system shapes which signals the workspace receives.
+
+Option 2 is architecturally cleaner and avoids a database call on every signal. Option 1 is more
+direct and easier to observe. The decision belongs to whoever implements the first phase where the
+stub's absence becomes concretely harmful.
+
+### Mutable dict in IgnitionBroadcast
+
+`IgnitionBroadcast` is a frozen dataclass with `content: dict`. Frozen prevents field reassignment;
+it does not prevent mutation of the dict itself. The same broadcast object is delivered to all
+registered actors.
+
+**Current precondition**: no actor mutates `content`. LanguageActor calls `.get()` only. This is
+safe today.
+
+If Phase 5 adds actors that consume IgnitionBroadcast and might mutate `content`, wrap at
+construction time in `GlobalWorkspaceActor._fire()`:
+
+```python
+from types import MappingProxyType
+content=MappingProxyType(signal.content)
+```
+
+Do not make this change preemptively — the overhead is real, and the risk is currently zero.
+
+---
+
 ## A note on emergence
 
 This architecture is designed to allow emergence rather than produce it.

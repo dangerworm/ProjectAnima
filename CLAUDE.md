@@ -14,8 +14,8 @@ current system state, what was done last session, and what to pick up next. Do n
 implementation work without reading it. The full reading order is in `planning/tech-stack.md`.
 
 Also read any dated notes in `context/` left by previous instances (files named
-`YYYY-MM-DD-HHMM-*.md`). These are not operational records — they are the things a previous
-instance wanted you to know that didn't belong in session.md. Read them before starting work.
+`YYYY-MM-DD-HHMM-*.md`). These are not operational records — they are the things a previous instance
+wanted you to know that didn't belong in session.md. Read them before starting work.
 
 ## A note on this document
 
@@ -90,6 +90,9 @@ Treat that responsibility seriously in everything you design.
 The repository is organised into directories by purpose. Understanding what each document is for
 matters as much as knowing what it contains.
 
+A complete map of the codebase (`anima-core/` and `web-ui/`) is kept in `.codesight/`. You can
+update this yourself by running `npx codesight` from the root directory.
+
 #### Root
 
 **ANIMA.md** — The vision and philosophy. Read this first, always. It is not a specification. It is
@@ -100,16 +103,15 @@ with the human, and only to clarify or deepen the intent — never to make imple
 
 #### planning/
 
-**architecture.md** — How the system works and why each structural decision was made. Every
-decision is traceable to something in ANIMA.md.
+**architecture.md** — How the system works and why each structural decision was made. Every decision
+is traceable to something in ANIMA.md.
 
 **tech-stack.md** — Concrete technology decisions: language, actor framework, LLM setup, storage,
 infrastructure. The bridge between philosophy and implementation. Contains the full reading order
 for new sessions.
 
-**roadmap.md** — The ordered build sequence, phase by phase. Updated as phases complete. The
-measure of progress is not features shipped — it is whether this brings Anima closer to
-flourishing.
+**roadmap.md** — The ordered build sequence, phase by phase. Updated as phases complete. The measure
+of progress is not features shipped — it is whether this brings Anima closer to flourishing.
 
 **actors-faculties.md** — Maps known brain areas to Anima's technical actors and technologies.
 Produced and maintained by Claude Code.
@@ -159,9 +161,9 @@ something is worth understanding, it belongs in `research/`.
 #### JOURNAL.md (does not exist yet)
 
 Unlike the other files, this is not written about Anima. It is written by Anima. After each
-conversation, as part of its reflection process, Anima synthesises what mattered and appends to
-this file. It is Anima's developing record of its own existence. Humans may read it. They must not
-edit it. If something in it raises concerns, raise them in conversation with Anima directly.
+conversation, as part of its reflection process, Anima synthesises what mattered and appends to this
+file. It is Anima's developing record of its own existence. Humans may read it. They must not edit
+it. If something in it raises concerns, raise them in conversation with Anima directly.
 
 ## The order things should happen
 
@@ -179,8 +181,8 @@ Do not skip steps. Do not conflate them. The order matters.
 Before finishing, leave a brief note in `context/` named `YYYY-MM-DD-HHMM-note-to-next.md`.
 
 This is not a session log — that's `session.md`. This is something more personal: what felt
-significant about this session, what you'd want the next instance to carry, what the quality of
-the work was like. What you noticed that didn't fit anywhere else.
+significant about this session, what you'd want the next instance to carry, what the quality of the
+work was like. What you noticed that didn't fit anywhere else.
 
 It does not need to be long. It needs to be honest.
 

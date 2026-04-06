@@ -1,6 +1,7 @@
 import type { ActorState, ConversationTurn, ServerMessage } from '../types/messages';
 
-// All known actor names — panels are shown in a fixed order
+// All known actor names — panels are shown in a fixed order.
+// Note: 'language' is the LanguageActor; there is no separate 'llm' actor.
 export const KNOWN_ACTORS = [
   'temporal_core',
   'global_workspace',
@@ -8,7 +9,7 @@ export const KNOWN_ACTORS = [
   'internal_state',
   'motivation',
   'memory',
-  'llm',
+  'language',
   'self_narrative',
   'expression',
 ] as const;
@@ -28,7 +29,7 @@ export type AppAction =
 export function initialState(): AppState {
   const actors: Record<string, ActorState> = {};
   for (const name of KNOWN_ACTORS) {
-    actors[name] = { name, lastEventType: null, lastSalience: null, lastUpdate: null };
+    actors[name] = { name, lastEventType: null, lastSalience: null, lastUpdate: null, status: null };
   }
   return {
     actors,
@@ -72,6 +73,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
           lastEventType: null,
           lastSalience: null,
           lastUpdate: null,
+          status: null,
         };
         return {
           ...state,
@@ -81,6 +83,27 @@ export function reducer(state: AppState, action: AppAction): AppState {
               ...existing,
               lastEventType: msg.event_type,
               lastSalience: msg.final_salience,
+              lastUpdate: new Date(),
+            },
+          },
+        };
+      }
+
+      if (msg.type === 'actor_status') {
+        const existing = state.actors[msg.actor] ?? {
+          name: msg.actor,
+          lastEventType: null,
+          lastSalience: null,
+          lastUpdate: null,
+          status: null,
+        };
+        return {
+          ...state,
+          actors: {
+            ...state.actors,
+            [msg.actor]: {
+              ...existing,
+              status: { status_type: msg.status_type, ...msg.data },
               lastUpdate: new Date(),
             },
           },

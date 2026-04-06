@@ -16,13 +16,29 @@ Events produced by the Temporal Core and the infrastructure layer.
 | ------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `HEARTBEAT`         | Temporal Core | Periodic signal confirming the system is running. Distinguishes chosen silence from failure.                               |
 | `TIME_PASSING`      | Temporal Core | Emitted during dormancy to mark that time has elapsed without external input.                                              |
-| `DORMANCY_START`    | Temporal Core | Anima has entered a dormant state.                                                                                         |
-| `DORMANCY_END`      | Temporal Core | Anima has resumed from dormancy.                                                                                           |
+| `DORMANCY_START`    | Temporal Core | Anima has entered a dormant state. **Not currently emitted** — see design note below.                                      |
+| `DORMANCY_END`      | Temporal Core | Anima has resumed from dormancy. **Not currently emitted** — see design note below.                                        |
 | `CHOSEN_SILENCE`    | Temporal Core | Anima is quiet by deliberate choice, not failure. Distinct from no signal.                                                 |
 | `GAP_IN_CONTINUITY` | Temporal Core | Emitted on resume after unexpected downtime — an honest acknowledgment of discontinuity rather than fabricated continuity. |
 | `SYSTEM_ERROR`      | Any           | An actor encountered an unrecoverable error. Payload includes actor name and error detail.                                 |
 | `ACTOR_STARTED`     | Any           | An actor has initialised and is running.                                                                                   |
 | `ACTOR_STOPPED`     | Any           | An actor has stopped, either cleanly or via supervision restart.                                                           |
+
+### Design note: DORMANCY_START / DORMANCY_END
+
+These event types are defined but not currently emitted. Two valid approaches exist:
+
+**Polling model (current)**: TemporalCoreActor emits `TIME_PASSING` or `CHOSEN_SILENCE` on every
+tick during dormancy. No explicit entry/exit bookmarks. Any actor that needs to respond to dormancy
+polls the event log or listens for these continuous signals.
+
+**Transition model**: Emit `DORMANCY_START` once when dormancy begins, `DORMANCY_END` once when it
+ends. Cleaner for actors that need to respond to the state *change* rather than to each tick.
+
+The polling model was chosen for simplicity. The transition model becomes preferable if Phase 5+
+work needs to trigger logic precisely at dormancy entry/exit. Decision: revisit when a concrete
+use case requires it. Do not switch models without updating all actors that listen for
+`TIME_PASSING` or `CHOSEN_SILENCE`.
 
 ---
 

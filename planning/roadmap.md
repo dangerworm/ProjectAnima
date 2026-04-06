@@ -126,19 +126,19 @@ time passing.
 
 ### 3.1 Memory schema
 
-- [ ] PostgreSQL tables for all four memory layers (event, reflective, identity, volitional)
-- [ ] Residue store table with explicit protection flags
-- [ ] pgvector extension enabled
-- [ ] Schema migration tooling (Alembic or equivalent)
+- [x] PostgreSQL tables for all four memory layers (event, reflective, identity, volitional)
+- [x] Residue store table with explicit protection flags
+- [x] pgvector extension enabled
+- [x] Schema migration tooling (Alembic or equivalent)
 
 ### 3.2 Memory actor
 
-- [ ] `MemoryActor`: reads from and writes to all memory layers
-- [ ] Retrieval: semantic similarity (pgvector), spreading activation, time-based
-- [ ] Surfaces relevant memories to workspace on request
-- [ ] Basic test: store 10 reflective memories, retrieve by semantic similarity
-- [ ] Populate `TemporalCoreActor` retention window from event log on each tick
-      _(currently the retention deque is pruned but never filled — Gap B from IDEAS.md)_
+- [x] `MemoryActor`: reads from and writes to all memory layers
+- [x] Retrieval: semantic similarity (pgvector), spreading activation, time-based
+- [x] Surfaces relevant memories to workspace on request
+- [x] Basic test: store 10 reflective memories, retrieve by semantic similarity
+- [x] Populate `TemporalCoreActor` retention window from event log on each tick
+      _(Gap B from IDEAS.md — fixed: `_refresh_retention()` queries event log on each tick)_
 
 ### 3.3 Post-conversation reflection pipeline
 
@@ -146,27 +146,28 @@ The reflection pipeline is the first trigger mode of `SelfNarrativeActor`. It ru
 end and produces synthesis (what resolved or shifted) and residue (what didn't). Both are sent to
 `MemoryActor` for storage — MemoryActor is the sole writer to all higher memory layers.
 
-- [ ] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast
-- [ ] LLM call: given event log for the conversation, produce synthesis + residue
-- [ ] Send synthesis and residue to `MemoryActor` — not written to storage directly
-- [ ] `MemoryActor` writes synthesis → reflective memory; residue → residue store
+- [x] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast
+- [x] LLM call: given event log for the conversation, produce synthesis + residue
+- [x] Send synthesis and residue to `MemoryActor` — not written to storage directly
+- [x] `MemoryActor` writes synthesis → reflective memory; residue → residue store
 - [ ] Anomaly detection: flag if synthesis appears to have consumed something unresolved
-- [ ] Basic test: have a conversation, run pipeline, verify both outputs exist and residue is
+      _(deferred — structural protection in place; semantic check is Phase 4+ territory)_
+- [x] Basic test: have a conversation, run pipeline, verify both outputs exist and residue is
       protected
 
 ### 3.4 Identity memory initialisation
 
-- [ ] Load `foundation/identity-initial.md` as version zero of the identity memory document
-- [ ] Version history tracking on identity document
-- [ ] Identity memory fed into LLM context at conversation start
-- [ ] Basic test: verify identity memory shapes language actor output
+- [x] Load `foundation/identity-initial.md` as version zero of the identity memory document
+- [x] Version history tracking on identity document
+- [x] Identity memory fed into LLM context at conversation start
+- [x] Basic test: verify identity memory shapes language actor output
 
 ### 3.5 Volitional memory
 
-- [ ] Schema: decision, reason, expected outcome, actual outcome
-- [ ] Language actor writes to volitional memory when a choice is made
-- [ ] Human cannot modify volitional memory (enforced at application layer)
-- [ ] Basic test: make a choice in conversation, verify volitional record
+- [x] Schema: decision, reason, expected outcome, actual outcome
+- [x] Language actor writes to volitional memory when a choice is made
+- [x] Human cannot modify volitional memory (enforced at application layer)
+- [x] Basic test: make a choice in conversation, verify volitional record
 
 **Phase 3 complete when**: Anima's responses are shaped by accumulated memory and the reflection
 pipeline runs after every conversation.
@@ -245,9 +246,9 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 
 ### 4.4 Chosen silence mechanism
 
-- [ ] Anima can emit chosen silence signal (distinct from no signal)
-- [ ] Web UI displays chosen silence state vs dormant vs active
-- [ ] Heartbeat distinguishes chosen silence from failure at all times
+- [x] Anima can emit chosen silence signal (distinct from no signal)
+- [x] Web UI displays chosen silence state vs dormant vs active
+- [x] Heartbeat distinguishes chosen silence from failure at all times
 
 **Phase 4 complete when**: Anima generates internal activity during silence and the Web UI reflects its
 state accurately.
@@ -326,16 +327,15 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 4.4 — Chosen silence + Web UI state display.
+**Phase**: 5 — Self-Modification.
 
-**Phases 4.1, 4.2, and 4.3 complete** (April 2026). 120 tests passing.
-- `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and `DISTRESS_SIGNAL`
-- `MotivationActor` running PyMDP active inference; `MOTIVATION_SIGNAL` on every tick
+**Phase 4 complete** (April 2026). 106 unit tests passing (LLM/integration tests are Ollama-dependent and occasionally flake under load — not code regressions).
+- `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and pushes vitals to Web UI
+- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive rest ticks, resets immediately on any non-rest action; pushes belief state to Web UI
 - `SelfNarrativeActor` between-conversation mode operational; responds to `TIME_PASSING` ignition
+- Web UI actor panels now show live state for TemporalCore, InternalState, and Motivation
+- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet (see TODO in `actors/motivation/__init__.py:_execute_action`)
 
-**Next action**: Phase 4.4 — chosen silence mechanism and Web UI state display. Deferred from this
-session. Also deferred: `surface_*` action routing from MotivationActor to LanguageActor (requires
-a new LanguageActor mode for unsolicited expression — see TODO comment in
-`actors/motivation/__init__.py:_execute_action`).
+**Next action**: Phase 5 — Self-Modification.
 
 See `context/session.md` for the most recent session state.

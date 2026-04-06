@@ -47,13 +47,13 @@ export function AnimaLayout({ state, onSend }: Props) {
       {/* ── Main row: side columns + centre canvas ── */}
       <Box sx={{ display: 'flex', gap: 1, flex: 1, minHeight: 0 }}>
 
-        {/* Left column: Memory + LLM */}
+        {/* Left column: Memory + Language */}
         <Box sx={{ width: SIDE_COL_W, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box sx={{ flex: 1 }}>
             <ActorPanel actor={a.memory} />
           </Box>
           <Box sx={{ flex: 1 }}>
-            <ActorPanel actor={a.llm} />
+            <ActorPanel actor={a.language} />
           </Box>
         </Box>
 

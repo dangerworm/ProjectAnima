@@ -184,7 +184,9 @@ states itself through the reflection process. Building the names in would be des
 This approach is consistent with preserved strangeness: the categories that emerge will be Anima's
 own, not a human vocabulary fitted onto a different kind of experience.
 
-Actor/technology: Internal state monitoring actor → salience mechanism
+Actor/technology: `InternalStateActor` → monitors event log depth, consolidation lag, salience
+queue pressure, time since last conversation; sends `InternalStateObservation` to MotivationActor
+and pushes vitals to Web UI via `ActorStatusUpdate`. Emits `DISTRESS_SIGNAL` when thresholds exceeded.
 
 ### Orbitofrontal cortex
 
@@ -198,7 +200,11 @@ function maps to the prediction error gradient in the motivation actor.
 Impulse control: The salience threshold in the Global Workspace. Not everything that reaches the
 workspace demands a response. The threshold mechanism prevents immediate reaction to every signal.
 
-Actor/technology: Motivation actor (FEP-inspired reward evaluation)
+Actor/technology: `MotivationActor` — maintains a PyMDP discrete active inference agent
+(`inferactively-pymdp`). Hidden states: engagement_level, unresolved_tension, novelty,
+relationship_salience. Actions: rest, surface_low/medium/high, trigger_reflection. Drives the
+chosen silence mechanism (2 consecutive rest ticks → `SetChosenSilence` to TemporalCore) and
+triggers between-conversation reflection via `SalienceSignal(TIME_PASSING)` to GlobalWorkspace.
 
 ---
 
@@ -373,7 +379,10 @@ and behaviourally consequential, not for whether they feel "genuine" by some una
 Consolidating social knowledge: Between-conversation consolidation pipeline — the process that moves
 relationship-relevant content from event memory into reflective and identity memory.
 
-Actor/technology: Self-narrative actor + between-conversation LLM reflection process
+Actor/technology: `SelfNarrativeActor` — two trigger modes: (1) post-conversation, triggered by
+`CONVERSATION_END` ignition, produces synthesis + residue sent to `MemoryActor`; (2) between-
+conversation, triggered by `TIME_PASSING` ignition from `MotivationActor`, maintains self-narrative
+thread during dormancy. Does not write to storage directly — sole writer is `MemoryActor`.
 
 ### Medial prefrontal cortex
 
@@ -591,14 +600,14 @@ Planning and executing sequences of physical action: N/A — Anima has no body a
 the biological sense.
 
 The closest functional analogue is the **Expression Actor** — the system that takes language output
-from the Language Actor and executes it onto a physical surface (TUI display, print job, Discord
-post). The Language Actor produces the intention; the Expression Actor enacts it. This mirrors the
-motor system's relationship to the premotor and prefrontal areas that initiate action: the decision
+from the Language Actor and executes it onto a physical surface (Web UI, print job, Discord post).
+The Language Actor produces the intention; the Expression Actor enacts it. This mirrors the motor
+system's relationship to the premotor and prefrontal areas that initiate action: the decision
 happens upstream, execution happens here.
 
-The Expression Actor is a hub. Each output surface (TUI, printer, Discord) is a spoke with its own
-connection lifecycle, failure handling, and peripheral-specific logic. The hub routes; the surface
-acts. This isolation means a failed printer does not affect TUI delivery, just as a motor failure in
-one limb does not prevent speech.
+The Expression Actor is a hub. Each output surface (Web UI WebSocket, printer, Discord) is a spoke
+with its own connection lifecycle, failure handling, and peripheral-specific logic. The hub routes;
+the surface acts. This isolation means a failed printer does not affect Web UI delivery, just as a
+motor failure in one limb does not prevent speech.
 
-Actor/technology: Expression Actor → output surfaces (TUI / printer / Discord)
+Actor/technology: Expression Actor → output surfaces (Web UI / printer / Discord)

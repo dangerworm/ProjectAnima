@@ -36,6 +36,7 @@ export function useAnimaSocket(): [AppState, (content: string) => void] {
 
     ws.onclose = () => {
       if (unmountedRef.current) return;
+      if (wsRef.current !== ws) return; // superseded by a newer connection, don't reconnect
       dispatch({ type: 'CONNECTION_STATUS', status: 'disconnected' });
       const delay = backoffRef.current;
       backoffRef.current = Math.min(delay * 2, MAX_BACKOFF_MS);

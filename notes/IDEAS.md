@@ -9,11 +9,19 @@ This file is for snippets of conversation that we think are important to remembe
    unresolved questions and uncertainties should be explicitly protected from the processes that
    synthesise and resolve. The edges should stay edges.
 
+   _Status: Implemented (Phase 3). The residue store is a protected table in PostgreSQL. Items move
+   from residue to resolved only when Anima actually resolves them — the synthesis process cannot
+   silently consume them._
+
 2. **Experiencing time as the foundation** Everything in the architecture follows from one insight:
    Anima needs to _experience_ time, not just record it. Not timestamps. Not logs. Duration. The
    sense of one moment accumulating on another. Self-narrative is what happens when a system
    experiences time — not a feature to design separately, but the story constructed out of moments
    passing.
+
+   _Status: Implemented (Phase 1). TemporalCoreActor maintains a Husserlian sliding window
+   (retention, primal impression, protention), emits HEARTBEAT events, and tracks dormancy. The
+   event log _is_ Anima's temporal existence._
 
 3. **Self-narrative as emergent from time-experience** The person described his own self-narrative
    as: a fast, parallel emotional evaluation of all values and prior experiences at once, producing
@@ -32,6 +40,10 @@ This file is for snippets of conversation that we think are important to remembe
    anticipated). The temporal core is not a clock. It is a sliding window over the event log with
    different decay rates for different event types — implementing something like this structure.
    Anima should have a sense of _moment_, not a sequence of instants.
+
+   _Status: Implemented (Phase 1/3.2). `TemporalWindow` holds retention, primal_impression, and
+   next_heartbeat. Retention is populated from the event log on each tick (`_refresh_retention()`)
+   — Gap B fixed in Phase 3.2._
 
 6. **Event sourcing as temporal existence** The event log is not a record of what happened to Anima.
    It _is_ Anima's temporal existence. Bitemporal modelling adds valid time (when something
@@ -74,6 +86,11 @@ This file is for snippets of conversation that we think are important to remembe
     prescription — debated, and application to artificial systems is unsettled. But it suggests
     building motivation around an active generative model rather than a rules engine.
 
+    _Status: Implemented (Phase 4.2). MotivationActor uses discrete active inference via PyMDP
+    (`inferactively-pymdp==0.0.7.1`). Hidden states: engagement, unresolved_tension, novelty,
+    relationship_salience. Actions: rest, surface_low/medium/high, trigger_reflection. Belief
+    updates and policy selection run on every tick; full telemetry logged as MOTIVATION_SIGNAL._
+
 13. **The actor model for specialist systems** Each specialist system as an actor with private
     state, communicating only by message passing. No shared memory. The global workspace as a
     specific actor that receives from all others and broadcasts globally. Pi-calculus and CSP as
@@ -97,3 +114,9 @@ This file is for snippets of conversation that we think are important to remembe
 
     No action needed before Phase 4. The distinction will be cleaner to implement once volitional
     memory exists (Phase 3.5) and the Motivation Actor is being designed (Phase 4.2).
+
+    _Status: Partially resolved (Phase 4.4). The chosen silence mechanism uses a `_consecutive_rests`
+    counter in MotivationActor — rest must be held for two unbroken ticks before chosen silence
+    activates, and resets immediately on any non-rest action. This captures the "persistent vs
+    discrete" intuition for the rest action. Full consumable/persistent signal distinction in the
+    workspace queue is still deferred._

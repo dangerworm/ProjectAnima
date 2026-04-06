@@ -15,7 +15,14 @@ export interface ActorEventMessage {
   final_salience: number;
 }
 
-export type ServerMessage = LanguageOutputMessage | ActorEventMessage;
+export interface ActorStatusMessage {
+  type: 'actor_status';
+  actor: string;
+  status_type: string;
+  data: Record<string, unknown>;
+}
+
+export type ServerMessage = LanguageOutputMessage | ActorEventMessage | ActorStatusMessage;
 
 export interface HumanInputMessage {
   type: 'human_input';
@@ -28,6 +35,7 @@ export interface ActorState {
   lastEventType: string | null;
   lastSalience: number | null;
   lastUpdate: Date | null;
+  status: Record<string, unknown> | null;
 }
 
 // The conversation feed

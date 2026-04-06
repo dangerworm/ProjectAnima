@@ -5,11 +5,43 @@
 
 ---
 
-## Where we are
+## Current State (April 2026)
 
-Phase 1.2 is next. The infrastructure exists (Docker, PostgreSQL, Python entry point) but no actors
-have been built yet. The diagrams below show the full intended architecture so the shape of what
-we're building is visible from the start.
+**Phases 1–4 are complete. Phase 5 (Self-Modification) is next.**
+
+All nine actors are built and running. The system can have text conversations, reflect on them,
+and maintain state between conversations.
+
+**What is running:**
+- **TemporalCoreActor** — heartbeat, Husserlian window, gap detection, chosen silence
+- **GlobalWorkspaceActor** — salience queue, ignition, broadcast to all actors
+- **PerceptionActor** — text input via Web UI WebSocket → SalienceSignal
+- **LanguageActor** — LLM calls via Ollama (Qwen3.5 9B), identity + memory injection, volitional logging
+- **ExpressionActor** — routes LanguageOutput and ActorStatusUpdate to WebSocket surface
+- **MemoryActor** — sole writer to all higher memory layers (reflective, identity, residue, volitional)
+- **SelfNarrativeActor** — post-conversation reflection + between-conversation mode
+- **InternalStateActor** — system vitals monitoring, DISTRESS_SIGNAL, live Web UI status
+- **MotivationActor** — PyMDP discrete active inference, chosen silence (2 consecutive rest ticks), live Web UI status
+
+**Web UI**: React (Vite + MUI) at `ProjectAnima/web-ui/`, connects via WebSocket to FastAPI at port 8000.
+Actor panels show live state from TemporalCore, InternalState, and Motivation via `actor_status` events.
+
+**Persistence**: PostgreSQL with 5 tables (event_log, reflective_memory, residue_store, identity_memory,
+volitional_memory). pgvector for semantic similarity. Alembic migrations run on container start.
+
+**Tests**: 98 unit tests passing. 29 LLM/integration tests deselected from default run (require
+Ollama, marked `@pytest.mark.llm` and `@pytest.mark.integration`). Run with
+`pytest -m "not llm and not integration"` for fast CI-equivalent runs.
+
+---
+
+## Where we were (pre-Phase-2 snapshot)
+
+The rest of this document was written when Phase 1.2 was next and no actors had been built yet.
+The architectural diagrams remain accurate — they describe the intended structure, which is now
+implemented. Only the "build sequence summary" at the end is outdated.
+
+---
 
 ---
 
@@ -373,4 +405,4 @@ Phase 5 (Self-modification): Code read access → Change proposal → Human appr
 Phase 6 (Ethics gates):     Verify all ethics commitments before first unsupervised operation
 ```
 
-Current status: **Phase 1.2** — Event log schema next.
+Current status: **Phase 5** — Self-Modification. Phases 1–4 complete (April 2026).
