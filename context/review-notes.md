@@ -1,7 +1,7 @@
 # Code Review Notes
 
-> Written during the session of 5th April 2026 by a Claude instance doing a full review pass
-> before Phase 2.4. Reference document — not a session log.
+> Written during the session of 5th April 2026 by a Claude instance doing a full review pass before
+> Phase 2.4. Reference document — not a session log.
 
 ---
 
@@ -13,8 +13,8 @@
 "model": self._llm._model,
 ```
 
-`_model` is a private attribute of `LLMClient`. Fixed by adding a `model` property to
-`LLMClient` and updating the reference.
+`_model` is a private attribute of `LLMClient`. Fixed by adding a `model` property to `LLMClient`
+and updating the reference.
 
 **Status**: Fixed this session.
 
@@ -24,15 +24,16 @@
 
 **File**: `anima-core/app/actors/global_workspace/messages/__init__.py`
 
-`IgnitionBroadcast` is a frozen dataclass, but its `content: dict` field is mutable. Frozen
-prevents reassignment of the field, not mutation of the dict's contents. The same broadcast
-object is delivered to all registered actors — if any future actor mutates `content`, it would
-affect all subsequent recipients.
+`IgnitionBroadcast` is a frozen dataclass, but its `content: dict` field is mutable. Frozen prevents
+reassignment of the field, not mutation of the dict's contents. The same broadcast object is
+delivered to all registered actors — if any future actor mutates `content`, it would affect all
+subsequent recipients.
 
-Currently no actor mutates it (LanguageActor calls `.get()` only). This is a latent risk, not
-a current bug.
+Currently no actor mutates it (LanguageActor calls `.get()` only). This is a latent risk, not a
+current bug.
 
 **Options when it matters**:
+
 - Wrap in `types.MappingProxyType` at construction time in `_fire()`
 - Convert to a named dataclass instead of a free dict
 - Document and trust actors not to mutate (current approach)
@@ -61,17 +62,18 @@ signal distinction (IDEAS.md #14).
 
 ## Design discrepancy: DORMANCY_START / DORMANCY_END never emitted
 
-`EventType` defines `DORMANCY_START` and `DORMANCY_END`, but `TemporalCoreActor` never emits
-them. The actor emits `TIME_PASSING` (or `CHOSEN_SILENCE`) continuously during dormancy rather
-than bookending with START/END events.
+`EventType` defines `DORMANCY_START` and `DORMANCY_END`, but `TemporalCoreActor` never emits them.
+The actor emits `TIME_PASSING` (or `CHOSEN_SILENCE`) continuously during dormancy rather than
+bookending with START/END events.
 
 Two valid designs exist:
+
 - **Current**: continuous TIME_PASSING events during dormancy (polling model)
 - **Alternative**: single DORMANCY_START on entry, single DORMANCY_END on exit (transition model)
 
-The transition model is cleaner for any actor that needs to respond to dormancy state changes
-(e.g., the between-conversation process trigger in Phase 4.3). The polling model is simpler
-to implement and test.
+The transition model is cleaner for any actor that needs to respond to dormancy state changes (e.g.,
+the between-conversation process trigger in Phase 4.3). The polling model is simpler to implement
+and test.
 
 **Status**: Flagged for discussion. Do not change until Phase 4 brings concrete requirements.
 
@@ -79,9 +81,9 @@ to implement and test.
 
 ## Gap: Perception Actor has no roadmap entry
 
-The roadmap lists Phase 2.6 as the text input/output loop, which requires a Perception Actor.
-But there is no phase entry for building the Perception Actor — it appears in the actor list
-but was never given implementation tasks.
+The roadmap lists Phase 2.6 as the text input/output loop, which requires a Perception Actor. But
+there is no phase entry for building the Perception Actor — it appears in the actor list but was
+never given implementation tasks.
 
 Fixed by adding PerceptionActor tasks to Phase 2.6 in the roadmap.
 
@@ -108,8 +110,9 @@ Identified during this review and resolved in conversation with Drew.
 the system-overview diagrams. Dual write paths to the same layers, with no clear ownership.
 
 **Decision**:
-- MemoryActor has sole custody of all higher memory layers (RM, IM, VM, RS). Nothing writes to
-  these layers directly except MemoryActor.
+
+- MemoryActor has sole custody of all higher memory layers (RM, IM, VM, RS). Nothing writes to these
+  layers directly except MemoryActor.
 - Every other actor that needs to persist something to these layers sends a message to MemoryActor.
 - SelfNarrativeActor produces synthesis (via LLM) and sends the output to MemoryActor. It does not
   write to storage directly.
@@ -117,6 +120,7 @@ the system-overview diagrams. Dual write paths to the same layers, with no clear
   managed memory layer.
 
 **SelfNarrativeActor trigger modes** (also resolved this session):
+
 1. Post-conversation: triggered by CONVERSATION_END → synthesises that conversation → sends
    synthesis + residue to MemoryActor
 2. Between-conversation: triggered by dormancy threshold from Temporal Core → maintains
@@ -124,8 +128,8 @@ the system-overview diagrams. Dual write paths to the same layers, with no clear
 
 The reflection pipeline (Phase 3.3) lives in SelfNarrativeActor, not as a separate actor.
 
-**Documents updated**: `planning/architecture.md`, `notes/system-overview.md`,
-`planning/roadmap.md` (Phase 3.3).
+**Documents updated**: `planning/architecture.md`, `notes/system-overview.md`, `planning/roadmap.md`
+(Phase 3.3).
 
 ---
 
@@ -133,14 +137,14 @@ The reflection pipeline (Phase 3.3) lives in SelfNarrativeActor, not as a separa
 
 These are real but have homes in the roadmap — listed here for completeness.
 
-- **Husserlian retention window empty**: `TemporalWindow.retention` is pruned but never
-  populated. Phase 3.2 will populate it from the event log on each tick.
+- **Husserlian retention window empty**: `TemporalWindow.retention` is pruned but never populated.
+  Phase 3.2 will populate it from the event log on each tick.
 
-- **Workspace pressure ephemeral**: Accumulated salience pressure is lost on restart. Phase 4.2
-  will reconstruct from open volitional items.
+- **Workspace pressure ephemeral**: Accumulated salience pressure is lost on restart. Phase 4.2 will
+  reconstruct from open volitional items.
 
-- **Identity resonance stub**: `GlobalWorkspaceActor._identity_resonance()` returns 0.0.
-  Phase 3 connects this to the identity memory layer.
+- **Identity resonance stub**: `GlobalWorkspaceActor._identity_resonance()` returns 0.0. Phase 3
+  connects this to the identity memory layer.
 
-- **In-memory context window**: `LanguageActor._context` is a simple deque. Phase 3 replaces
-  this with memory-driven retrieval from the event log and reflective memory layers.
+- **In-memory context window**: `LanguageActor._context` is a simple deque. Phase 3 replaces this
+  with memory-driven retrieval from the event log and reflective memory layers.
