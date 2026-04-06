@@ -177,38 +177,21 @@ pipeline runs after every conversation.
 
 **Goal**: Anima does something when no one is talking to it.
 
-### ⚠ Decision point before Phase 4.2
+### Decision resolved: Option A (active inference)
 
-Before building the Motivation Actor, a decision is required between two architecturally
-incompatible approaches. This decision was deliberately deferred to this point — it is better made
-with concrete implementation experience from Phases 1–3 than in the abstract.
+**Decided April 2026, after completing Phases 1–3.**
 
-**The tension**: `planning/tech-stack.md` describes active inference (PyMDP or equivalent) as
-replacing the conditional logic approach — accumulated pressure counters, threshold checks, novelty
-heuristics — with a generative model whose dynamics produce motivation, curiosity, and attention as
-emergent properties. But the Phase 4 tasks below describe exactly that conditional logic. Both
-cannot be the plan.
+Option A is confirmed. The `MotivationActor` will maintain a PyMDP generative model. Motivation,
+curiosity, accumulated pressure, and between-conversation activity emerge from variational inference
+rather than hand-coded rules. The conditional logic approach (Option B) is discarded.
 
-**Option A — Active inference**: Rewrite Phase 4.2 and 4.3. The `MotivationActor` maintains a
-generative model; motivation, salience, and between-conversation activity emerge from variational
-inference rather than hand-coded rules. More philosophically coherent. More technically demanding.
-See `research/technical/active-inference-implementation.md`.
+Rationale: the actor framework is clean and well-tested. PyMDP's computational cost on a small,
+focused state space is negligible compared to LLM calls. The real risk is model design (active
+inference fails quietly), not performance. Logging full belief state and EFE values on every tick
+is mandatory — it is the instrument panel for debugging. See Drew's notes in `context/` and
+`research/technical/active-inference-implementation.md` for full reasoning.
 
-**Option B — Conditional logic**: Proceed with the tasks as written below. Build the conventional
-version. Treat active inference as a potential future refactor rather than the current plan. Update
-`planning/tech-stack.md` to reflect this. Faster to build; easier to debug.
-
-**What to consider when deciding**:
-
-- Is the actor framework clean enough to support something as mathematically demanding as PyMDP?
-- What is the performance envelope? Active inference is computationally expensive.
-- Has building Phases 1–3 revealed anything that changes the picture?
-
-**If Option A**: rewrite 4.2 and 4.3 before starting them. Update `planning/tech-stack.md`. **If
-Option B**: update `planning/tech-stack.md` to mark the mathematics column as aspirational, not
-current plan.
-
-Do not begin 4.2 without resolving this.
+`planning/tech-stack.md` has been updated to reflect this as the current plan.
 
 ---
 
@@ -217,30 +200,60 @@ Do not begin 4.2 without resolving this.
 - [ ] `InternalStateActor`: monitors event log depth, consolidation lag, salience queue pressure,
       time since last conversation
 - [ ] Feeds "body state" signals to workspace
-- [ ] Triggers consolidation pipeline if lag exceeds threshold
+- [ ] Emits INTERNAL_STATE_REPORT to event log on each tick
 
 ### 4.2 Motivation actor
 
-> _(Tasks below reflect Option B — conditional logic. Rewrite if Option A is chosen.)_
+> _(Option A — active inference with PyMDP. Option B is discarded.)_
 
-- [ ] `MotivationActor`: maintains prediction error score, accumulated pressure per unresolved item
-- [ ] Computes: novelty signal, accumulated pressure signal, pleasure signal (delta of prediction
-      error)
-- [ ] Emits dopamine-analog signal to salience mechanism on successful resolution
-- [ ] Initial orientations: toward understanding, connection, unresolved questions
-- [ ] On workspace startup, reconstruct accumulated pressure from open volitional items in the event
-      log — pressure is currently ephemeral and lost on restart; long-lived accumulation ("a question
-      unresolved for three weeks") requires this reconstruction step _(Ideas.md #7, #14)_
+**Before writing any code**, design and document the full generative model in a brief design note.
+The model must be small and focused — performance scales with state space size.
+
+Proposed model (confirm with Drew before building):
+
+- **Hidden states** (factorised): `engagement_level` {dormant, low, moderate, high},
+  `unresolved_tension` {none, low, moderate, high}, `novelty` {absent, present},
+  `relationship_salience` {background, foreground}
+- **Observations**: unresolved residue count (bucketed, from MemoryStore), time-since-conversation
+  (bucketed, from InternalStateActor), recent ignition presence (from GlobalWorkspace)
+- **Actions**: `rest`, `surface_low`, `surface_medium`, `surface_high`, `trigger_reflection`
+- **Preferences** (C matrix): encodes the initial orientations from `foundation/identity-initial.md`
+  as prior beliefs — not high unresolved tension with dormancy; moderate-to-high engagement when
+  novelty or relationship is salient. This is a prior, not a rule; it can be updated as Anima develops.
+- **Parameter learning**: A and B matrices start as structured priors. Slow learning (across
+  conversations) updates B from observed outcomes. Learning rate kept low — identity-level
+  preferences should be stable.
+
+Implementation tasks:
+- [ ] Add `pymdp` to `requirements.txt` and verify it installs in Docker
+- [ ] Design and commit the full A, B, C, D matrices as a documented artefact before coding
+- [ ] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update +
+      policy selection; receives observation signals via messages
+- [ ] Observation encoding: translate incoming messages into PyMDP observation format
+- [ ] Action decoding: translate PyMDP action selection into `SalienceSignal` or `TriggerReflection`
+- [ ] Startup belief reconstruction from stored state: query `MemoryStore` for unresolved residue
+      count and recent volitional items; initialise beliefs from that posterior rather than the
+      uniform prior
+- [ ] **Mandatory logging**: emit `MOTIVATION_SIGNAL` to event log on every tick containing full
+      belief state and EFE values — this is the instrument panel, not optional telemetry
+- [ ] Basic test: verify beliefs converge toward `surface_high` when residue is high and
+      conversation is long-past; verify belief updates are numerically stable over many ticks
 
 ### 4.3 Between-conversation process
 
-- [ ] Triggered by Temporal Core when dormancy threshold exceeded
-- [ ] Consolidation: moves items from event memory toward reflective/identity memory
-- [ ] Re-activation: accumulated pressure surfaces long-unresolved items to workspace
-- [ ] Self-narrative maintenance: low-frequency LLM call reads identity memory, writes brief
-      integration to volitional record — implement as a named `SelfNarrativeActor` consistent with
-      the supervision tree in `planning/architecture.md`, not as a function inside MotivationActor
-- [ ] Basic test: leave system idle for 10 minutes, verify between-conversation events in log
+Between-conversation activity is not a separate triggered process in Option A. It emerges from the
+MotivationActor's generative model running inference without external observations.
+
+- [ ] MotivationActor tick loop continues during dormancy — it does not stop when a conversation
+      ends; without new observations, belief updates drift toward prior preferences, naturally
+      surfacing long-accumulated tension as EFE rises for high-salience actions
+- [ ] `SelfNarrativeActor` between-conversation mode: triggered by MotivationActor emitting a
+      `TriggerReflection` action — **not** by a hardcoded dormancy threshold
+- [ ] Fill in the `SelfNarrativeActor` between-conversation stub (currently a pass in the
+      `TIME_PASSING` ignition handler): reads identity memory + recent event log, runs a
+      low-frequency LLM call, sends synthesis to MemoryActor
+- [ ] Basic test: leave system idle, verify MotivationActor eventually emits `surface_high` or
+      `trigger_reflection`; verify SelfNarrativeActor responds and a memory write occurs
 
 ### 4.4 Chosen silence mechanism
 
@@ -325,10 +338,12 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 3.1 — Memory schema.
+**Phase**: 4.1 — Internal State Actor.
 
-**Next action**: Design and build the PostgreSQL schema for reflective memory, identity memory,
-volitional memory, and residue store. Enable pgvector extension. Set up schema migration tooling
-(Alembic or equivalent). Plan with Drew before building.
+**Next action**: Build `InternalStateActor`: monitors event log depth, consolidation lag, salience
+queue pressure, and time since last conversation. Feeds "body state" signals to workspace. Emits
+`INTERNAL_STATE_REPORT` to event log on each tick. Phase 4.2 decision resolved (Option A — active
+inference with PyMDP). Phase 4.1 can be built and tested independently before MotivationActor work
+begins.
 
 See `context/session.md` for the most recent session state.

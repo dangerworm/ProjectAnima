@@ -338,15 +338,15 @@ The architecture principle (see `planning/architecture.md`) is that cognitive be
 emerge from mathematical dynamics rather than be enumerated as conditional logic. This section
 records which components are candidates and what frameworks apply.
 
-| Component                     | Planned conditional approach                                 | Mathematical replacement                                                                      | Framework                                   |
+| Component                     | Discarded (Option B)                                         | Current plan (Phase 4+)                                                                       | Framework                                   |
 | ----------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | Global Workspace ignition     | Threshold check on salience score                            | Attractor network — ignition emerges from recurrent dynamics crossing an unstable equilibrium | Continuous attractor network (coupled ODEs) |
 | Salience weighting            | Weighted sum of novelty + pressure + identity resonance      | Precision-weighted prediction error                                                           | Active inference (PyMDP / custom)           |
 | Accumulated pressure          | Counter per unresolved item                                  | Belief state that resists updating until evidence arrives                                     | Active inference                            |
 | Novelty detection             | Heuristic score on incoming signals                          | Epistemic value — expected information gain                                                   | Active inference                            |
-| Motivation / drive            | Rules toward understanding, connection, unresolved questions | Prior preferences in generative model — the system expects to be curious                      | Active inference                            |
+| Motivation / drive            | Rules toward understanding, connection, unresolved questions | Prior preferences in generative model — the system expects to be curious                      | Active inference (PyMDP) — **current plan** |
 | Emotional regulation          | Blend function (identity coherence score × raw salience)     | Precision on interoceptive signals                                                            | Active inference                            |
-| Between-conversation activity | Triggered process on dormancy threshold                      | Inference running without external observations — model samples from prior                    | Active inference                            |
+| Between-conversation activity | Triggered process on dormancy threshold                      | Inference running without external observations — model samples from prior                    | Active inference (PyMDP) — **current plan** |
 | Internal representation       | Structured JSON with comparison logic                        | Algebraic (VSA) or geometric (Conceptual Spaces)                                              | Deferred — see open questions               |
 
 **Where mathematics does not apply**: actor framework, event log, message passing, PostgreSQL
@@ -355,10 +355,11 @@ schema, Docker, the Expression Actor's routing logic. These are infrastructure. 
 **Implementation reference**: `research/technical/active-inference-implementation.md` — covers
 PyMDP, attractor dynamics, precision weighting, and caveats.
 
-**Starting position**: Begin with clean conventional code for Phase 1 and Phase 2. Introduce
-mathematical frameworks incrementally, starting with the Global Workspace ignition mechanism in
-Phase 2.1 and the Motivation Actor in Phase 4.2. Do not retrofit mathematics onto working code
-without a concrete reason.
+**Starting position**: Phases 1–3 used clean conventional code as planned. Phase 4 introduces
+mathematical frameworks: the MotivationActor uses discrete active inference (PyMDP) as the primary
+approach — Option A, confirmed April 2026. Do not retrofit mathematics onto working code without a
+concrete reason. The Global Workspace ignition mechanism (Phase 2.1) remains a threshold check for
+now; the attractor network upgrade is deferred.
 
 ---
 

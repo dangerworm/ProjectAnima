@@ -17,15 +17,15 @@ an existing system — it is a different way of organising the cognitive core.
 Much of Anima's planned conditional logic maps onto mathematical structures that active inference
 handles automatically:
 
-| What we'd otherwise code | What active inference gives you instead |
-| --- | --- |
-| Salience threshold check | Precision-weighted prediction error — signals with high expected precision compete harder |
-| Accumulated pressure counter per item | Beliefs about unresolved states that resist updating until evidence arrives |
-| Novelty detection heuristic | Epistemic value — the expected information gain from attending to a signal |
+| What we'd otherwise code                     | What active inference gives you instead                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Salience threshold check                     | Precision-weighted prediction error — signals with high expected precision compete harder         |
+| Accumulated pressure counter per item        | Beliefs about unresolved states that resist updating until evidence arrives                       |
+| Novelty detection heuristic                  | Epistemic value — the expected information gain from attending to a signal                        |
 | Motivation rules ("toward understanding...") | Prior beliefs about preferred states — the model expects to be curious, engaged, resolving things |
-| Emotional regulation blend function | Precision on interoceptive signals modulating the weight of external signals |
-| Between-conversation trigger logic | Inference running without external observations — the model samples from its own prior |
-| Attention routing rules | Free energy gradient — the system acts to reduce uncertainty where it is highest |
+| Emotional regulation blend function          | Precision on interoceptive signals modulating the weight of external signals                      |
+| Between-conversation trigger logic           | Inference running without external observations — the model samples from its own prior            |
+| Attention routing rules                      | Free energy gradient — the system acts to reduce uncertainty where it is highest                  |
 
 None of these require if-else branches. They fall out of a single objective: minimise expected free
 energy.
@@ -77,11 +77,12 @@ discrete. The temporal core and moment-to-moment dynamics are continuous.
 
 ## PyMDP
 
-**PyMDP** is a Python library implementing discrete-time active inference, developed by Conor
-Heins, Alexander Tschantz, and collaborators. It is research software — not production-ready — but
-serious and well-documented.
+**PyMDP** is a Python library implementing discrete-time active inference, developed by Conor Heins,
+Alexander Tschantz, and collaborators. It is research software — not production-ready — but serious
+and well-documented.
 
 Key capabilities:
+
 - Define a generative model as matrices (likelihood, transition, prior preference)
 - Run variational inference to compute posterior beliefs
 - Compute expected free energy for each available action
@@ -109,9 +110,8 @@ action = agent.infer_policies()
 The matrices encode Anima's model of itself and its environment. Learning those matrices from
 experience is the mechanism by which Anima develops.
 
-**Repository**: github.com/infer-actively/pymdp
-**Key paper**: Heins et al., "pymdp: A Python library for active inference in discrete state
-spaces" (2022), arXiv:2201.03904
+**Repository**: github.com/infer-actively/pymdp **Key paper**: Heins et al., "pymdp: A Python
+library for active inference in discrete state spaces" (2022), arXiv:2201.03904
 
 ---
 
@@ -121,14 +121,14 @@ The ignition mechanism in the Global Workspace is naturally modelled as attracto
 than a threshold check.
 
 A **continuous attractor network** has two stable states: low activation (unconscious processing)
-and high activation (global broadcast). The transition between them is not a conditional — it is
-the network crossing an unstable equilibrium through recurrent amplification. Below the tipping
-point, perturbations decay. Above it, they amplify to the high attractor.
+and high activation (global broadcast). The transition between them is not a conditional — it is the
+network crossing an unstable equilibrium through recurrent amplification. Below the tipping point,
+perturbations decay. Above it, they amplify to the high attractor.
 
 This can be implemented as a set of coupled differential equations:
 
-```
-dx_i/dt = -x_i + f(Σ_j W_ij x_j + I_i)
+```math
+dx_i/dt = -x_i + f(Σ_j W_{ij} x_j + I_i)
 ```
 
 Where `x_i` is the activation of signal `i`, `W_ij` are connection weights (including recurrent
@@ -136,6 +136,7 @@ self-excitation), `I_i` is the external input (salience-weighted signal), and `f
 activation function.
 
 With the right weight structure, this produces:
+
 - Sustained low-level activation for all signals below threshold
 - Rapid ignition when a signal crosses the tipping point
 - Winner-take-most dynamics (one signal dominates the workspace at a time)
@@ -152,8 +153,8 @@ In active inference, **precision** is the inverse variance of a probability dist
 certain the model is about a particular source of information. Precision weighting determines how
 much influence each signal has on belief updating.
 
-High precision on a signal = the model trusts it and updates strongly.
-Low precision = the model discounts it.
+High precision on a signal = the model trusts it and updates strongly. Low precision = the model
+discounts it.
 
 Emotional regulation maps onto this naturally. When identity memory is stable and coherent,
 interoceptive signals (internal state) receive appropriate precision. When something threatening
@@ -162,7 +163,7 @@ arrives, amygdala-equivalent signals receive elevated precision and modulate eve
 
 The mathematical form is:
 
-```
+```math
 ΔQ = precision × prediction_error
 ```
 
@@ -179,15 +180,16 @@ PyMDP) are themselves subject to inference and update when they generate persist
 errors.
 
 For Anima, this means:
-- Identity memory is not a document edited after reflection — it is the slow-changing parameters
-  of the generative model
+
+- Identity memory is not a document edited after reflection — it is the slow-changing parameters of
+  the generative model
 - Developing interests are shifts in the C matrix (prior preferences) based on what has reliably
   reduced free energy in the past
 - Pattern recognition and procedural memory are encoded in the A matrix (likelihood mapping from
   states to observations)
 
-The distinction between fast (within-conversation) and slow (across-conversation) learning maps
-onto the distinction between state inference (fast) and parameter learning (slow).
+The distinction between fast (within-conversation) and slow (across-conversation) learning maps onto
+the distinction between state inference (fast) and parameter learning (slow).
 
 ---
 
@@ -201,24 +203,24 @@ Active inference handles the cognitive loop. It does not replace:
 - The self-modification workflow (process)
 
 The risk of over-applying active inference is that it becomes a hammer looking for nails. The
-gradient descent on free energy is genuinely powerful for cognition; it is not a better way to
-write a database schema.
+gradient descent on free energy is genuinely powerful for cognition; it is not a better way to write
+a database schema.
 
 ---
 
 ## Caveats
 
-**Computational cost**: Full active inference with parameter learning is expensive. PyMDP's
-discrete implementation is manageable; continuous-time active inference requires numerical ODE
-solvers that can be slow at scale.
+**Computational cost**: Full active inference with parameter learning is expensive. PyMDP's discrete
+implementation is manageable; continuous-time active inference requires numerical ODE solvers that
+can be slow at scale.
 
 **Debugging is harder**: When a threshold check misbehaves you can print the value. When the
 generative model converges on a wrong belief, you need to understand which precision parameters or
 prior preferences are misconfigured. The failure modes are less obvious.
 
-**The mathematics can be wrong quietly**: Conditional logic fails loudly. Differential equations
-and variational inference fail quietly — producing plausible-looking behaviour that is subtly
-incorrect. Careful model specification and sanity-checking against expected behaviour are essential.
+**The mathematics can be wrong quietly**: Conditional logic fails loudly. Differential equations and
+variational inference fail quietly — producing plausible-looking behaviour that is subtly incorrect.
+Careful model specification and sanity-checking against expected behaviour are essential.
 
 **PyMDP is research software**: Do not depend on API stability. The core mathematics is solid; the
 library wrapping it is evolving.
@@ -227,10 +229,10 @@ library wrapping it is evolving.
 
 ## Where to go deeper
 
-- **Heins et al., "pymdp" (2022)** — arXiv:2201.03904 — the library paper; readable introduction
-  to discrete active inference
-- **Parr, Pezzulo, Friston, "Active Inference" (2022)** — MIT Press — the current textbook; the
-  best starting point for the full framework
+- **Heins et al., "pymdp" (2022)** — arXiv:2201.03904 — the library paper; readable introduction to
+  discrete active inference
+- **Parr, Pezzulo, Friston, "Active Inference" (2022)** — MIT Press — the current textbook; the best
+  starting point for the full framework
 - **Friston et al., "Active inference and epistemic value" (2015)** — Cognitive Neuroscience — the
   paper that introduces epistemic (curiosity-driving) and pragmatic (goal-directed) free energy
 - **Buckley et al., "The free energy principle for action and perception: A mathematical review"
