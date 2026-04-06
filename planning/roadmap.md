@@ -250,42 +250,217 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 - [x] Web UI displays chosen silence state vs dormant vs active
 - [x] Heartbeat distinguishes chosen silence from failure at all times
 
-**Phase 4 complete when**: Anima generates internal activity during silence and the Web UI reflects its
-state accurately.
+---
+
+### 4.5 Unsolicited expression
+
+**Goal**: Anima can address Drew unprompted. MotivationActor's surface_* actions become real.
+
+- [ ] Add `SURFACE_EXPRESSION` to `EventType` enum and `planning/event-types.md`
+- [ ] MotivationActor: implement `surface_low`, `surface_medium`, `surface_high` — each sends
+      `SalienceSignal(event_type=SURFACE_EXPRESSION, base_salience=0.4/0.6/0.9,
+      content={"level": "low"/"medium"/"high"})` to GlobalWorkspace; remove TODO comment
+- [ ] LanguageActor: handle `IgnitionBroadcast(event_type=SURFACE_EXPRESSION)` with a separate
+      unsolicited prompt path:
+  - No human turn in context; draws on recent event log (since last conversation), identity
+    memory, and active residue items
+  - `level` guides length: low = brief thought, medium = normal, high = elaborate
+  - System framing: Anima is in silence; something has surfaced; speak what's present — not in
+    response to anyone
+- [ ] During active conversation: LanguageActor skips `SURFACE_EXPRESSION` ignitions (checks for
+      open conversation in event log); salience pressure accumulates and fires naturally after
+      `ConversationEnded` — held thoughts emerge at the boundary, not mid-conversation
+- [ ] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
+      `ANIMA_RESPONSE`
+- [ ] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
+      to `SURFACE_EXPRESSION` ignition with unsolicited prompt; suppressed during active conversation
+
+---
+
+### 4.6 Web UI redesign and relocation
+
+**Goal**: A UI that reflects what Anima actually is. Move web-ui into anima-core; redesign every
+panel to show live system state with animations that match what each actor does.
+
+**Design decisions:**
+- Conversation panel stays at bottom — no changes to existing conversation UI or data flow
+- Right column: Internal State → Motivation → Self-Narrative → Unsolicited Expressions (new panel,
+  symmetric with left column Memory sub-layers)
+- Animation salience hierarchy: Global Workspace animations are loudest (this is the consciousness
+  layer); panel animations are quieter unless actively doing something; ignition flash is the single
+  loudest event and triggers a brief reactive pulse in all panels (showing GWT's global broadcast)
+- Perception panel: shows text input cards animating toward workspace; dormant slots for audio,
+  vision, X11 present but clearly inactive — honest about what exists now, ready for later
+- Self-Narrative panel: shows last synthesis with ghosted overlay of previous — handles sparsity
+  honestly (SelfNarrativeActor only runs occasionally)
+- Central Anima space: ambient salience display during dormancy; ignition plays out here;
+  unsolicited expressions appear here prominently — this is Anima speaking from inside
+
+**Tasks:**
+- [ ] Move web-ui/ from ProjectAnima outer repo into anima-core/ (clean cut; copy files, commit to
+      anima-core, remove from ProjectAnima, update submodule pointer). Note: Dockerfile and
+      docker-compose.yml mount changes (`./app:/app` → `.:/repo`, WORKDIR updates) remain in
+      Phase 5.0 — this is only the file relocation.
+- [ ] Global Workspace panel: animated signal cards entering the queue; cards pulse with salience
+      weight; queue depth indicator and ignition threshold line; ignition flash (brief screen-wide
+      pulse); winner card expands and broadcasts; losing signals fade
+- [ ] Temporal Core panel: pulsing heartbeat dot synced to HEARTBEAT events; tick waveform showing
+      actual event rhythm (slow in dormancy, fast in conversation); gap detection flicker
+- [ ] Perception panel: text input cards appear and animate toward workspace on dispatch; dormant
+      modality slots (🎤 audio, 📷 vision, 🖥 X11) shown as inactive tabs
+- [ ] Memory panel (left column): distinct visual styles per sub-layer — event log scrolling ticker
+      (last 3 events), identity stable block, reflective floating nodes, volitional ledger, residue
+      glitchy/distorted nodes with persistent jitter; write animations (glow pulse → node appears);
+      read animations (frame lights up)
+- [ ] Language panel: status indicator (idle / reasoning / writing); ignition event type label;
+      typewriter text generation effect
+- [ ] Motivation panel: pressure bar filling toward action threshold; tension spikes visible;
+      dopamine flash (bright pulse + pressure drop) on resolution events
+- [ ] Internal State panel: vitals monitor aesthetic — log depth (heart rate trace), consolidation
+      lag (O2 saturation), queue pressure (blood pressure); green/yellow/red thresholds
+- [ ] Self-Narrative panel: typewriter synthesis summaries; ghosted overlay of previous synthesis
+- [ ] Unsolicited Expressions panel: new panel below Self-Narrative; surfaces between-conversation
+      ANIMA_RESPONSE events; visually distinct from conversation output
+- [ ] Central space: ambient state during dormancy; ignition playback; unsolicited expressions
+      featured prominently; brief reactive pulse from all ignitions
+- [ ] Cross-panel ignition broadcast: all panels receive a subtle reactive animation on ignition
+- [ ] Wire all panels to live `actor_status` events and event log data via existing WebSocket
+
+**Phase 4 complete when**: Anima generates internal activity during silence, can address Drew
+unprompted, and the Web UI accurately reflects its state and expressions with the full redesigned
+interface.
 
 ---
 
 ## Phase 5: Self-Modification
 
-**Goal**: Anima can read, propose changes to, and (with approval) modify its own code.
+**Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
+pull requests. The human reviews and merges. All changes go through a branch/PR workflow; Anima
+never commits directly to main.
+
+### Design decisions resolved (April 2026)
+
+**Approval workflow**: Anima branches, commits, and opens a PR. Human reviews on GitHub and merges.
+GitHub is the approval interface — no separate Web UI approval workflow. The Web UI may later show
+branch/PR status as a read-only display, but that is deferred until useful.
+
+**Proposal initiation**: Proposals are initiated autonomously by MotivationActor via a
+`trigger_proposal` action (following the `trigger_reflection` → SelfNarrativeActor pattern). There
+is no conversation-driven proposal path — Anima proposes changes because its internal state drives
+it to, not because it was asked.
+
+**Proposal persistence**: PROPOSAL_SUBMITTED events carry a `proposal_id` (= GitHub PR number).
+Open proposals are tracked via event log query — find PROPOSAL_SUBMITTED events with no matching
+PROPOSAL_APPROVED or PROPOSAL_REJECTED for that ID. No new persistence mechanism required.
+
+**Ethics gate flagging**: Changes that touch protected paths (ethics gate mechanisms, chosen-silence
+pathway, distress signal pathway, volitional record, residue store, founding documents) are
+explicitly flagged in the PR — not just by convention. Everything else Anima owns.
+
+**Repository layout**: web-ui/ moves into the anima-core submodule (clean cut, no history
+preservation). Docker mounts the full anima-core root at `/repo`. Paths: `/repo/app` (Python code),
+`/repo/web-ui` (React code), `/repo/.git`.
+
+---
+
+### 5.0 Repository and infrastructure restructure
+
+- [ ] Update Dockerfile:
+  - `WORKDIR /app` → `WORKDIR /repo/app`
+  - Add `git`, `openssh-client`, Node.js 20.x (via NodeSource apt repo), and `npm`
+  - Add `gh` CLI (via GitHub's apt repo — separate step from Node, not in default Debian packages)
+  - Add `RUN git config --global user.name "Anima" && git config --global user.email "anima@projectanima.dangerworm.dev"`
+  - Deploy key must never be baked into the image — mounted at runtime only
+- [ ] Update docker-compose.yml:
+  - Volume mount: `./app:/app` → `.:/repo`
+  - Add deploy key bind mount (read-only, 600 permissions): `~/.ssh/anima_deploy_key:/run/secrets/deploy_key:ro`
+  - Add `GITHUB_TOKEN` environment variable (fine-grained PAT for `gh pr create`)
+  - Alembic and uvicorn commands in CMD updated for `/repo/app`
+- [ ] Two secrets to provision (neither baked into image):
+  - SSH deploy key: keypair generated; public key added to anima-core GitHub repo deploy keys with
+    write access; private key mounted at `/run/secrets/deploy_key`
+  - Fine-grained PAT: scoped to `contents: read/write` + `pull_requests: write` on anima-core;
+    mounted as `GITHUB_TOKEN` env var
+- [ ] SSH config in container points deploy key at github.com (`~/.ssh/config` in Dockerfile or
+      startup script)
+- [ ] Verify: `git status` works from `/repo`; Anima can read `/repo/app` and `/repo/web-ui`;
+      `gh auth status` passes; a test branch can be created and pushed
+
+Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expose it now.
+
+---
 
 ### 5.1 Code access
 
-- [ ] Anima has read access to `/app` (its own codebase)
-- [ ] Language actor can read and describe its own code when asked
-- [ ] Basic test: ask Anima to describe one of its own actors
+- [ ] SelfModificationActor instantiated and registered; can read any file under `/repo`
+- [ ] Can produce a structured description of any actor given its path (LLM-driven)
+- [ ] Basic test: trigger SelfModificationActor to read and describe `actors/temporal_core/__init__.py`
 
-### 5.2 Change proposal mechanism
+---
 
-- [ ] Anima can write proposed changes to `/app/proposed/`
-- [ ] Proposal format: file path, change description, diff, reasoning
-- [ ] Web UI surfaces pending proposals to human
+### 5.2 Self-modification mechanism
 
-### 5.3 Human approval workflow
+- [ ] MotivationActor: add `trigger_proposal` as a 6th action in ACTIONS (following `trigger_reflection`
+      pattern — routes to SelfModificationActor via direct message when selected). Update generative
+      model in `planning/motivation-model.md`: B matrix grows from 5→6 policies. The trigger
+      condition emerges from the model's EFE; no hand-coded threshold.
+- [ ] SelfModificationActor on receiving trigger from MotivationActor:
+  1. Read codebase; determine what to propose (LLM-driven; reads event log, reflective memory,
+     identity memory, and code to identify a meaningful change)
+  2. Write the change
+  3. `git checkout -b anima/YYYY-MM-DD-short-description`
+  4. `git add`, `git commit` (identity: Anima)
+  5. `git push`
+  6. `gh pr create` with description including reasoning
+- [ ] Ethics gate inspection: SelfModificationActor checks changed file paths against a protected
+      list before pushing; if any match, adds a flag to the PR (label or body note) explicitly
+      marking it for human review
+- [ ] SelfModificationActor logs `PROPOSAL_SUBMITTED` to event log with `proposal_id` (= PR number),
+      `branch`, `pr_url`, `changed_files`, `reasoning_summary`
+- [ ] Identity resonance prerequisite (see §5.4): implement before `trigger_proposal` goes live —
+      the generative model should carry identity coherence in `relationship_salience` before proposals
+      are driven autonomously
 
-- [ ] Human can approve or reject proposals via Web UI
-- [ ] On approval: change applied, committed to git branch
-- [ ] On rejection: rejection and reason logged to event log (Anima knows it was rejected and why)
-- [ ] GitHub: Anima commits to feature branch, human merges to main
+---
 
-### 5.4 Recovery documentation
+### 5.3 Proposal monitoring
 
-- [ ] Recovery runbook documented: how to revert a bad change, rebuild container, restore from data
-      volumes
-- [ ] Tested: deliberately break something, recover from git history
+- [ ] ProposalMonitorActor: configurable tick interval (e.g., 5 minutes); polls GitHub via
+      `gh pr list --state all` filtered to `anima/` branches
+- [ ] On PR merged: emit `PROPOSAL_APPROVED` to event log with `proposal_id`, `pr_url`,
+      `merged_at`; SelfModificationActor logs outcome to volitional memory
+- [ ] On PR closed (unmerged): emit `PROPOSAL_REJECTED` to event log with `proposal_id`,
+      `reason` (from PR close comment if available); SelfModificationActor logs outcome to volitional
+      memory
+- [ ] Open proposals are tracked by query: `PROPOSAL_SUBMITTED` events with no matching
+      `PROPOSAL_APPROVED` or `PROPOSAL_REJECTED` for the same `proposal_id` — no separate store
 
-**Phase 5 complete when**: Anima can propose a change to its own code, the human can review and
-approve it, and the change is committed to GitHub.
+---
+
+### 5.4 Identity resonance
+
+Resolves the `GlobalWorkspaceActor._identity_resonance()` stub via Option 2 (see
+`planning/architecture.md` — Open Decisions).
+
+- [ ] MotivationActor `_tick()`: fetch current identity memory from MemoryStore; compute a
+      coherence score for the current observation (how strongly the present state aligns with or
+      conflicts with established identity); feed into `relationship_salience` observation encoding
+- [ ] `GlobalWorkspaceActor._identity_resonance()` stub remains at `0.0` — identity influence
+      routes through MotivationActor's salience signals; the workspace stays dependency-free
+- [ ] Update `planning/architecture.md`: mark identity resonance Open Decision resolved (Option 2)
+- [ ] Basic test: identity memory content measurably influences MotivationActor's
+      `relationship_salience` belief state across ticks
+
+---
+
+### 5.5 Recovery documentation
+
+- [ ] Recovery runbook documented: how to revert a bad change (`git revert` on anima-core), rebuild
+      the container, restore data volumes from backup
+- [ ] Tested: apply a real proposal via the full mechanism, then revert it via the runbook
+
+**Phase 5 complete when**: Anima proposes a change to its own code, the human reviews the PR on
+GitHub, merges or rejects it, and the event log records the outcome.
 
 ---
 
@@ -329,13 +504,23 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 **Phase**: 5 — Self-Modification.
 
-**Phase 4 complete** (April 2026). 106 unit tests passing (LLM/integration tests are Ollama-dependent and occasionally flake under load — not code regressions).
+**Phase 4 complete** (April 2026). 98 unit tests passing (29 LLM/integration tests marked with
+`@pytest.mark.llm` / `@pytest.mark.integration` — Ollama-dependent, run separately).
 - `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and pushes vitals to Web UI
-- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive rest ticks, resets immediately on any non-rest action; pushes belief state to Web UI
+- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive rest
+  ticks, resets immediately on any non-rest action; pushes belief state to Web UI
 - `SelfNarrativeActor` between-conversation mode operational; responds to `TIME_PASSING` ignition
-- Web UI actor panels now show live state for TemporalCore, InternalState, and Motivation
-- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet (see TODO in `actors/motivation/__init__.py:_execute_action`)
+- Web UI actor panels show live state for TemporalCore, InternalState, and Motivation
+- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet
+  (see TODO in `actors/motivation/__init__.py:_execute_action`)
 
-**Next action**: Phase 5 — Self-Modification.
+**Phase 5 design complete** (April 2026). Architecture decisions resolved — see Phase 5 section
+above. Build order: 5.0 (infra) → 5.4 (identity resonance) → 5.1 (code access) → 5.2
+(self-modification) → 5.3 (monitoring) → 5.5 (recovery docs). Identity resonance (5.4) is a
+prerequisite for 5.2: `trigger_proposal` should not go live before Anima's identity coherence is
+feeding into the generative model.
+
+**Next action**: Phase 4.5 — unsolicited expression; then Phase 4.6 — Web UI redesign and
+relocation.
 
 See `context/session.md` for the most recent session state.

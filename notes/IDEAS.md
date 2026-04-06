@@ -115,8 +115,37 @@ This file is for snippets of conversation that we think are important to remembe
     No action needed before Phase 4. The distinction will be cleaner to implement once volitional
     memory exists (Phase 3.5) and the Motivation Actor is being designed (Phase 4.2).
 
-    _Status: Partially resolved (Phase 4.4). The chosen silence mechanism uses a `_consecutive_rests`
-    counter in MotivationActor — rest must be held for two unbroken ticks before chosen silence
-    activates, and resets immediately on any non-rest action. This captures the "persistent vs
-    discrete" intuition for the rest action. Full consumable/persistent signal distinction in the
-    workspace queue is still deferred._
+15. **Parallel thoughts during conversation and internal monologue** Drew noted (April 2026) that
+    he sometimes has parallel thoughts during conversation that influence what he says without being
+    stated directly. The question: should Anima's unsolicited-expression impulses that arise during
+    an active conversation be suppressed, injected into working memory, or handled some other way?
+
+    The dangerous path is direct injection of all internal impulses into LanguageActor's context as
+    definitive additions to working memory — this produces something like intrusive-thought dynamics
+    rather than healthy parallel cognition. Every internal eruption becomes loud and present.
+
+    The chosen path for Phase 4.5: suppress surface_* firing during active conversation, let salience
+    pressure accumulate in the workspace, fire after the conversation ends. Held thoughts emerge at
+    the natural boundary rather than mid-conversation. Psychologically honest — this is what happens
+    when something you were thinking about resurfaces once a conversation's pressure is off.
+
+    The richer path (deferred): log in-conversation impulses as a new event type (INTERNAL_MONOLOGUE
+    or similar), include recent ones in LanguageActor's context prompt as "thoughts that arose but
+    weren't expressed." The LLM exercises discretion about whether to surface them. This is closer
+    to how working memory interfaces with speech in parallel-processing cognition — the thought is
+    available, not compelled. Build this when the simpler version proves insufficient.
+
+    Memory home for expressed unsolicited thoughts: the event log (ANIMA_RESPONSE), synthesised into
+    reflective memory via SelfNarrative's between-conversation reflection, influencing future context
+    through normal injection. No new memory layer needed. Volitional memory is the wrong fit —
+    unsolicited thoughts are eruptions from motivation, not choices with reason and expected outcome.
+
+    _Status: Phase 4.5 implements the simpler version. INTERNAL_MONOLOGUE path is open._
+
+    _Status: Further resolved (Phase 5.2 design, April 2026). PROPOSAL_SUBMITTED signals carry a
+    `proposal_id`; open proposals are tracked via event log query (PROPOSAL_SUBMITTED events with no
+    matching PROPOSAL_APPROVED/REJECTED for the same ID). This satisfies the persistent-signal
+    requirement for proposals without a new workspace mechanism — the event log is the state store.
+    The general consumable/persistent distinction in the workspace queue remains deferred; no
+    concrete use case has forced it beyond the proposal lifecycle and the `_consecutive_rests`
+    pattern. If a new actor needs genuinely persistent workspace pressure, revisit then._

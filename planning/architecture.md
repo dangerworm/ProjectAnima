@@ -380,25 +380,16 @@ resolution. Do not resolve them unilaterally.
 
 ### Identity resonance in the Global Workspace
 
-`GlobalWorkspaceActor._identity_resonance()` currently returns 0.0. It is a stub. The intent:
-salience weighting should account for how strongly a signal resonates with or conflicts with
-Anima's developing identity.
+**Resolved April 2026 — Option 2. Implemented in Phase 5.4.**
 
-Phase 3 established `MemoryStore` and identity retrieval in the LanguageActor. GlobalWorkspaceActor
-was not given access to it. Two options for Phase 5:
+`GlobalWorkspaceActor._identity_resonance()` returns 0.0 and will remain a stub. Identity
+influence routes through MotivationActor instead: `MotivationActor._tick()` fetches current
+identity memory from MemoryStore and computes a coherence score for the current observation, feeding
+it into the `relationship_salience` observation encoding. The workspace stays dependency-free.
 
-1. **Inject MemoryStore into GlobalWorkspaceActor** — the workspace queries identity on each
-   incoming signal to compute resonance. Clean, direct. Cost: GlobalWorkspaceActor gains a database
-   dependency; resonance check adds latency to every signal.
-
-2. **Surface identity bias via MotivationActor** — MotivationActor's generative model already
-   encodes relationship salience and engagement. Signals from MotivationActor (particularly
-   `trigger_reflection`) carry implicit identity weighting. The workspace doesn't need direct
-   identity access if the motivational system shapes which signals the workspace receives.
-
-Option 2 is architecturally cleaner and avoids a database call on every signal. Option 1 is more
-direct and easier to observe. The decision belongs to whoever implements the first phase where the
-stub's absence becomes concretely harmful.
+Rationale: Option 2 avoids a database call on every salience signal and preserves the workspace's
+role as a routing layer rather than a reasoning layer. MotivationActor already has MemoryStore
+access and runs its own tick loop — identity coherence is a natural input to its generative model.
 
 ### Mutable dict in IgnitionBroadcast
 

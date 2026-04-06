@@ -82,6 +82,7 @@ Events produced by the motivation and internal state systems.
 | `MOTIVATION_SIGNAL`     | Motivation Actor     | A motivation signal has been produced (novelty, accumulated pressure, or resolution). Payload includes signal type and magnitude.  |
 | `DISTRESS_SIGNAL`       | Internal State Actor | A signal suggesting a distress-like state has been detected. Payload includes the triggering conditions. Requires human attention. |
 | `INTERNAL_STATE_REPORT` | Internal State Actor | A periodic snapshot of system health metrics (event log depth, consolidation lag, salience queue pressure).                        |
+| `SURFACE_EXPRESSION`    | Motivation Actor     | MotivationActor has selected a surface_* action; signals LanguageActor to generate an unsolicited expression. Payload: `{"level": "low"\|"medium"\|"high"}`. Suppressed during active conversation — salience pressure accumulates and fires after ConversationEnded. |
 
 ---
 
@@ -89,11 +90,29 @@ Events produced by the motivation and internal state systems.
 
 Events produced by the self-modification workflow.
 
-| Event type           | Source actor   | Description                                                                                  |
-| -------------------- | -------------- | -------------------------------------------------------------------------------------------- |
-| `PROPOSAL_SUBMITTED` | Language Actor | Anima has submitted a code change proposal. Payload references the file in `/app/proposed/`. |
-| `PROPOSAL_APPROVED`  | System         | A proposal has been approved by the human and applied.                                       |
-| `PROPOSAL_REJECTED`  | System         | A proposal has been rejected. Payload includes the reason.                                   |
+| Event type           | Source actor              | Description                                                                                                                        |
+| -------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `PROPOSAL_SUBMITTED` | SelfModificationActor     | Anima has opened a GitHub PR with a code change. Payload: see schema below.                                                        |
+| `PROPOSAL_APPROVED`  | ProposalMonitorActor      | A proposal PR was merged by the human. Payload: `proposal_id`, `pr_url`, `merged_at`.                                             |
+| `PROPOSAL_REJECTED`  | ProposalMonitorActor      | A proposal PR was closed without merging. Payload: `proposal_id`, `pr_url`, `reason` (close comment if available, else empty str). |
+
+### PROPOSAL_SUBMITTED payload schema
+
+```json
+{
+  "proposal_id": "<GitHub PR number, integer>",
+  "branch": "anima/YYYY-MM-DD-short-description",
+  "pr_url": "https://github.com/owner/anima-core/pull/N",
+  "changed_files": ["relative/path/to/file.py"],
+  "reasoning_summary": "<one or two sentences on why this change was proposed>",
+  "ethics_flagged": false
+}
+```
+
+`ethics_flagged` is `true` if any changed file matches the protected paths list; the PR will also
+carry an explicit flag in its body/labels. `proposal_id` is the key used by ProposalMonitorActor
+to match PROPOSAL_APPROVED or PROPOSAL_REJECTED events. Open proposals: query PROPOSAL_SUBMITTED
+events with no matching terminal event for the same `proposal_id`.
 
 ---
 

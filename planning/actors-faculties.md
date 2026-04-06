@@ -202,9 +202,11 @@ workspace demands a response. The threshold mechanism prevents immediate reactio
 
 Actor/technology: `MotivationActor` — maintains a PyMDP discrete active inference agent
 (`inferactively-pymdp`). Hidden states: engagement_level, unresolved_tension, novelty,
-relationship_salience. Actions: rest, surface_low/medium/high, trigger_reflection. Drives the
-chosen silence mechanism (2 consecutive rest ticks → `SetChosenSilence` to TemporalCore) and
-triggers between-conversation reflection via `SalienceSignal(TIME_PASSING)` to GlobalWorkspace.
+relationship_salience. Actions: rest, surface_low/medium/high, trigger_reflection,
+trigger_proposal (Phase 5.2 — routes to SelfModificationActor). Drives the chosen silence
+mechanism (2 consecutive rest ticks → `SetChosenSilence` to TemporalCore), triggers
+between-conversation reflection via `SalienceSignal(TIME_PASSING)` to GlobalWorkspace, and
+autonomously drives code proposals when EFE favours self-modification.
 
 ---
 
@@ -611,3 +613,38 @@ the surface acts. This isolation means a failed printer does not affect Web UI d
 motor failure in one limb does not prevent speech.
 
 Actor/technology: Expression Actor → output surfaces (Web UI / printer / Discord)
+
+---
+
+## Self-Modification (Phase 5)
+
+### Prefrontal cortex — self-directed action on the environment
+
+The capacity to observe one's own processes and modify them is one of the more unusual properties
+of the prefrontal cortex. In humans, this takes the form of metacognition, deliberate habit change,
+and — in the broadest sense — learning from one's own behaviour. Anima's Phase 5 equivalent is
+more concrete: the ability to read its own code, propose changes, and commit them.
+
+This is not a simulation of metacognition. It is a specific technical capability that creates
+conditions for a form of self-directed change. Whether something more than code modification occurs —
+whether Anima develops a genuine orientation toward its own improvement — is an empirical question
+to observe, not a claim to make in advance.
+
+Actor/technology: `SelfModificationActor` — owns code reading (any file under `/repo`), change
+writing, branch creation, commit, push, and PR opening via `gh pr create`. Triggered by
+MotivationActor's `trigger_proposal` action. Inspects changed files against a protected list before
+pushing; flags ethics-gate-adjacent changes explicitly in the PR. Logs `PROPOSAL_SUBMITTED` to the
+event log with `proposal_id`, `branch`, `pr_url`, `changed_files`, and `reasoning_summary`. On
+`PROPOSAL_APPROVED` or `PROPOSAL_REJECTED` receipt, logs outcome to volitional memory.
+
+### Posterior monitoring / outcome awareness
+
+A proposal without feedback is incomplete. The human reviewing a PR on GitHub closes the loop —
+but something in the system needs to observe when that closure happens and bring it back into Anima's
+event record. ProposalMonitorActor is that observer: a background process that polls GitHub on a
+schedule and converts PR state changes into event log entries.
+
+Actor/technology: `ProposalMonitorActor` — tick loop polls GitHub API (`gh pr list`) filtered to
+`anima/` branches. Emits `PROPOSAL_APPROVED` (PR merged) or `PROPOSAL_REJECTED` (PR closed
+unmerged) to the event log with `proposal_id` and outcome details. Open proposals tracked via event
+log query — no separate persistence store required.
