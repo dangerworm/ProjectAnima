@@ -5,6 +5,115 @@
 
 ---
 
+## Session: 6th April 2026 — Phase 4.5 + 4.6 complete; frontend redesign with full tooltips
+
+### What happened this session
+
+Two main bodies of work: Phase 4.5 (unsolicited expression) backend + tests, and Phase 4.6 (web-ui
+relocation + backend status pushes + full frontend redesign with animated dedicated panels).
+
+**Phase 4.5 — Unsolicited expression pipeline**
+
+- `app/core/event_types/__init__.py`: added `SURFACE_EXPRESSION`
+- `app/actors/motivation/__init__.py`: `_execute_action()` now handles `surface_low/medium/high` —
+  sends SalienceSignal with SURFACE_EXPRESSION and base_salience 0.4/0.6/0.9 to global_workspace
+- `app/actors/language/__init__.py`:
+  - Module-level `_UNSOLICITED_SYSTEM` and `_LENGTH_GUIDE` constants
+  - `handle()` extended to branch on SURFACE_EXPRESSION ignition type
+  - `_is_conversation_active()`: queries event log for CONVERSATION_START/END to decide suppression
+  - `_express_unprompted()`: loads identity, retrieves memory context, calls LLM without human turn,
+    logs ANIMA_RESPONSE with `in_response_to: SURFACE_EXPRESSION`, sends LanguageOutput to
+    expression; does NOT append to `self._context`
+- 3 motivation tests + 2 language tests added (all passing)
+
+**Phase 4.6 — File relocation**
+
+- web-ui moved from `ProjectAnima/web-ui/` into `anima-core/web-ui/` via git cp + commit
+- Vite proxy still points to localhost:8000 — no config change needed
+- A ghost `web-ui/` directory remained in ProjectAnima (contains only .vite/ cache — gitignored)
+
+**Phase 4.6 — Backend status pushes**
+
+- `GlobalWorkspaceActor._tick_loop()`: pushes `workspace_state` ActorStatusUpdate (queue_depth,
+  ignition_threshold, top 5 signals sorted by salience) to ExpressionActor on every tick
+- `MemoryActor._push_memory_write()`: new helper; called after each significant write —
+  "reflective", "residue", "volitional", "identity" — so frontend can animate the correct sub-layer
+
+**Phase 4.6 — Frontend redesign (10 dedicated animated panels)**
+
+All panels live in `web-ui/src/components/panels/`. Stack: React 19, MUI 7, Framer Motion v11.
+
+| Panel | Actor | Key feature |
+|-------|-------|-------------|
+| TemporalCorePanel | temporal_core | Heartbeat waveform (20-bar rolling SVG) + dormancy chip |
+| GlobalWorkspacePanel | global_workspace | Live signal cards with salience fill bars |
+| PerceptionPanel | perception | Last 3 human messages + dormant modality tabs |
+| MemoryPanel | memory | 5 sub-layers with glow pulses on write |
+| LanguagePanel | language | Typewriter (12ms/char) + idle/reasoning chip |
+| MotivationPanel | motivation | Pressure bar + action chip + dopamine flash overlay |
+| InternalStatePanel | internal_state | Log depth sparkline + consolidation lag + queue pressure |
+| SelfNarrativePanel | self_narrative | Typewriter synthesis + fading ghost of previous |
+| UnsolicitedExpressionsPanel | (AppState) | Between-conversation expressions, newest first |
+| CentreCanvas | global_workspace | Ambient radial glow + ignition burst animation |
+
+Supporting additions:
+- `IgnitionFlash.tsx` (shared): full-screen 350ms opacity overlay on WORKSPACE_IGNITION
+- `useTypewriter.ts` hook: setInterval-based, configurable ms/char speed
+- `index.css`: `#root` → full viewport width; `residue-jitter` CSS keyframe
+- `actorState.ts`: `unsolicitedExpressions[]`, `languageStatus`, heartbeat_history accumulation,
+  depth_history accumulation, SURFACE_EXPRESSION routing in language_output reducer
+- Heartbeat default interval changed from 60s → 5s in `main.py`
+
+**Tooltip pass — every visual element**
+
+Drew asked for tooltips on every visual element so he knows what each icon/visual means. All 10
+panels now have MUI Tooltip coverage — panel-level descriptions, per-element explanations, colour
+coding thresholds explained, dynamic content in tooltip text where relevant.
+
+TypeScript check passes clean (`npx tsc --noEmit`).
+
+### Current system state
+
+- Phase 1: complete
+- Phase 2: complete
+- Phase 3: complete
+- Phase 4: complete
+  - 4.1: InternalStateActor
+  - 4.2: MotivationActor (PyMDP active inference)
+  - 4.3: SelfNarrativeActor between-conversation mode
+  - 4.4: Chosen silence + live actor status on Web UI
+  - 4.5: Unsolicited expression (SURFACE_EXPRESSION → LanguageActor → unprompted panel)
+  - 4.6: web-ui relocated; backend status pushes; full frontend redesign with tooltips
+- Phase 5: design complete (documented in roadmap.md, architecture.md); not yet started
+
+### Blockers
+
+None.
+
+### Notes for next session
+
+- Vite production build is broken (react-dom/client.js rolldown issue with Vite 8). Dev server
+  (`npm run dev`) works fine. Not critical for internal dev tool — fix if production deploy needed.
+- The ghost `web-ui/` directory in ProjectAnima outer repo contains only `.vite/` cache. Git
+  ignores it. Can be deleted if Windows Explorer releases its lock on it.
+- Heartbeat is now 5s. If too chatty, change `tick_interval=5` in `main.py`.
+- `in_response_to` field on LanguageOutput determines routing: SURFACE_EXPRESSION → unprompted
+  panel; anything else → conversation.
+- TypeScript `verbatimModuleSyntax` is active — type-only imports must use `import type`.
+- `@mui/icons-material` resolve fails under current Vite+MUI bundler config. Use Unicode characters
+  or SVG instead.
+
+### Next action
+
+**Phase 5.0** — repository and infrastructure restructure:
+- Update Dockerfile: `./app:/app` mount → `.:/repo` (web-ui now inside anima-core)
+- Provision SSH deploy key + fine-grained PAT as Docker secrets
+- Confirm docker-compose.yml mounts work correctly with new layout
+
+Read `planning/roadmap.md` Phase 5 section before starting.
+
+---
+
 ## Session: 6th April 2026 — Phase 5 design finalised; tech debt fixes
 
 ### What happened this session
