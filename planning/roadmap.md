@@ -197,63 +197,51 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 
 ### 4.1 Internal state monitoring actor
 
-- [ ] `InternalStateActor`: monitors event log depth, consolidation lag, salience queue pressure,
+- [x] `InternalStateActor`: monitors event log depth, consolidation lag, salience queue pressure,
       time since last conversation
-- [ ] Feeds "body state" signals to workspace
-- [ ] Emits INTERNAL_STATE_REPORT to event log on each tick
+- [x] Feeds "body state" signals to workspace via `InternalStateObservation` messages
+- [x] Emits `INTERNAL_STATE_REPORT` to event log on each tick
+- [x] Emits `DISTRESS_SIGNAL` + `SalienceSignal` when consolidation lag or queue pressure exceeds
+      configurable thresholds
+- [x] All guards in place: no crash if workspace or motivation not registered
+- [x] Tests: 6 passing
 
 ### 4.2 Motivation actor
 
 > _(Option A — active inference with PyMDP. Option B is discarded.)_
 
-**Before writing any code**, design and document the full generative model in a brief design note.
-The model must be small and focused — performance scales with state space size.
-
-Proposed model (confirm with Drew before building):
-
-- **Hidden states** (factorised): `engagement_level` {dormant, low, moderate, high},
-  `unresolved_tension` {none, low, moderate, high}, `novelty` {absent, present},
-  `relationship_salience` {background, foreground}
-- **Observations**: unresolved residue count (bucketed, from MemoryStore), time-since-conversation
-  (bucketed, from InternalStateActor), recent ignition presence (from GlobalWorkspace)
-- **Actions**: `rest`, `surface_low`, `surface_medium`, `surface_high`, `trigger_reflection`
-- **Preferences** (C matrix): encodes the initial orientations from `foundation/identity-initial.md`
-  as prior beliefs — not high unresolved tension with dormancy; moderate-to-high engagement when
-  novelty or relationship is salient. This is a prior, not a rule; it can be updated as Anima develops.
-- **Parameter learning**: A and B matrices start as structured priors. Slow learning (across
-  conversations) updates B from observed outcomes. Learning rate kept low — identity-level
-  preferences should be stable.
-
-Implementation tasks:
-- [ ] Add `pymdp` to `requirements.txt` and verify it installs in Docker
-- [ ] Design and commit the full A, B, C, D matrices as a documented artefact before coding
-- [ ] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update +
+- [x] Full generative model designed and committed: `planning/motivation-model.md`
+- [x] C matrix update pathway documented as ethical commitment in `foundation/ethics.md`
+      (A/B matrices update automatically; C changes only through SelfNarrativeActor/MemoryActor
+      — Anima's values don't drift silently)
+- [x] `inferactively-pymdp==0.0.7.1` added to `requirements.txt`; confirmed installs in Docker
+      (note: this is NOT the `pymdp` package on PyPI, which is a different unrelated library)
+- [x] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update +
       policy selection; receives observation signals via messages
-- [ ] Observation encoding: translate incoming messages into PyMDP observation format
-- [ ] Action decoding: translate PyMDP action selection into `SalienceSignal` or `TriggerReflection`
-- [ ] Startup belief reconstruction from stored state: query `MemoryStore` for unresolved residue
-      count and recent volitional items; initialise beliefs from that posterior rather than the
-      uniform prior
-- [ ] **Mandatory logging**: emit `MOTIVATION_SIGNAL` to event log on every tick containing full
-      belief state and EFE values — this is the instrument panel, not optional telemetry
-- [ ] Basic test: verify beliefs converge toward `surface_high` when residue is high and
-      conversation is long-past; verify belief updates are numerically stable over many ticks
+- [x] Hidden state factors: `engagement_level` [4], `unresolved_tension` [4], `novelty` [2],
+      `relationship_salience` [2]. Only tension (factor 1) is controllable — 5 clean policies,
+      no combinatorial explosion.
+- [x] Observation encoding: residue_obs (bucketed), time_obs (bucketed), ignition_obs (bool)
+- [x] Action decoding: `trigger_reflection` → `SalienceSignal(TIME_PASSING)` to workspace;
+      `surface_*` deferred (TODO comment); `rest` → nothing beyond telemetry
+- [x] Warm start: queries MemoryStore residue count + last CONVERSATION_END timestamp; shapes D
+      prior accordingly. Cold start on DB unavailable.
+- [x] `qs` seeded from D prior after agent construction (PyMDP initialises qs uniformly, not from D)
+- [x] **Mandatory MOTIVATION_SIGNAL** on every tick: beliefs, EFE, selected_action, observations
+- [x] Tests: 7 passing
 
 ### 4.3 Between-conversation process
 
-Between-conversation activity is not a separate triggered process in Option A. It emerges from the
-MotivationActor's generative model running inference without external observations.
-
-- [ ] MotivationActor tick loop continues during dormancy — it does not stop when a conversation
-      ends; without new observations, belief updates drift toward prior preferences, naturally
-      surfacing long-accumulated tension as EFE rises for high-salience actions
-- [ ] `SelfNarrativeActor` between-conversation mode: triggered by MotivationActor emitting a
-      `TriggerReflection` action — **not** by a hardcoded dormancy threshold
-- [ ] Fill in the `SelfNarrativeActor` between-conversation stub (currently a pass in the
-      `TIME_PASSING` ignition handler): reads identity memory + recent event log, runs a
-      low-frequency LLM call, sends synthesis to MemoryActor
-- [ ] Basic test: leave system idle, verify MotivationActor eventually emits `surface_high` or
-      `trigger_reflection`; verify SelfNarrativeActor responds and a memory write occurs
+- [x] MotivationActor tick loop continues during dormancy — belief updates continue without
+      external observations; accumulated tension raises EFE for `trigger_reflection`
+- [x] `SelfNarrativeActor` between-conversation mode: `TIME_PASSING` ignition →
+      `_run_between_conversation_reflection()`
+- [x] Queries event log for events since last `CONVERSATION_END` (or last 24h); returns early
+      if no meaningful events found
+- [x] LLM call with lightweight between-conversation prompt; sends `StoreReflection` and
+      optionally `UpdateIdentity` to MemoryActor
+- [x] `memory_store` parameter added to `SelfNarrativeActor`; passed from `main.py`
+- [x] Tests: 3 new Phase 4.3 tests (9 total for self_narrative)
 
 ### 4.4 Chosen silence mechanism
 
@@ -338,12 +326,16 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 4.1 — Internal State Actor.
+**Phase**: 4.4 — Chosen silence + Web UI state display.
 
-**Next action**: Build `InternalStateActor`: monitors event log depth, consolidation lag, salience
-queue pressure, and time since last conversation. Feeds "body state" signals to workspace. Emits
-`INTERNAL_STATE_REPORT` to event log on each tick. Phase 4.2 decision resolved (Option A — active
-inference with PyMDP). Phase 4.1 can be built and tested independently before MotivationActor work
-begins.
+**Phases 4.1, 4.2, and 4.3 complete** (April 2026). 120 tests passing.
+- `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and `DISTRESS_SIGNAL`
+- `MotivationActor` running PyMDP active inference; `MOTIVATION_SIGNAL` on every tick
+- `SelfNarrativeActor` between-conversation mode operational; responds to `TIME_PASSING` ignition
+
+**Next action**: Phase 4.4 — chosen silence mechanism and Web UI state display. Deferred from this
+session. Also deferred: `surface_*` action routing from MotivationActor to LanguageActor (requires
+a new LanguageActor mode for unsolicited expression — see TODO comment in
+`actors/motivation/__init__.py:_execute_action`).
 
 See `context/session.md` for the most recent session state.
