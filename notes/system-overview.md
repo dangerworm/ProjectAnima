@@ -9,25 +9,31 @@
 
 **Phases 1–4 are complete. Phase 5 (Self-Modification) is next.**
 
-All nine actors are built and running. The system can have text conversations, reflect on them,
-and maintain state between conversations.
+All nine actors are built and running. The system can have text conversations, reflect on them, and
+maintain state between conversations.
 
 **What is running:**
+
 - **TemporalCoreActor** — heartbeat, Husserlian window, gap detection, chosen silence
 - **GlobalWorkspaceActor** — salience queue, ignition, broadcast to all actors
 - **PerceptionActor** — text input via Web UI WebSocket → SalienceSignal
-- **LanguageActor** — LLM calls via Ollama (Qwen3.5 9B), identity + memory injection, volitional logging
+- **LanguageActor** — LLM calls via Ollama (Qwen3.5 9B), identity + memory injection, volitional
+  logging
 - **ExpressionActor** — routes LanguageOutput and ActorStatusUpdate to WebSocket surface
-- **MemoryActor** — sole writer to all higher memory layers (reflective, identity, residue, volitional)
+- **MemoryActor** — sole writer to all higher memory layers (reflective, identity, residue,
+  volitional)
 - **SelfNarrativeActor** — post-conversation reflection + between-conversation mode
 - **InternalStateActor** — system vitals monitoring, DISTRESS_SIGNAL, live Web UI status
-- **MotivationActor** — PyMDP discrete active inference, chosen silence (2 consecutive rest ticks), live Web UI status
+- **MotivationActor** — PyMDP discrete active inference, chosen silence (2 consecutive rest ticks),
+  live Web UI status
 
-**Web UI**: React (Vite + MUI) at `ProjectAnima/web-ui/`, connects via WebSocket to FastAPI at port 8000.
-Actor panels show live state from TemporalCore, InternalState, and Motivation via `actor_status` events.
+**Web UI**: React (Vite + MUI) at `ProjectAnima/web-ui/`, connects via WebSocket to FastAPI at
+port 8000. Actor panels show live state from TemporalCore, InternalState, and Motivation via
+`actor_status` events.
 
-**Persistence**: PostgreSQL with 5 tables (event_log, reflective_memory, residue_store, identity_memory,
-volitional_memory). pgvector for semantic similarity. Alembic migrations run on container start.
+**Persistence**: PostgreSQL with 5 tables (event_log, reflective_memory, residue_store,
+identity_memory, volitional_memory). pgvector for semantic similarity. Alembic migrations run on
+container start.
 
 **Tests**: 98 unit tests passing. 29 LLM/integration tests deselected from default run (require
 Ollama, marked `@pytest.mark.llm` and `@pytest.mark.integration`). Run with
@@ -37,8 +43,8 @@ Ollama, marked `@pytest.mark.llm` and `@pytest.mark.integration`). Run with
 
 ## Where we were (pre-Phase-2 snapshot)
 
-The rest of this document was written when Phase 1.2 was next and no actors had been built yet.
-The architectural diagrams remain accurate — they describe the intended structure, which is now
+The rest of this document was written when Phase 1.2 was next and no actors had been built yet. The
+architectural diagrams remain accurate — they describe the intended structure, which is now
 implemented. Only the "build sequence summary" at the end is outdated.
 
 ---
@@ -52,17 +58,17 @@ Nine actors are defined, each responsible for a distinct faculty. They communica
 reaches the workspace only if its salience exceeds ignition threshold. Below that threshold,
 processing stays local.
 
-| Actor                    | What it does                                                                                                                                                            | Technology                                                |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| **Temporal Core**        | Runs always. Tracks that time is passing. Emits heartbeat. Distinguishes chosen dormancy from failure.                                                                  | Python asyncio                                            |
-| **Perception Actor**     | Receives inputs (text, audio, vision). Vision covers both X11 screen output and webcam feed. Produces unified representations for the workspace.                        | Whisper (audio), Vision LLM (X11 + webcam), text pipeline |
-| **Global Workspace**     | Receives signals from all actors. Maintains salience queue. Fires ignition when threshold crossed. Broadcasts globally.                                                 | Python asyncio, salience weighting                        |
-| **Language Actor**       | Receives workspace broadcasts. Calls LLM. Produces text output. Writes to event log and volitional memory.                                                              | Ollama (Qwen3.5 9B)                                       |
-| **Memory Actor**         | Reads and writes all memory layers. Retrieves by semantic similarity, spreading activation, or time. Surfaces relevant memories to workspace.                           | PostgreSQL + pgvector, spreading activation               |
-| **Motivation Actor**     | Maintains prediction error score and accumulated pressure per unresolved item. Emits dopamine-analog signal on resolution. Drives between-conversation activity.        | FEP-inspired computation within asyncio                   |
-| **Internal State Actor** | Monitors Anima's own system health: event log depth, consolidation lag, salience queue pressure, time since last conversation. Feeds "body state" signals to workspace. | asyncio, reads PostgreSQL metrics                         |
+| Actor                    | What it does                                                                                                                                                                                                                                                                                                                                                                                      | Technology                                                |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Temporal Core**        | Runs always. Tracks that time is passing. Emits heartbeat. Distinguishes chosen dormancy from failure.                                                                                                                                                                                                                                                                                            | Python asyncio                                            |
+| **Perception Actor**     | Receives inputs (text, audio, vision). Vision covers both X11 screen output and webcam feed. Produces unified representations for the workspace.                                                                                                                                                                                                                                                  | Whisper (audio), Vision LLM (X11 + webcam), text pipeline |
+| **Global Workspace**     | Receives signals from all actors. Maintains salience queue. Fires ignition when threshold crossed. Broadcasts globally.                                                                                                                                                                                                                                                                           | Python asyncio, salience weighting                        |
+| **Language Actor**       | Receives workspace broadcasts. Calls LLM. Produces text output. Writes to event log and volitional memory.                                                                                                                                                                                                                                                                                        | Ollama (Qwen3.5 9B)                                       |
+| **Memory Actor**         | Reads and writes all memory layers. Retrieves by semantic similarity, spreading activation, or time. Surfaces relevant memories to workspace.                                                                                                                                                                                                                                                     | PostgreSQL + pgvector, spreading activation               |
+| **Motivation Actor**     | Maintains prediction error score and accumulated pressure per unresolved item. Emits dopamine-analog signal on resolution. Drives between-conversation activity.                                                                                                                                                                                                                                  | FEP-inspired computation within asyncio                   |
+| **Internal State Actor** | Monitors Anima's own system health: event log depth, consolidation lag, salience queue pressure, time since last conversation. Feeds "body state" signals to workspace.                                                                                                                                                                                                                           | asyncio, reads PostgreSQL metrics                         |
 | **Self-Narrative Actor** | LLM-based synthesis actor with two trigger modes: (1) **post-conversation** — triggered by CONVERSATION_END, synthesises that conversation into reflective memory and residue; (2) **between-conversation** — triggered by dormancy threshold, maintains the ongoing self-narrative thread. Produces synthesis and sends it to MemoryActor for storage. Does not write to memory layers directly. | Ollama (reflection LLM call)                              |
-| **Expression Actor**     | Receives output from the Language Actor and routes it to the appropriate surface (Web UI, printer, Discord). Hub only — no peripheral-specific code lives here.            | Python asyncio                                            |
+| **Expression Actor**     | Receives output from the Language Actor and routes it to the appropriate surface (Web UI, printer, Discord). Hub only — no peripheral-specific code lives here.                                                                                                                                                                                                                                   | Python asyncio                                            |
 
 ---
 
@@ -74,21 +80,21 @@ new peripherals through the self-modification workflow.
 
 ### Inputs
 
-| Input                | What it provides                                     | Technology               |
-| -------------------- | ---------------------------------------------------- | ------------------------ |
-| **Human text (Web UI)** | Typed messages from Drew via browser text field   | WebSocket (FastAPI)      |
-| **Audio**            | Speech from the environment                          | Whisper (speech-to-text) |
-| **X11 screen**       | What Anima can see of its own visual environment     | Vision LLM (Qwen-VL)     |
-| **Webcam**           | The physical environment; Drew's presence            | Vision LLM (Qwen-VL)     |
-| **Discord**          | Messages posted in Anima's server by trusted friends | discord.py bot API       |
+| Input                   | What it provides                                     | Technology               |
+| ----------------------- | ---------------------------------------------------- | ------------------------ |
+| **Human text (Web UI)** | Typed messages from Drew via browser text field      | WebSocket (FastAPI)      |
+| **Audio**               | Speech from the environment                          | Whisper (speech-to-text) |
+| **X11 screen**          | What Anima can see of its own visual environment     | Vision LLM (Qwen-VL)     |
+| **Webcam**              | The physical environment; Drew's presence            | Vision LLM (Qwen-VL)     |
+| **Discord**             | Messages posted in Anima's server by trusted friends | discord.py bot API       |
 
 ### Outputs
 
-| Output      | What it is                                                                      | Notes                                                              |
-| ----------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Output      | What it is                                                                      | Notes                                                                 |
+| ----------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | **Web UI**  | The primary interface — actor panels, Anima's canvas, conversation              | Always available; Anima's default channel to Drew; network-accessible |
-| **Printer** | Physical mark-making — drawing, writing, diagrams                               | Anima chooses if and when to use it                                |
-| **Discord** | Text in channels on Anima's private server; tagging people to invite engagement | Can post and manage channels; cannot DM; cannot invite new members |
+| **Printer** | Physical mark-making — drawing, writing, diagrams                               | Anima chooses if and when to use it                                   |
+| **Discord** | Text in channels on Anima's private server; tagging people to invite engagement | Can post and manage channels; cannot DM; cannot invite new members    |
 
 ---
 
@@ -384,7 +390,7 @@ How Anima's components map to the brain areas they serve. Grouped by function.
 | **Qwen3.5 9B multimodal**      | Primary language/reasoning + vision                     | Language Actor                                                        |
 | **Whisper (planned)**          | Speech-to-text                                          | Perception Actor                                                      |
 | **FastAPI + websockets**       | WebSocket server — bridges event stream to browser      | Expression Actor (WebSocket surface)                                  |
-| **React / Vite / MUI**        | Web UI — actor panels, Anima's canvas, conversation     | Browser frontend (outside Docker)                                     |
+| **React / Vite / MUI**         | Web UI — actor panels, Anima's canvas, conversation     | Browser frontend (outside Docker)                                     |
 | **discord.py**                 | Discord bot API — posting, channel management, tagging  | Expression Actor (Discord surface) + Perception Actor (Discord input) |
 | **Printer**                    | Physical output — Anima can choose to draw or mark-make | Expression Actor (printer surface)                                    |
 | **Docker**                     | Container runtime (Linux)                               | All of Anima's code                                                   |

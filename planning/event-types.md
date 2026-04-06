@@ -63,7 +63,7 @@ Events produced by the memory and reflection systems.
 
 | Event type             | Source actor         | Description                                                                                        |
 | ---------------------- | -------------------- | -------------------------------------------------------------------------------------------------- |
-| `MEMORY_SURFACE`       | Memory Actor         | A memory has been surfaced to the workspace. Payload includes memory type and content summary.     |
+| `MEMORY_SURFACE`       | Memory Actor         | A memory has been surfaced to the workspace. Payload includes memory type and content summary. **Not yet emitted** — Phase 3 memory retrieval happens via LanguageActor context injection, not as a workspace event. Retain the type for a future path where surfaced memories explicitly enter the workspace ignition cycle. |
 | `CONSOLIDATION_START`  | Memory Actor         | The post-conversation consolidation pipeline has begun.                                            |
 | `CONSOLIDATION_END`    | Memory Actor         | The consolidation pipeline has completed.                                                          |
 | `REFLECTION_SYNTHESIS` | Self-Narrative Actor | A reflection synthesis has been produced. Payload references the reflective memory entry.          |
