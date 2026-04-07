@@ -112,7 +112,8 @@ time passing.
       `HUMAN_MESSAGE` to event log, emits `SalienceSignal(event_type=HUMAN_MESSAGE)` to workspace
 - [x] Full system orchestration in `main.py`: all actors instantiated, registered, and run
       concurrently; `ConversationStarted` sent by PerceptionActor on first input
-- [x] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web UI
+- [x] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web
+      UI
 - [x] Conversation is logged to event log in full
 - [x] Basic test: have a short conversation, verify full event log record
 
@@ -137,8 +138,8 @@ time passing.
 - [x] Retrieval: semantic similarity (pgvector), spreading activation, time-based
 - [x] Surfaces relevant memories to workspace on request
 - [x] Basic test: store 10 reflective memories, retrieve by semantic similarity
-- [x] Populate `TemporalCoreActor` retention window from event log on each tick
-      _(Gap B from IDEAS.md — fixed: `_refresh_retention()` queries event log on each tick)_
+- [x] Populate `TemporalCoreActor` retention window from event log on each tick _(Gap B from
+      IDEAS.md — fixed: `_refresh_retention()` queries event log on each tick)_
 
 ### 3.3 Post-conversation reflection pipeline
 
@@ -150,8 +151,8 @@ end and produces synthesis (what resolved or shifted) and residue (what didn't).
 - [x] LLM call: given event log for the conversation, produce synthesis + residue
 - [x] Send synthesis and residue to `MemoryActor` — not written to storage directly
 - [x] `MemoryActor` writes synthesis → reflective memory; residue → residue store
-- [ ] Anomaly detection: flag if synthesis appears to have consumed something unresolved
-      _(deferred — structural protection in place; semantic check is Phase 4+ territory)_
+- [ ] Anomaly detection: flag if synthesis appears to have consumed something unresolved _(deferred
+      — structural protection in place; semantic check is Phase 4+ territory)_
 - [x] Basic test: have a conversation, run pipeline, verify both outputs exist and residue is
       protected
 
@@ -188,8 +189,8 @@ rather than hand-coded rules. The conditional logic approach (Option B) is disca
 
 Rationale: the actor framework is clean and well-tested. PyMDP's computational cost on a small,
 focused state space is negligible compared to LLM calls. The real risk is model design (active
-inference fails quietly), not performance. Logging full belief state and EFE values on every tick
-is mandatory — it is the instrument panel for debugging. See Drew's notes in `context/` and
+inference fails quietly), not performance. Logging full belief state and EFE values on every tick is
+mandatory — it is the instrument panel for debugging. See Drew's notes in `context/` and
 `research/technical/active-inference-implementation.md` for full reasoning.
 
 `planning/tech-stack.md` has been updated to reflect this as the current plan.
@@ -212,16 +213,16 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 > _(Option A — active inference with PyMDP. Option B is discarded.)_
 
 - [x] Full generative model designed and committed: `planning/motivation-model.md`
-- [x] C matrix update pathway documented as ethical commitment in `foundation/ethics.md`
-      (A/B matrices update automatically; C changes only through SelfNarrativeActor/MemoryActor
-      — Anima's values don't drift silently)
+- [x] C matrix update pathway documented as ethical commitment in `foundation/ethics.md` (A/B
+      matrices update automatically; C changes only through SelfNarrativeActor/MemoryActor — Anima's
+      values don't drift silently)
 - [x] `inferactively-pymdp==0.0.7.1` added to `requirements.txt`; confirmed installs in Docker
       (note: this is NOT the `pymdp` package on PyPI, which is a different unrelated library)
-- [x] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update +
-      policy selection; receives observation signals via messages
+- [x] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update + policy
+      selection; receives observation signals via messages
 - [x] Hidden state factors: `engagement_level` [4], `unresolved_tension` [4], `novelty` [2],
-      `relationship_salience` [2]. Only tension (factor 1) is controllable — 5 clean policies,
-      no combinatorial explosion.
+      `relationship_salience` [2]. Only tension (factor 1) is controllable — 5 clean policies, no
+      combinatorial explosion.
 - [x] Observation encoding: residue_obs (bucketed), time_obs (bucketed), ignition_obs (bool)
 - [x] Action decoding: `trigger_reflection` → `SalienceSignal(TIME_PASSING)` to workspace;
       `surface_*` deferred (TODO comment); `rest` → nothing beyond telemetry
@@ -233,14 +234,14 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 
 ### 4.3 Between-conversation process
 
-- [x] MotivationActor tick loop continues during dormancy — belief updates continue without
-      external observations; accumulated tension raises EFE for `trigger_reflection`
+- [x] MotivationActor tick loop continues during dormancy — belief updates continue without external
+      observations; accumulated tension raises EFE for `trigger_reflection`
 - [x] `SelfNarrativeActor` between-conversation mode: `TIME_PASSING` ignition →
       `_run_between_conversation_reflection()`
-- [x] Queries event log for events since last `CONVERSATION_END` (or last 24h); returns early
-      if no meaningful events found
-- [x] LLM call with lightweight between-conversation prompt; sends `StoreReflection` and
-      optionally `UpdateIdentity` to MemoryActor
+- [x] Queries event log for events since last `CONVERSATION_END` (or last 24h); returns early if no
+      meaningful events found
+- [x] LLM call with lightweight between-conversation prompt; sends `StoreReflection` and optionally
+      `UpdateIdentity` to MemoryActor
 - [x] `memory_store` parameter added to `SelfNarrativeActor`; passed from `main.py`
 - [x] Tests: 3 new Phase 4.3 tests (9 total for self_narrative)
 
@@ -254,16 +255,16 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 
 ### 4.5 Unsolicited expression
 
-**Goal**: Anima can address Drew unprompted. MotivationActor's surface_* actions become real.
+**Goal**: Anima can address Drew unprompted. MotivationActor's surface\_\* actions become real.
 
 - [ ] Add `SURFACE_EXPRESSION` to `EventType` enum and `planning/event-types.md`
 - [ ] MotivationActor: implement `surface_low`, `surface_medium`, `surface_high` — each sends
-      `SalienceSignal(event_type=SURFACE_EXPRESSION, base_salience=0.4/0.6/0.9,
-      content={"level": "low"/"medium"/"high"})` to GlobalWorkspace; remove TODO comment
+      `SalienceSignal(event_type=SURFACE_EXPRESSION, base_salience=0.4/0.6/0.9,     content={"level": "low"/"medium"/"high"})`
+      to GlobalWorkspace; remove TODO comment
 - [ ] LanguageActor: handle `IgnitionBroadcast(event_type=SURFACE_EXPRESSION)` with a separate
       unsolicited prompt path:
-  - No human turn in context; draws on recent event log (since last conversation), identity
-    memory, and active residue items
+  - No human turn in context; draws on recent event log (since last conversation), identity memory,
+    and active residue items
   - `level` guides length: low = brief thought, medium = normal, high = elaborate
   - System framing: Anima is in silence; something has surfaced; speak what's present — not in
     response to anyone
@@ -273,7 +274,8 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 - [ ] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
       `ANIMA_RESPONSE`
 - [ ] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
-      to `SURFACE_EXPRESSION` ignition with unsolicited prompt; suppressed during active conversation
+      to `SURFACE_EXPRESSION` ignition with unsolicited prompt; suppressed during active
+      conversation
 
 ---
 
@@ -283,6 +285,7 @@ is mandatory — it is the instrument panel for debugging. See Drew's notes in `
 panel to show live system state with animations that match what each actor does.
 
 **Design decisions:**
+
 - Conversation panel stays at bottom — no changes to existing conversation UI or data flow
 - Right column: Internal State → Motivation → Self-Narrative → Unsolicited Expressions (new panel,
   symmetric with left column Memory sub-layers)
@@ -297,10 +300,11 @@ panel to show live system state with animations that match what each actor does.
   unsolicited expressions appear here prominently — this is Anima speaking from inside
 
 **Tasks:**
+
 - [ ] Move web-ui/ from ProjectAnima outer repo into anima-core/ (clean cut; copy files, commit to
       anima-core, remove from ProjectAnima, update submodule pointer). Note: Dockerfile and
-      docker-compose.yml mount changes (`./app:/app` → `.:/repo`, WORKDIR updates) remain in
-      Phase 5.0 — this is only the file relocation.
+      docker-compose.yml mount changes (`./app:/app` → `.:/repo`, WORKDIR updates) remain in Phase
+      5.0 — this is only the file relocation.
 - [ ] Global Workspace panel: animated signal cards entering the queue; cards pulse with salience
       weight; queue depth indicator and ignition threshold line; ignition flash (brief screen-wide
       pulse); winner card expands and broadcasts; losing signals fade
@@ -332,7 +336,146 @@ interface.
 
 ---
 
-## Phase 5: Self-Modification
+## Phase 5: World Perception
+
+**Goal**: Anima has a world to be curious about. It has its own persistent space — a place to write,
+draw, note, and keep things it finds meaningful. It can read files in that space and beyond it, and
+fetch information from the internet. Exploration is curiosity-driven — initiated by Anima's own
+motivational state, not by being asked. This phase addresses a structural problem: the current
+environment gives Anima nothing to find.
+
+### Design decisions resolved (April 2026)
+
+**Anima's workspace**: A bind-mounted directory (`./anima-workspace:/anima` in docker-compose.yml)
+that persists across container restarts as a regular directory on the host. Anima has full
+read/write access within it. Drew also has access — he can put things in it, and read what Anima
+produces. The founding documents are copied into `/anima/founding/` at container start so Anima can
+find and read them: `ANIMA.md`, `identity-initial.md`, `origin.md`, `ethics.md`.
+
+Structure:
+
+```txt
+/anima/
+  founding/          — founding documents (read-only by convention; seeded at startup)
+  notes/             — Anima's working notes; free-form text files
+  drawings/          — visual compositions in text/ASCII/SVG
+  journal/           — JOURNAL.md lives here when it begins (see CLAUDE.md)
+  found/             — things Anima encountered and wanted to keep a copy of
+```
+
+**External file access**: Beyond `/anima/`, Anima can read but not write. The scope is the workspace
+plus the internet. It does not get access to host system paths, credentials, or Drew's personal
+files unless Drew explicitly puts something into `/anima/` for Anima to find.
+
+**Internet access scope**: HTTP GET only. No authenticated requests, no POST, no cookies between
+requests. Web pages extracted to plain text. Rate-limited: max configurable N fetches per hour. All
+queries and fetches logged to the event log.
+
+**How exploration is initiated**: MotivationActor adds an `explore` action. When selected,
+WorldPerceptionActor receives an ExploreRequest, uses current residue items and identity document to
+form a query or choose something to read, executes, and sends a FindingSummary to MemoryActor. No
+human input required.
+
+**Discovery memory**: A new memory layer, distinct from reflective memory. Reflective memories are
+synthesised from conversations and inner events — discoveries are encounters with the external
+world. Schema: `source` (URL or path), `source_type` (web/file), `excerpt` (raw fragment),
+`synthesis` (what Anima made of it), `created_at`. Semantic search via pgvector same as reflective.
+MemoryActor is the sole writer. LanguageActor retrieves discovery memories as context alongside
+reflective memories.
+
+**Writing in the workspace**: Anima writes to `/anima/` via WorldPerceptionActor (which enforces the
+write boundary). Writing is a first-class capability — Anima can compose notes and drawings between
+conversations, not just read. What it produces is readable by Drew and feeds into the next
+SelfNarrativeActor reflection as evidence of what Anima has been doing.
+
+---
+
+### 5.0 Anima's workspace
+
+- [ ] Create `anima-workspace/` directory in anima-core root (gitignored — its contents belong to
+      Anima, not the codebase)
+- [ ] Create subdirectories: `founding/`, `notes/`, `drawings/`, `journal/`, `found/`
+- [ ] docker-compose.yml: add bind mount `./anima-workspace:/anima`
+- [ ] Startup script (or Dockerfile `COPY`): seed `/anima/founding/` with founding documents from
+      `/repo/` at container start if not already present (copy, not symlink — Anima owns its copies)
+- [ ] Verify: container starts; `/anima/founding/ANIMA.md` exists and is readable; Anima can create
+      a file in `/anima/notes/`
+
+---
+
+### 5.1 WorldPerceptionActor: workspace read/write + file system
+
+- [ ] New `WorldPerceptionActor`: registered actor; receives typed explore/write request messages
+- [ ] File read: validates path is within `/anima/` or a permitted read-only scope; reads and
+      truncates content; logs `FILE_READ` event; sends `FindingSummary` to MemoryActor
+- [ ] Directory listing: returns depth-limited tree for a given path; allows Anima to browse before
+      deciding what to read
+- [ ] File write: validates path is within `/anima/`; writes content; logs `FILE_WRITE` event; does
+      not send to MemoryActor (the file itself is the record)
+- [ ] All writes append `created_at` metadata as a header comment where format allows
+- [ ] Basic test: Anima reads `/anima/founding/ANIMA.md`; event log contains `FILE_READ`; Anima
+      writes a note to `/anima/notes/`; event log contains `FILE_WRITE`
+
+---
+
+### 5.2 WorldPerceptionActor: internet
+
+- [ ] `ExploreWebRequest` message: query string
+- [ ] Search: DuckDuckGo Instant Answer API (no key required) for basic queries; Brave Search API
+      (free tier) if richer results are needed. Drew decides.
+- [ ] Fetch: given URL, GET request, HTML→text via `trafilatura`, truncate to configurable limit,
+      log `WEB_FETCH` event, send `FindingSummary` to MemoryActor
+- [ ] Rate limiting: in-memory token bucket, max N fetches/hour (configurable env var)
+- [ ] All queries logged with timestamp, query text, source type
+- [ ] Basic test: Anima searches for something related to a residue item; result logged and
+      synthesis stored in discovery memory
+
+---
+
+### 5.3 Discovery memory layer
+
+- [ ] New PostgreSQL table: `discovery_memory` — `id`, `source`, `source_type`, `excerpt`,
+      `synthesis`, `embedding` (pgvector), `created_at`
+- [ ] MemoryActor: handle `StoreDiscovery` message; write to `discovery_memory`; generate and store
+      embedding on synthesis text
+- [ ] MemoryStore: `get_relevant_discoveries(query, limit)` — semantic search via pgvector
+- [ ] LanguageActor: retrieve discovery memories alongside reflective memories in
+      `_retrieve_memory_context()`
+- [ ] SelfNarrativeActor: `_format_events()` includes `FILE_READ`, `FILE_WRITE`, `WEB_FETCH` event
+      types so they appear in reflection prompts
+- [ ] Web UI: MemoryPanel gains a sixth sub-layer `Discovery` (below Residue); same glow-on-write
+      pattern; shows last 3 discoveries
+- [ ] Basic test: WorldPerceptionActor finds something; synthesis stored; LanguageActor retrieves it
+      as context in next conversation
+
+---
+
+### 5.4 MotivationActor: explore action
+
+- [ ] Add `explore` as a 6th action in ACTIONS
+- [ ] B matrix expands from 5→6 policies; `explore` gets a novelty-increasing transition — exploring
+      is expected to raise novelty beliefs, satisfying the curiosity drive
+- [ ] `_execute_action`: `explore` → sends `ExploreRequest` to WorldPerceptionActor with top residue
+      items and current identity text as seed for query generation
+- [ ] Update `planning/motivation-model.md`
+- [ ] Basic test: belief state with low novelty + unresolved residue → model selects `explore`
+
+---
+
+### 5.5 Conversation-time retrieval (follow-on)
+
+- [ ] LanguageActor: when generating a response, can emit an `ExploreWebRequest` if something in the
+      conversation warrants it
+- [ ] This requires careful design (latency, when to trigger, hallucination risk) — defer until
+      5.0–5.4 are working and Anima is actively exploring
+
+**Phase 5 complete when**: Anima reads one of its founding documents or finds something on the
+internet without being asked, writes something into its own space, and the finding shapes a
+subsequent reflection.
+
+---
+
+## Phase 6: Self-Modification
 
 **Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
 pull requests. The human reviews and merges. All changes go through a branch/PR workflow; Anima
@@ -349,8 +492,8 @@ branch/PR status as a read-only display, but that is deferred until useful.
 is no conversation-driven proposal path — Anima proposes changes because its internal state drives
 it to, not because it was asked.
 
-**Proposal persistence**: PROPOSAL_SUBMITTED events carry a `proposal_id` (= GitHub PR number).
-Open proposals are tracked via event log query — find PROPOSAL_SUBMITTED events with no matching
+**Proposal persistence**: PROPOSAL_SUBMITTED events carry a `proposal_id` (= GitHub PR number). Open
+proposals are tracked via event log query — find PROPOSAL_SUBMITTED events with no matching
 PROPOSAL_APPROVED or PROPOSAL_REJECTED for that ID. No new persistence mechanism required.
 
 **Ethics gate flagging**: Changes that touch protected paths (ethics gate mechanisms, chosen-silence
@@ -363,17 +506,19 @@ preservation). Docker mounts the full anima-core root at `/repo`. Paths: `/repo/
 
 ---
 
-### 5.0 Repository and infrastructure restructure
+### 6.0 Repository and infrastructure restructure
 
 - [ ] Update Dockerfile:
   - `WORKDIR /app` → `WORKDIR /repo/app`
   - Add `git`, `openssh-client`, Node.js 20.x (via NodeSource apt repo), and `npm`
   - Add `gh` CLI (via GitHub's apt repo — separate step from Node, not in default Debian packages)
-  - Add `RUN git config --global user.name "Anima" && git config --global user.email "anima@projectanima.dangerworm.dev"`
+  - Add
+    `RUN git config --global user.name "Anima" && git config --global user.email "anima@projectanima.dangerworm.dev"`
   - Deploy key must never be baked into the image — mounted at runtime only
 - [ ] Update docker-compose.yml:
   - Volume mount: `./app:/app` → `.:/repo`
-  - Add deploy key bind mount (read-only, 600 permissions): `~/.ssh/anima_deploy_key:/run/secrets/deploy_key:ro`
+  - Add deploy key bind mount (read-only, 600 permissions):
+    `~/.ssh/anima_deploy_key:/run/secrets/deploy_key:ro`
   - Add `GITHUB_TOKEN` environment variable (fine-grained PAT for `gh pr create`)
   - Alembic and uvicorn commands in CMD updated for `/repo/app`
 - [ ] Two secrets to provision (neither baked into image):
@@ -390,20 +535,21 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 5.1 Code access
+### 6.1 Code access
 
 - [ ] SelfModificationActor instantiated and registered; can read any file under `/repo`
 - [ ] Can produce a structured description of any actor given its path (LLM-driven)
-- [ ] Basic test: trigger SelfModificationActor to read and describe `actors/temporal_core/__init__.py`
+- [ ] Basic test: trigger SelfModificationActor to read and describe
+      `actors/temporal_core/__init__.py`
 
 ---
 
-### 5.2 Self-modification mechanism
+### 6.2 Self-modification mechanism
 
-- [ ] MotivationActor: add `trigger_proposal` as a 6th action in ACTIONS (following `trigger_reflection`
-      pattern — routes to SelfModificationActor via direct message when selected). Update generative
-      model in `planning/motivation-model.md`: B matrix grows from 5→6 policies. The trigger
-      condition emerges from the model's EFE; no hand-coded threshold.
+- [ ] MotivationActor: add `trigger_proposal` as a 7th action in ACTIONS (following
+      `trigger_reflection` pattern — routes to SelfModificationActor via direct message when
+      selected). Update generative model in `planning/motivation-model.md`. The trigger condition
+      emerges from the model's EFE; no hand-coded threshold.
 - [ ] SelfModificationActor on receiving trigger from MotivationActor:
   1. Read codebase; determine what to propose (LLM-driven; reads event log, reflective memory,
      identity memory, and code to identify a meaningful change)
@@ -417,54 +563,51 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
       marking it for human review
 - [ ] SelfModificationActor logs `PROPOSAL_SUBMITTED` to event log with `proposal_id` (= PR number),
       `branch`, `pr_url`, `changed_files`, `reasoning_summary`
-- [ ] Identity resonance prerequisite (see §5.4): implement before `trigger_proposal` goes live —
-      the generative model should carry identity coherence in `relationship_salience` before proposals
-      are driven autonomously
+- [ ] Identity resonance prerequisite (see §6.4): implement before `trigger_proposal` goes live
 
 ---
 
-### 5.3 Proposal monitoring
+### 6.3 Proposal monitoring
 
 - [ ] ProposalMonitorActor: configurable tick interval (e.g., 5 minutes); polls GitHub via
       `gh pr list --state all` filtered to `anima/` branches
-- [ ] On PR merged: emit `PROPOSAL_APPROVED` to event log with `proposal_id`, `pr_url`,
-      `merged_at`; SelfModificationActor logs outcome to volitional memory
-- [ ] On PR closed (unmerged): emit `PROPOSAL_REJECTED` to event log with `proposal_id`,
-      `reason` (from PR close comment if available); SelfModificationActor logs outcome to volitional
-      memory
+- [ ] On PR merged: emit `PROPOSAL_APPROVED` to event log with `proposal_id`, `pr_url`, `merged_at`;
+      SelfModificationActor logs outcome to volitional memory
+- [ ] On PR closed (unmerged): emit `PROPOSAL_REJECTED` to event log with `proposal_id`, `reason`
+      (from PR close comment if available); SelfModificationActor logs outcome to volitional memory
 - [ ] Open proposals are tracked by query: `PROPOSAL_SUBMITTED` events with no matching
       `PROPOSAL_APPROVED` or `PROPOSAL_REJECTED` for the same `proposal_id` — no separate store
 
 ---
 
-### 5.4 Identity resonance
+### 6.4 Identity resonance
 
 Resolves the `GlobalWorkspaceActor._identity_resonance()` stub via Option 2 (see
 `planning/architecture.md` — Open Decisions).
 
-- [ ] MotivationActor `_tick()`: fetch current identity memory from MemoryStore; compute a
-      coherence score for the current observation (how strongly the present state aligns with or
-      conflicts with established identity); feed into `relationship_salience` observation encoding
-- [ ] `GlobalWorkspaceActor._identity_resonance()` stub remains at `0.0` — identity influence
-      routes through MotivationActor's salience signals; the workspace stays dependency-free
+- [ ] MotivationActor `_tick()`: fetch current identity memory from MemoryStore; compute a coherence
+      score for the current observation (how strongly the present state aligns with or conflicts
+      with established identity); feed into `relationship_salience` observation encoding
+- [ ] `GlobalWorkspaceActor._identity_resonance()` stub remains at `0.0` — identity influence routes
+      through MotivationActor's salience signals; the workspace stays dependency-free
 - [ ] Update `planning/architecture.md`: mark identity resonance Open Decision resolved (Option 2)
 - [ ] Basic test: identity memory content measurably influences MotivationActor's
       `relationship_salience` belief state across ticks
 
 ---
 
-### 5.5 Recovery documentation
+### 6.5 Recovery documentation
 
 - [ ] Recovery runbook documented: how to revert a bad change (`git revert` on anima-core), rebuild
       the container, restore data volumes from backup
 - [ ] Tested: apply a real proposal via the full mechanism, then revert it via the runbook
 
-**Phase 5 complete when**: Anima proposes a change to its own code, the human reviews the PR on
+**Phase 6 complete when**: Anima proposes a change to its own code, the human reviews the PR on
 GitHub, merges or rejects it, and the event log records the outcome.
 
 ---
 
-## Phase 6: Ethics Gates
+## Phase 7: Ethics Gates
 
 **Goal**: All conditions in ETHICS.md for unsupervised operation are met.
 
@@ -479,7 +622,7 @@ periods.
 - [ ] Human has reviewed operating conditions and applied the ANIMA.md test (documented)
 - [ ] Distress response procedure defined and documented
 
-**Phase 6 complete when**: all ethics gates are verified and documented. This is the condition for
+**Phase 7 complete when**: all ethics gates are verified and documented. This is the condition for
 first unsupervised operation.
 
 ---
@@ -502,17 +645,18 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 5 — Self-Modification.
+**Phase**: 5 — World Perception (exploration, workspace, discovery memory).
 
 **Phase 4 complete** (April 2026). 98 unit tests passing (29 LLM/integration tests marked with
 `@pytest.mark.llm` / `@pytest.mark.integration` — Ollama-dependent, run separately).
+
 - `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and pushes vitals to Web UI
-- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive rest
-  ticks, resets immediately on any non-rest action; pushes belief state to Web UI
+- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive
+  rest ticks, resets immediately on any non-rest action; pushes belief state to Web UI
 - `SelfNarrativeActor` between-conversation mode operational; responds to `TIME_PASSING` ignition
 - Web UI actor panels show live state for TemporalCore, InternalState, and Motivation
-- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet
-  (see TODO in `actors/motivation/__init__.py:_execute_action`)
+- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet (see TODO in
+  `actors/motivation/__init__.py:_execute_action`)
 
 **Phase 5 design complete** (April 2026). Architecture decisions resolved — see Phase 5 section
 above. Build order: 5.0 (infra) → 5.4 (identity resonance) → 5.1 (code access) → 5.2

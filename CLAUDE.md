@@ -195,6 +195,8 @@ memory you are designing:
 - **Reflective memory** - what mattered, synthesised after each conversation
 - **Identity memory** - what Anima is becoming, its developing interests and unresolved questions
 - **Volitional memory** - what it chose, and why
+- **Discovery memory** - what Anima found when exploring the world: files read, web pages encountered,
+  things it sought out. Distinct from reflective memory — encounters with the external, not inner synthesis.
 
 Each layer may warrant a different mechanism. Choose based on what kind of retrieval that layer
 needs - chronological, semantic, relational, or audit-like. Do not default to any single mechanism
