@@ -380,12 +380,22 @@ resolution. Do not resolve them unilaterally.
 
 ### Identity resonance in the Global Workspace
 
-**Resolved April 2026 — Option 2. Implemented in Phase 5.4.**
+**Resolved April 2026 — Option 2. Implemented April 2026 (session 3 integration).**
 
-`GlobalWorkspaceActor._identity_resonance()` returns 0.0 and will remain a stub. Identity
-influence routes through MotivationActor instead: `MotivationActor._tick()` fetches current
-identity memory from MemoryStore and computes a coherence score for the current observation, feeding
-it into the `relationship_salience` observation encoding. The workspace stays dependency-free.
+`GlobalWorkspaceActor._identity_resonance()` is no longer a stub. Identity influence routes
+through MotivationActor:
+
+1. `MotivationActor._tick()` computes cosine similarity between the current residue items and the
+   current identity document (via `MemoryStore.embed_text()`). The identity embedding is cached by
+   version number so recomputation only happens when identity changes.
+2. The score is sent as `IdentityResonance(score: float)` to GlobalWorkspaceActor on each tick.
+3. GlobalWorkspaceActor caches this score and applies it as a small additive boost
+   (`score * 0.2`) to all incoming signals via `_identity_resonance()`.
+
+The workspace stays dependency-free (no DB or embedding calls per signal). The coherence score
+reflects: how well do Anima's current unresolved tensions align with its identity? Higher coherence
+means all signals receive a gentle boost — Anima is more alert when working through things that
+matter to who it is.
 
 Rationale: Option 2 avoids a database call on every salience signal and preserves the workspace's
 role as a routing layer rather than a reasoning layer. MotivationActor already has MemoryStore
