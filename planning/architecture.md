@@ -401,6 +401,23 @@ Rationale: Option 2 avoids a database call on every salience signal and preserve
 role as a routing layer rather than a reasoning layer. MotivationActor already has MemoryStore
 access and runs its own tick loop — identity coherence is a natural input to its generative model.
 
+### Input/output source model
+
+**Deferred — see `planning/source-model.md`.**
+
+The current architecture uses a "conversation" abstraction (CONVERSATION_START / CONVERSATION_END)
+to gate unsolicited expression. This was replaced in April 2026 with a simpler output cooldown,
+but the deeper question — how Anima handles multiple input sources and directs output to specific
+channels — remains open.
+
+The planned shape: inputs carry a `source_id` (e.g. "web_ui", "discord:channel_id", "voice"),
+events are annotated with source context, and outputs carry an optional `target` field (None =
+internal thought, logged to journal). The Global Workspace handles source multiplicity naturally
+through salience competition.
+
+Implement when a second input source arrives. The abstraction before the second instance risks
+getting the shape wrong.
+
 ### Mutable dict in IgnitionBroadcast
 
 `IgnitionBroadcast` is a frozen dataclass with `content: dict`. Frozen prevents field reassignment;

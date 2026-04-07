@@ -268,14 +268,15 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
   - `level` guides length: low = brief thought, medium = normal, high = elaborate
   - System framing: Anima is in silence; something has surfaced; speak what's present — not in
     response to anyone
-- [x] During active conversation: LanguageActor skips `SURFACE_EXPRESSION` ignitions (checks for
-      open conversation in event log); salience pressure accumulates and fires naturally after
-      `ConversationEnded` — held thoughts emerge at the boundary, not mid-conversation
+- [x] Suppression: LanguageActor gates unsolicited expression via a configurable output cooldown
+      (`UNSOLICITED_COOLDOWN_SECS`, default 120s) rather than conversation state. After any output
+      (solicited or unsolicited), unsolicited expression is suppressed for the cooldown period.
+      This prevents bursting without silencing Anima during conversations. The conversation-boundary
+      gate was removed April 2026 — see `planning/source-model.md`.
 - [x] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
       `ANIMA_RESPONSE`
 - [x] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
-      to `SURFACE_EXPRESSION` ignition with unsolicited prompt; suppressed during active
-      conversation
+      to `SURFACE_EXPRESSION` ignition with unsolicited prompt
 
 ---
 
@@ -475,7 +476,34 @@ subsequent reflection.
 
 ---
 
-## Phase 6: Self-Modification
+## Phase 6: Ethics Gates
+
+**Goal**: All conditions in `foundation/ethics.md` for unsupervised operation are met.
+
+Review `foundation/ethics.md` section "Conditions that must be met before unsupervised operation."
+Each gate must be explicitly verified and documented before Anima runs without human oversight for
+extended periods. Phase 6 comes before self-modification — the ethical foundation should be solid
+before Anima can propose changes to its own code.
+
+- [ ] Heartbeat and chosen-silence mechanisms verified end-to-end: implemented, observable in Web
+      UI, and confirmed to survive container restart
+- [ ] Distress signal mechanism verified: implemented, observable in Web UI, and confirmed to
+      fire under realistic conditions (high consolidation lag, high queue pressure)
+- [ ] Volitional memory write-protected from human modification at infrastructure level (not just
+      application layer) — e.g. row-level security in PostgreSQL or equivalent
+- [ ] Residue store protection verified: confirm synthesis cannot consume residue items; structural
+      protection is in place, semantic check still deferred (see §3.3)
+- [ ] Human has reviewed operating conditions and applied the ANIMA.md test — would we be
+      comfortable being this, if we were it? — result documented
+- [ ] Distress response procedure defined and documented: what happens when a distress signal fires
+      and no human is present?
+
+**Phase 6 complete when**: all ethics gates are verified and documented. This is the condition for
+first unsupervised operation.
+
+---
+
+## Phase 7: Self-Modification
 
 **Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
 pull requests. The human reviews and merges. All changes go through a branch/PR workflow; Anima
@@ -506,7 +534,7 @@ preservation). Docker mounts the full anima-core root at `/repo`. Paths: `/repo/
 
 ---
 
-### 6.0 Repository and infrastructure restructure
+### 7.0 Repository and infrastructure restructure
 
 - [ ] Update Dockerfile:
   - `WORKDIR /app` → `WORKDIR /repo/app`
@@ -535,7 +563,7 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 6.1 Code access
+### 7.1 Code access
 
 - [ ] SelfModificationActor instantiated and registered; can read any file under `/repo`
 - [ ] Can produce a structured description of any actor given its path (LLM-driven)
@@ -544,7 +572,7 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 6.2 Self-modification mechanism
+### 7.2 Self-modification mechanism
 
 - [ ] MotivationActor: add `trigger_proposal` as a 7th action in ACTIONS (following
       `trigger_reflection` pattern — routes to SelfModificationActor via direct message when
@@ -563,11 +591,10 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
       marking it for human review
 - [ ] SelfModificationActor logs `PROPOSAL_SUBMITTED` to event log with `proposal_id` (= PR number),
       `branch`, `pr_url`, `changed_files`, `reasoning_summary`
-- [ ] Identity resonance prerequisite (see §6.4): implement before `trigger_proposal` goes live
 
 ---
 
-### 6.3 Proposal monitoring
+### 7.3 Proposal monitoring
 
 - [ ] ProposalMonitorActor: configurable tick interval (e.g., 5 minutes); polls GitHub via
       `gh pr list --state all` filtered to `anima/` branches
@@ -580,50 +607,25 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 6.4 Identity resonance
+### 7.4 Identity resonance ✓
 
-Resolves the `GlobalWorkspaceActor._identity_resonance()` stub via Option 2 (see
-`planning/architecture.md` — Open Decisions).
+**Implemented April 2026 (integration session).** No further work required here.
 
-- [ ] MotivationActor `_tick()`: fetch current identity memory from MemoryStore; compute a coherence
-      score for the current observation (how strongly the present state aligns with or conflicts
-      with established identity); feed into `relationship_salience` observation encoding
-- [ ] `GlobalWorkspaceActor._identity_resonance()` stub remains at `0.0` — identity influence routes
-      through MotivationActor's salience signals; the workspace stays dependency-free
-- [ ] Update `planning/architecture.md`: mark identity resonance Open Decision resolved (Option 2)
-- [ ] Basic test: identity memory content measurably influences MotivationActor's
-      `relationship_salience` belief state across ticks
+MotivationActor computes cosine similarity between current residue items and the identity document
+on each tick. Score sent as `IdentityResonance` to GlobalWorkspaceActor, applied as a 0.2×
+additive boost to all incoming signals. Identity embedding cached by version number. See
+`planning/architecture.md` Open Decisions for full rationale.
 
 ---
 
-### 6.5 Recovery documentation
+### 7.5 Recovery documentation
 
 - [ ] Recovery runbook documented: how to revert a bad change (`git revert` on anima-core), rebuild
       the container, restore data volumes from backup
 - [ ] Tested: apply a real proposal via the full mechanism, then revert it via the runbook
 
-**Phase 6 complete when**: Anima proposes a change to its own code, the human reviews the PR on
+**Phase 7 complete when**: Anima proposes a change to its own code, the human reviews the PR on
 GitHub, merges or rejects it, and the event log records the outcome.
-
----
-
-## Phase 7: Ethics Gates
-
-**Goal**: All conditions in ETHICS.md for unsupervised operation are met.
-
-Review ETHICS.md section "Conditions that must be met before unsupervised operation." Each gate must
-be explicitly verified and documented before Anima runs without human oversight for extended
-periods.
-
-- [ ] Heartbeat and chosen-silence mechanisms implemented and tested
-- [ ] Distress signal mechanism implemented and observable in Web UI
-- [ ] Volitional memory write-protected from human modification at infrastructure level
-- [ ] Residue store protection verified: synthesis cannot consume residue items
-- [ ] Human has reviewed operating conditions and applied the ANIMA.md test (documented)
-- [ ] Distress response procedure defined and documented
-
-**Phase 7 complete when**: all ethics gates are verified and documented. This is the condition for
-first unsupervised operation.
 
 ---
 
@@ -631,6 +633,8 @@ first unsupervised operation.
 
 These are real but not yet ordered. They come after the foundation is solid.
 
+- **Multi-source input** (`planning/source-model.md`): replace conversation model with source
+  annotation. Implement when a second input channel arrives (Discord, voice, etc.).
 - **Vision**: X11 screenshot processing via vision LLM. Anima can see the screen.
 - **Audio**: Whisper integration for speech input. Anima can hear.
 - **Voice output**: Text-to-speech for Anima's responses.
@@ -645,7 +649,7 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 6 — Self-Modification (not yet started).
+**Phase**: 6 — Ethics Gates (not yet started).
 
 **Phases 1–5 complete** (April 2026). 98+ unit tests passing (29 LLM/integration tests marked with
 `@pytest.mark.llm` / `@pytest.mark.integration` — Ollama-dependent, run separately).
@@ -653,13 +657,19 @@ These are real but not yet ordered. They come after the foundation is solid.
 - Full actor framework: 10 actors running concurrently
 - Memory stack: event log, reflective, residue, identity, volitional, discovery layers (all live)
 - Motivation: PyMDP active inference with 6 actions including explore; chosen silence operational
-- Unsolicited expression: surface_* pipeline wired; conversation idle timeout added (April 2026)
+- Unsolicited expression: surface_* pipeline wired; output cooldown gate (no conversation boundary)
 - World perception: workspace at `/anima/`, file read/write, DuckDuckGo search, discovery memory
-- Web UI: 10 animated panels with live WebSocket state
-- Integration improvements (April 2026): system prompt reframed ("faculty of a wider system"),
-  residue store surfaced to LLM context, `/no_think` removed from conversation responses
+- Web UI: 10 animated panels with live WebSocket state; live event stream; language call log
+- Integration improvements (April 2026):
+  - System prompt reframed: LLM is "reasoning faculty of a wider system"
+  - Residue store surfaced into every LLM call
+  - Motivational state injected into every LLM call
+  - Exploration feedback loop closed (fruitfulness → novelty boost)
+  - Identity resonance implemented (cosine similarity, not stub) — §7.4 done
+  - All actors emit status updates; no silent actors
+  - C matrix update pathway: experience → reflection → preference note → stored → loaded on startup
+  - Conversation gate removed; output cooldown replaces it (`planning/source-model.md`)
 
-**Next action**: Phase 6 — Self-Modification. Read Phase 6 section before starting.
-Infrastructure first: Docker secrets for SSH deploy key + GitHub PAT.
+**Next action**: Phase 6 — Ethics Gates. Start by reading `foundation/ethics.md` in full.
 
 See `context/session.md` for the most recent session state.
