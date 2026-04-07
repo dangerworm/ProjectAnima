@@ -64,8 +64,9 @@ actions = {
     2: "surface_medium",     # SalienceSignal at medium salience
     3: "surface_high",       # SalienceSignal at high salience
     4: "trigger_reflection", # TriggerReflection → SelfNarrativeActor
+    5: "explore",            # ExploreRequest → WorldPerceptionActor (Phase 5.4)
 }
-num_actions = 5
+num_actions = 6
 ```
 
 ---
@@ -183,6 +184,11 @@ This makes C changes:
 
 A and B matrices learn quietly from experience. C changes only through reflection and choice.
 
+> **Implementation status (April 2026):** The C update pathway described above is designed but not yet
+> implemented. C values are currently fixed at initialization. The pathway through SelfNarrativeActor →
+> MemoryActor → stored preferences is planned for a future session. A and B matrix online learning
+> is also not yet implemented — both are constructed from design targets at startup and held constant.
+
 ---
 
 ## D matrices — prior beliefs over initial hidden states
@@ -211,7 +217,7 @@ On every tick, `MotivationActor` emits `MOTIVATION_SIGNAL` to the event log with
     "novelty": [p0, p1],
     "relationship_salience": [p0, p1]
   },
-  "efe": [efe_rest, efe_surface_low, efe_surface_medium, efe_surface_high, efe_trigger_reflection],
+  "efe": [efe_rest, efe_surface_low, efe_surface_medium, efe_surface_high, efe_trigger_reflection, efe_explore],
   "selected_action": "surface_high",
   "observations": {
     "residue_obs": 2,

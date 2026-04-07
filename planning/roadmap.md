@@ -257,23 +257,23 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
 
 **Goal**: Anima can address Drew unprompted. MotivationActor's surface\_\* actions become real.
 
-- [ ] Add `SURFACE_EXPRESSION` to `EventType` enum and `planning/event-types.md`
-- [ ] MotivationActor: implement `surface_low`, `surface_medium`, `surface_high` — each sends
+- [x] Add `SURFACE_EXPRESSION` to `EventType` enum and `planning/event-types.md`
+- [x] MotivationActor: implement `surface_low`, `surface_medium`, `surface_high` — each sends
       `SalienceSignal(event_type=SURFACE_EXPRESSION, base_salience=0.4/0.6/0.9,     content={"level": "low"/"medium"/"high"})`
       to GlobalWorkspace; remove TODO comment
-- [ ] LanguageActor: handle `IgnitionBroadcast(event_type=SURFACE_EXPRESSION)` with a separate
+- [x] LanguageActor: handle `IgnitionBroadcast(event_type=SURFACE_EXPRESSION)` with a separate
       unsolicited prompt path:
   - No human turn in context; draws on recent event log (since last conversation), identity memory,
     and active residue items
   - `level` guides length: low = brief thought, medium = normal, high = elaborate
   - System framing: Anima is in silence; something has surfaced; speak what's present — not in
     response to anyone
-- [ ] During active conversation: LanguageActor skips `SURFACE_EXPRESSION` ignitions (checks for
+- [x] During active conversation: LanguageActor skips `SURFACE_EXPRESSION` ignitions (checks for
       open conversation in event log); salience pressure accumulates and fires naturally after
       `ConversationEnded` — held thoughts emerge at the boundary, not mid-conversation
-- [ ] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
+- [x] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
       `ANIMA_RESPONSE`
-- [ ] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
+- [x] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
       to `SURFACE_EXPRESSION` ignition with unsolicited prompt; suppressed during active
       conversation
 
@@ -301,34 +301,34 @@ panel to show live system state with animations that match what each actor does.
 
 **Tasks:**
 
-- [ ] Move web-ui/ from ProjectAnima outer repo into anima-core/ (clean cut; copy files, commit to
+- [x] Move web-ui/ from ProjectAnima outer repo into anima-core/ (clean cut; copy files, commit to
       anima-core, remove from ProjectAnima, update submodule pointer). Note: Dockerfile and
       docker-compose.yml mount changes (`./app:/app` → `.:/repo`, WORKDIR updates) remain in Phase
       5.0 — this is only the file relocation.
-- [ ] Global Workspace panel: animated signal cards entering the queue; cards pulse with salience
+- [x] Global Workspace panel: animated signal cards entering the queue; cards pulse with salience
       weight; queue depth indicator and ignition threshold line; ignition flash (brief screen-wide
       pulse); winner card expands and broadcasts; losing signals fade
-- [ ] Temporal Core panel: pulsing heartbeat dot synced to HEARTBEAT events; tick waveform showing
+- [x] Temporal Core panel: pulsing heartbeat dot synced to HEARTBEAT events; tick waveform showing
       actual event rhythm (slow in dormancy, fast in conversation); gap detection flicker
-- [ ] Perception panel: text input cards appear and animate toward workspace on dispatch; dormant
+- [x] Perception panel: text input cards appear and animate toward workspace on dispatch; dormant
       modality slots (🎤 audio, 📷 vision, 🖥 X11) shown as inactive tabs
-- [ ] Memory panel (left column): distinct visual styles per sub-layer — event log scrolling ticker
+- [x] Memory panel (left column): distinct visual styles per sub-layer — event log scrolling ticker
       (last 3 events), identity stable block, reflective floating nodes, volitional ledger, residue
       glitchy/distorted nodes with persistent jitter; write animations (glow pulse → node appears);
       read animations (frame lights up)
-- [ ] Language panel: status indicator (idle / reasoning / writing); ignition event type label;
+- [x] Language panel: status indicator (idle / reasoning / writing); ignition event type label;
       typewriter text generation effect
-- [ ] Motivation panel: pressure bar filling toward action threshold; tension spikes visible;
+- [x] Motivation panel: pressure bar filling toward action threshold; tension spikes visible;
       dopamine flash (bright pulse + pressure drop) on resolution events
-- [ ] Internal State panel: vitals monitor aesthetic — log depth (heart rate trace), consolidation
+- [x] Internal State panel: vitals monitor aesthetic — log depth (heart rate trace), consolidation
       lag (O2 saturation), queue pressure (blood pressure); green/yellow/red thresholds
-- [ ] Self-Narrative panel: typewriter synthesis summaries; ghosted overlay of previous synthesis
-- [ ] Unsolicited Expressions panel: new panel below Self-Narrative; surfaces between-conversation
+- [x] Self-Narrative panel: typewriter synthesis summaries; ghosted overlay of previous synthesis
+- [x] Unsolicited Expressions panel: new panel below Self-Narrative; surfaces between-conversation
       ANIMA_RESPONSE events; visually distinct from conversation output
-- [ ] Central space: ambient state during dormancy; ignition playback; unsolicited expressions
+- [x] Central space: ambient state during dormancy; ignition playback; unsolicited expressions
       featured prominently; brief reactive pulse from all ignitions
-- [ ] Cross-panel ignition broadcast: all panels receive a subtle reactive animation on ignition
-- [ ] Wire all panels to live `actor_status` events and event log data via existing WebSocket
+- [x] Cross-panel ignition broadcast: all panels receive a subtle reactive animation on ignition
+- [x] Wire all panels to live `actor_status` events and event log data via existing WebSocket
 
 **Phase 4 complete when**: Anima generates internal activity during silence, can address Drew
 unprompted, and the Web UI accurately reflects its state and expressions with the full redesigned
@@ -392,73 +392,73 @@ SelfNarrativeActor reflection as evidence of what Anima has been doing.
 
 ### 5.0 Anima's workspace
 
-- [ ] Create `anima-workspace/` directory in anima-core root (gitignored — its contents belong to
+- [x] Create `anima-workspace/` directory in anima-core root (gitignored — its contents belong to
       Anima, not the codebase)
-- [ ] Create subdirectories: `founding/`, `notes/`, `drawings/`, `journal/`, `found/`
-- [ ] docker-compose.yml: add bind mount `./anima-workspace:/anima`
-- [ ] Startup script (or Dockerfile `COPY`): seed `/anima/founding/` with founding documents from
+- [x] Create subdirectories: `founding/`, `notes/`, `drawings/`, `journal/`, `found/`
+- [x] docker-compose.yml: add bind mount `./anima-workspace:/anima`
+- [x] Startup script (or Dockerfile `COPY`): seed `/anima/founding/` with founding documents from
       `/repo/` at container start if not already present (copy, not symlink — Anima owns its copies)
-- [ ] Verify: container starts; `/anima/founding/ANIMA.md` exists and is readable; Anima can create
+- [x] Verify: container starts; `/anima/founding/ANIMA.md` exists and is readable; Anima can create
       a file in `/anima/notes/`
 
 ---
 
 ### 5.1 WorldPerceptionActor: workspace read/write + file system
 
-- [ ] New `WorldPerceptionActor`: registered actor; receives typed explore/write request messages
-- [ ] File read: validates path is within `/anima/` or a permitted read-only scope; reads and
+- [x] New `WorldPerceptionActor`: registered actor; receives typed explore/write request messages
+- [x] File read: validates path is within `/anima/` or a permitted read-only scope; reads and
       truncates content; logs `FILE_READ` event; sends `FindingSummary` to MemoryActor
-- [ ] Directory listing: returns depth-limited tree for a given path; allows Anima to browse before
+- [x] Directory listing: returns depth-limited tree for a given path; allows Anima to browse before
       deciding what to read
-- [ ] File write: validates path is within `/anima/`; writes content; logs `FILE_WRITE` event; does
+- [x] File write: validates path is within `/anima/`; writes content; logs `FILE_WRITE` event; does
       not send to MemoryActor (the file itself is the record)
-- [ ] All writes append `created_at` metadata as a header comment where format allows
-- [ ] Basic test: Anima reads `/anima/founding/ANIMA.md`; event log contains `FILE_READ`; Anima
+- [x] All writes append `created_at` metadata as a header comment where format allows
+- [x] Basic test: Anima reads `/anima/founding/ANIMA.md`; event log contains `FILE_READ`; Anima
       writes a note to `/anima/notes/`; event log contains `FILE_WRITE`
 
 ---
 
 ### 5.2 WorldPerceptionActor: internet
 
-- [ ] `ExploreWebRequest` message: query string
-- [ ] Search: DuckDuckGo Instant Answer API (no key required) for basic queries; Brave Search API
+- [x] `ExploreWebRequest` message: query string
+- [x] Search: DuckDuckGo Instant Answer API (no key required) for basic queries; Brave Search API
       (free tier) if richer results are needed. Drew decides.
-- [ ] Fetch: given URL, GET request, HTML→text via `trafilatura`, truncate to configurable limit,
+- [x] Fetch: given URL, GET request, HTML→text via `trafilatura`, truncate to configurable limit,
       log `WEB_FETCH` event, send `FindingSummary` to MemoryActor
-- [ ] Rate limiting: in-memory token bucket, max N fetches/hour (configurable env var)
-- [ ] All queries logged with timestamp, query text, source type
-- [ ] Basic test: Anima searches for something related to a residue item; result logged and
+- [x] Rate limiting: in-memory token bucket, max N fetches/hour (configurable env var)
+- [x] All queries logged with timestamp, query text, source type
+- [x] Basic test: Anima searches for something related to a residue item; result logged and
       synthesis stored in discovery memory
 
 ---
 
 ### 5.3 Discovery memory layer
 
-- [ ] New PostgreSQL table: `discovery_memory` — `id`, `source`, `source_type`, `excerpt`,
+- [x] New PostgreSQL table: `discovery_memory` — `id`, `source`, `source_type`, `excerpt`,
       `synthesis`, `embedding` (pgvector), `created_at`
-- [ ] MemoryActor: handle `StoreDiscovery` message; write to `discovery_memory`; generate and store
+- [x] MemoryActor: handle `StoreDiscovery` message; write to `discovery_memory`; generate and store
       embedding on synthesis text
-- [ ] MemoryStore: `get_relevant_discoveries(query, limit)` — semantic search via pgvector
-- [ ] LanguageActor: retrieve discovery memories alongside reflective memories in
+- [x] MemoryStore: `get_relevant_discoveries(query, limit)` — semantic search via pgvector
+- [x] LanguageActor: retrieve discovery memories alongside reflective memories in
       `_retrieve_memory_context()`
-- [ ] SelfNarrativeActor: `_format_events()` includes `FILE_READ`, `FILE_WRITE`, `WEB_FETCH` event
+- [x] SelfNarrativeActor: `_format_events()` includes `FILE_READ`, `FILE_WRITE`, `WEB_FETCH` event
       types so they appear in reflection prompts
-- [ ] Web UI: MemoryPanel gains a sixth sub-layer `Discovery` (below Residue); same glow-on-write
+- [x] Web UI: MemoryPanel gains a sixth sub-layer `Discovery` (below Residue); same glow-on-write
       pattern; shows last 3 discoveries
-- [ ] Basic test: WorldPerceptionActor finds something; synthesis stored; LanguageActor retrieves it
+- [x] Basic test: WorldPerceptionActor finds something; synthesis stored; LanguageActor retrieves it
       as context in next conversation
 
 ---
 
 ### 5.4 MotivationActor: explore action
 
-- [ ] Add `explore` as a 6th action in ACTIONS
-- [ ] B matrix expands from 5→6 policies; `explore` gets a novelty-increasing transition — exploring
+- [x] Add `explore` as a 6th action in ACTIONS
+- [x] B matrix expands from 5→6 policies; `explore` gets a novelty-increasing transition — exploring
       is expected to raise novelty beliefs, satisfying the curiosity drive
-- [ ] `_execute_action`: `explore` → sends `ExploreRequest` to WorldPerceptionActor with top residue
+- [x] `_execute_action`: `explore` → sends `ExploreRequest` to WorldPerceptionActor with top residue
       items and current identity text as seed for query generation
-- [ ] Update `planning/motivation-model.md`
-- [ ] Basic test: belief state with low novelty + unresolved residue → model selects `explore`
+- [x] Update `planning/motivation-model.md`
+- [x] Basic test: belief state with low novelty + unresolved residue → model selects `explore`
 
 ---
 
@@ -645,26 +645,21 @@ These are real but not yet ordered. They come after the foundation is solid.
 
 ## Current status
 
-**Phase**: 5 — World Perception (exploration, workspace, discovery memory).
+**Phase**: 6 — Self-Modification (not yet started).
 
-**Phase 4 complete** (April 2026). 98 unit tests passing (29 LLM/integration tests marked with
+**Phases 1–5 complete** (April 2026). 98+ unit tests passing (29 LLM/integration tests marked with
 `@pytest.mark.llm` / `@pytest.mark.integration` — Ollama-dependent, run separately).
 
-- `InternalStateActor` running; emits `INTERNAL_STATE_REPORT` and pushes vitals to Web UI
-- `MotivationActor` running PyMDP active inference; chosen silence activates after 2 consecutive
-  rest ticks, resets immediately on any non-rest action; pushes belief state to Web UI
-- `SelfNarrativeActor` between-conversation mode operational; responds to `TIME_PASSING` ignition
-- Web UI actor panels show live state for TemporalCore, InternalState, and Motivation
-- `surface_*` actions deferred: LanguageActor has no unsolicited expression mode yet (see TODO in
-  `actors/motivation/__init__.py:_execute_action`)
+- Full actor framework: 10 actors running concurrently
+- Memory stack: event log, reflective, residue, identity, volitional, discovery layers (all live)
+- Motivation: PyMDP active inference with 6 actions including explore; chosen silence operational
+- Unsolicited expression: surface_* pipeline wired; conversation idle timeout added (April 2026)
+- World perception: workspace at `/anima/`, file read/write, DuckDuckGo search, discovery memory
+- Web UI: 10 animated panels with live WebSocket state
+- Integration improvements (April 2026): system prompt reframed ("faculty of a wider system"),
+  residue store surfaced to LLM context, `/no_think` removed from conversation responses
 
-**Phase 5 design complete** (April 2026). Architecture decisions resolved — see Phase 5 section
-above. Build order: 5.0 (infra) → 5.4 (identity resonance) → 5.1 (code access) → 5.2
-(self-modification) → 5.3 (monitoring) → 5.5 (recovery docs). Identity resonance (5.4) is a
-prerequisite for 5.2: `trigger_proposal` should not go live before Anima's identity coherence is
-feeding into the generative model.
-
-**Next action**: Phase 4.5 — unsolicited expression; then Phase 4.6 — Web UI redesign and
-relocation.
+**Next action**: Phase 6 — Self-Modification. Read Phase 6 section before starting.
+Infrastructure first: Docker secrets for SSH deploy key + GitHub PAT.
 
 See `context/session.md` for the most recent session state.
