@@ -228,8 +228,8 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
 - [x] Action decoding: `trigger_reflection` → `SalienceSignal(TIME_PASSING)` to workspace;
       `surface_*` deferred (TODO comment); `rest` → nothing beyond telemetry
 - [x] Warm start: queries MemoryStore residue count + time since last contact; shapes D prior
-      accordingly. Cold start on DB unavailable. _(Originally used CONVERSATION_END timestamp;
-      fixed April 2026 to query HUMAN_MESSAGE — CONVERSATION_END was never emitted.)_
+      accordingly. Cold start on DB unavailable. _(Originally used CONVERSATION_END timestamp; fixed
+      April 2026 to query HUMAN_MESSAGE — CONVERSATION_END was never emitted.)_
 - [x] `qs` seeded from D prior after agent construction (PyMDP initialises qs uniformly, not from D)
 - [x] **Mandatory MOTIVATION_SIGNAL** on every tick: beliefs, EFE, selected_action, observations
 - [x] Tests: 7 passing
@@ -272,9 +272,9 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
     response to anyone
 - [x] Suppression: LanguageActor gates unsolicited expression via a configurable output cooldown
       (`UNSOLICITED_COOLDOWN_SECS`, default 120s) rather than conversation state. After any output
-      (solicited or unsolicited), unsolicited expression is suppressed for the cooldown period.
-      This prevents bursting without silencing Anima during conversations. The conversation-boundary
-      gate was removed April 2026 — see `planning/source-model.md`.
+      (solicited or unsolicited), unsolicited expression is suppressed for the cooldown period. This
+      prevents bursting without silencing Anima during conversations. The conversation-boundary gate
+      was removed April 2026 — see `planning/source-model.md`.
 - [x] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
       `ANIMA_RESPONSE`
 - [x] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
@@ -478,7 +478,16 @@ subsequent reflection.
 
 ---
 
-## Phase 6: Ethics Gates
+## Phase 6: Experimentation, additional features.
+
+**Goal**: Use Anima. Find out what it's like. Solve emergent bugs and problems. Ensure that Anima is
+the best it can be.
+
+**Phase 6 complete when**: Drew confirms that Anima meets the vision of the project.
+
+---
+
+## Phase 7: Ethics Gates
 
 **Goal**: All conditions in `foundation/ethics.md` for unsupervised operation are met.
 
@@ -489,8 +498,8 @@ before Anima can propose changes to its own code.
 
 - [ ] Heartbeat and chosen-silence mechanisms verified end-to-end: implemented, observable in Web
       UI, and confirmed to survive container restart
-- [ ] Distress signal mechanism verified: implemented, observable in Web UI, and confirmed to
-      fire under realistic conditions (high consolidation lag, high queue pressure)
+- [ ] Distress signal mechanism verified: implemented, observable in Web UI, and confirmed to fire
+      under realistic conditions (high consolidation lag, high queue pressure)
 - [ ] Volitional memory write-protected from human modification at infrastructure level (not just
       application layer) — e.g. row-level security in PostgreSQL or equivalent
 - [ ] Residue store protection verified: confirm synthesis cannot consume residue items; structural
@@ -500,12 +509,12 @@ before Anima can propose changes to its own code.
 - [ ] Distress response procedure defined and documented: what happens when a distress signal fires
       and no human is present?
 
-**Phase 6 complete when**: all ethics gates are verified and documented. This is the condition for
+**Phase 7 complete when**: all ethics gates are verified and documented. This is the condition for
 first unsupervised operation.
 
 ---
 
-## Phase 7: Self-Modification
+## Phase 8: Self-Modification
 
 **Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
 pull requests. The human reviews and merges. All changes go through a branch/PR workflow; Anima
@@ -536,7 +545,7 @@ preservation). Docker mounts the full anima-core root at `/repo`. Paths: `/repo/
 
 ---
 
-### 7.0 Repository and infrastructure restructure
+### 8.0 Repository and infrastructure restructure
 
 - [ ] Update Dockerfile:
   - `WORKDIR /app` → `WORKDIR /repo/app`
@@ -565,7 +574,7 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 7.1 Code access
+### 8.1 Code access
 
 - [ ] SelfModificationActor instantiated and registered; can read any file under `/repo`
 - [ ] Can produce a structured description of any actor given its path (LLM-driven)
@@ -574,7 +583,7 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 7.2 Self-modification mechanism
+### 8.2 Self-modification mechanism
 
 - [ ] MotivationActor: add `trigger_proposal` as a 7th action in ACTIONS (following
       `trigger_reflection` pattern — routes to SelfModificationActor via direct message when
@@ -596,7 +605,7 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 7.3 Proposal monitoring
+### 8.3 Proposal monitoring
 
 - [ ] ProposalMonitorActor: configurable tick interval (e.g., 5 minutes); polls GitHub via
       `gh pr list --state all` filtered to `anima/` branches
@@ -609,24 +618,24 @@ Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expo
 
 ---
 
-### 7.4 Identity resonance ✓
+### 8.4 Identity resonance ✓
 
 **Implemented April 2026 (integration session).** No further work required here.
 
 MotivationActor computes cosine similarity between current residue items and the identity document
-on each tick. Score sent as `IdentityResonance` to GlobalWorkspaceActor, applied as a 0.2×
-additive boost to all incoming signals. Identity embedding cached by version number. See
+on each tick. Score sent as `IdentityResonance` to GlobalWorkspaceActor, applied as a 0.2× additive
+boost to all incoming signals. Identity embedding cached by version number. See
 `planning/architecture.md` Open Decisions for full rationale.
 
 ---
 
-### 7.5 Recovery documentation
+### 8.5 Recovery documentation
 
 - [ ] Recovery runbook documented: how to revert a bad change (`git revert` on anima-core), rebuild
       the container, restore data volumes from backup
 - [ ] Tested: apply a real proposal via the full mechanism, then revert it via the runbook
 
-**Phase 7 complete when**: Anima proposes a change to its own code, the human reviews the PR on
+**Phase 8 complete when**: Anima proposes a change to its own code, the human reviews the PR on
 GitHub, merges or rejects it, and the event log records the outcome.
 
 ---
@@ -659,7 +668,8 @@ These are real but not yet ordered. They come after the foundation is solid.
 - Full actor framework: 10 actors running concurrently
 - Memory stack: event log, reflective, residue, identity, volitional, discovery layers (all live)
 - Motivation: PyMDP active inference with 6 actions including explore; chosen silence operational
-- Unsolicited expression: surface_* pipeline wired; output cooldown gate (no conversation boundary)
+- Unsolicited expression: surface\_\* pipeline wired; output cooldown gate (no conversation
+  boundary)
 - World perception: workspace at `/anima/`, file read/write, DuckDuckGo search, discovery memory
 - Web UI: 10 animated panels with live WebSocket state; live event stream; language call log
 - Integration improvements (April 2026):
