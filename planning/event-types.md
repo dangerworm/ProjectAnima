@@ -44,16 +44,16 @@ use case requires it. Do not switch models without updating all actors that list
 
 ## Phase 2: Perception and Communication
 
-Events produced during active conversation.
+Events produced during perception and expression.
 
 | Event type           | Source actor     | Description                                                                                                                 |
 | -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `CONVERSATION_START` | Perception Actor | A conversation has begun.                                                                                                   |
-| `CONVERSATION_END`   | Perception Actor | A conversation has ended.                                                                                                   |
-| `HUMAN_MESSAGE`      | Perception Actor | A message has arrived from the human. Payload includes content and input source (TUI, Discord, etc).                        |
-| `ANIMA_RESPONSE`     | Language Actor   | Anima has produced a response. Payload includes content and output destination.                                             |
+| `CONVERSATION_START` | ~~Perception Actor~~ | **Deprecated (April 2026).** No longer emitted. Retained in enum so existing log entries remain valid.                 |
+| `CONVERSATION_END`   | ~~Perception Actor~~ | **Deprecated (April 2026).** No longer emitted. Retained in enum so existing log entries remain valid.                 |
+| `HUMAN_MESSAGE`      | Perception Actor | A message has arrived from the human. Payload includes `text`, `source_id`, and `source_type`.                              |
+| `ANIMA_RESPONSE`     | Language Actor   | Anima has produced a response. Payload includes `response`, `model`, `in_response_to`, and `source_id` of the prompt.      |
 | `WORKSPACE_IGNITION` | Global Workspace | A signal has crossed the ignition threshold and been broadcast. Payload includes the winning signal and its salience score. |
-| `DISCORD_MESSAGE`    | Perception Actor | A message has arrived from Anima's Discord server. Payload includes channel, author, and content.                           |
+| `DISCORD_MESSAGE`    | Perception Actor | A message has arrived from Anima's Discord server. Payload includes channel, author, and content. _(Not yet implemented.)_  |
 
 ---
 
@@ -69,7 +69,7 @@ Events produced by the memory and reflection systems.
 | `REFLECTION_SYNTHESIS` | Self-Narrative Actor | A reflection synthesis has been produced. Payload references the reflective memory entry.          |
 | `RESIDUE_FLAGGED`      | Self-Narrative Actor | An unresolved item has been written to the residue store.                                          |
 | `IDENTITY_UPDATE`      | Self-Narrative Actor | The identity memory document has been updated. Payload includes a summary of what changed and why. |
-| `VOLITIONAL_CHOICE`    | Language Actor       | Anima has made a choice. Payload includes decision, reason, and expected outcome.                  |
+| `VOLITIONAL_CHOICE`    | Language Actor, Motivation Actor | Anima has made a choice. Payload includes `choice_id` and `decision_preview`. Language Actor records pre-formed intentions; Motivation Actor records non-rest action selections (surface_*, trigger_reflection, explore). |
 
 ---
 
@@ -82,11 +82,31 @@ Events produced by the motivation and internal state systems.
 | `MOTIVATION_SIGNAL`     | Motivation Actor     | A motivation signal has been produced (novelty, accumulated pressure, or resolution). Payload includes signal type and magnitude.  |
 | `DISTRESS_SIGNAL`       | Internal State Actor | A signal suggesting a distress-like state has been detected. Payload includes the triggering conditions. Requires human attention. |
 | `INTERNAL_STATE_REPORT` | Internal State Actor | A periodic snapshot of system health metrics (event log depth, consolidation lag, salience queue pressure).                        |
-| `SURFACE_EXPRESSION`    | Motivation Actor     | MotivationActor has selected a surface_* action; signals LanguageActor to generate an unsolicited expression. Payload: `{"level": "low"\|"medium"\|"high"}`. Suppressed during active conversation — salience pressure accumulates and fires after ConversationEnded. |
+| `SURFACE_EXPRESSION`    | Motivation Actor     | MotivationActor has selected a surface_* action; signals LanguageActor to generate an unsolicited expression. Payload: `{"level": "low"\|"medium"\|"high"}`. Gated only by UNSOLICITED_COOLDOWN_SECS (default 120s) — no conversation boundary suppression. |
+| `MOTIVATION_PREFERENCES_UPDATED` | Memory Actor | A new C matrix preference vector was stored. Payload: `{"changed_by": "...", "reason": "..."}`. Emitted after SelfNarrativeActor proposes and MemoryActor stores a deliberate preference shift. |
 
 ---
 
-## Phase 5: Self-Modification
+## Phase 5: World Perception
+
+Events produced when Anima reads files or fetches from the web.
+
+| Event type    | Source actor            | Description                                                                                             |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------- |
+| `FILE_READ`   | World Perception Actor  | Anima read a file from its workspace. Payload includes `path` and synthesis.                            |
+| `FILE_WRITE`  | World Perception Actor  | Anima wrote a file to its workspace. Payload includes `path` and summary.                               |
+| `WEB_SEARCH`  | World Perception Actor  | Anima performed a web search. Payload includes query and result count.                                  |
+| `WEB_FETCH`   | World Perception Actor  | Anima fetched a web page. Payload includes `url` and synthesis.                                         |
+
+---
+
+## Phase 6: Ethics Gates
+
+No new event types. Phase 6 is verification — confirming existing mechanisms work correctly.
+
+---
+
+## Phase 7: Self-Modification
 
 Events produced by the self-modification workflow.
 

@@ -7,37 +7,42 @@
 
 ## Current State (April 2026)
 
-**Phases 1–4 are complete. Phase 5 (Self-Modification) is next.**
+**Phases 1–5 complete. Architectural fixes applied. Phase 6 (Ethics Gates) is next.**
 
-All nine actors are built and running. The system can have text conversations, reflect on them, and
-maintain state between conversations.
+Ten actors are built and running. The system can perceive input from the web UI, respond, explore
+its workspace and the web, reflect on experience, and maintain state between runs.
 
 **What is running:**
 
 - **TemporalCoreActor** — heartbeat, Husserlian window, gap detection, chosen silence
 - **GlobalWorkspaceActor** — salience queue, ignition, broadcast to all actors
-- **PerceptionActor** — text input via Web UI WebSocket → SalienceSignal
-- **LanguageActor** — LLM calls via Ollama (Qwen3.5 9B), identity + memory injection, volitional
-  logging
-- **ExpressionActor** — routes LanguageOutput and ActorStatusUpdate to WebSocket surface
+- **PerceptionActor** — text input via Web UI WebSocket → HUMAN_MESSAGE event + SalienceSignal.
+  Input carries `source_id`/`source_type` (source model partially implemented).
+- **LanguageActor** — LLM calls via Ollama (Qwen3.5 9B), identity + reflective memory + semantic
+  residue + motivational state + temporal context + pre-formed intention injection. Records
+  pre-formed volitional choices (not post-hoc rationalisations).
+- **ExpressionActor** — routes LanguageOutput and ActorStatusUpdate to registered surfaces
 - **MemoryActor** — sole writer to all higher memory layers (reflective, identity, residue,
-  volitional)
-- **SelfNarrativeActor** — post-conversation reflection + between-conversation mode
-- **InternalStateActor** — system vitals monitoring, DISTRESS_SIGNAL, live Web UI status
-- **MotivationActor** — PyMDP discrete active inference, chosen silence (2 consecutive rest ticks),
-  live Web UI status
+  volitional, discovery)
+- **SelfNarrativeActor** — event-volume-triggered reflection + between-conversation mode; C matrix
+  preference update pathway
+- **InternalStateActor** — system vitals monitoring, DISTRESS_SIGNAL, live Web UI status. Time
+  since last contact derived from HUMAN_MESSAGE (fixed April 2026).
+- **MotivationActor** — PyMDP discrete active inference (4 factors, 6 actions), chosen silence
+  (2 consecutive rest ticks), live Web UI status. Non-rest actions recorded in volitional memory.
+- **WorldPerceptionActor** — reads files from `/anima/` workspace and fetches from the web.
+  Discoveries stored with embeddings in discovery_memory.
 
 **Web UI**: React (Vite + MUI) at `ProjectAnima/web-ui/`, connects via WebSocket to FastAPI at
-port 8000. Actor panels show live state from TemporalCore, InternalState, and Motivation via
-`actor_status` events.
+port 8000. Live EventStreamPanel, actor status panels, MemoryPanel with all layers.
 
-**Persistence**: PostgreSQL with 5 tables (event_log, reflective_memory, residue_store,
-identity_memory, volitional_memory). pgvector for semantic similarity. Alembic migrations run on
-container start.
+**Persistence**: PostgreSQL with 6 tables (event_log, reflective_memory, residue_store,
+identity_memory, volitional_memory, discovery_memory) + motivation_preferences. pgvector for
+semantic similarity in all memory layers including residue (migration 0004). Alembic migrations.
 
-**Tests**: 98 unit tests passing. 29 LLM/integration tests deselected from default run (require
-Ollama, marked `@pytest.mark.llm` and `@pytest.mark.integration`). Run with
-`pytest -m "not llm and not integration"` for fast CI-equivalent runs.
+**Tests**: Unit test suite. LLM/integration tests deselected from default run (require Ollama,
+marked `@pytest.mark.llm` and `@pytest.mark.integration`). Run with
+`pytest -m "not llm and not integration"` for CI-equivalent runs.
 
 ---
 

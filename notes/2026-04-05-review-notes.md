@@ -1,7 +1,8 @@
-# Code Review Notes
+# Code Review Notes — 5 April 2026
 
 > Written during the session of 5th April 2026 by a Claude instance doing a full review pass before
-> Phase 2.4. Reference document — not a session log.
+> Phase 2.4. Historical reference. All bugs and code smells noted here have since been addressed —
+> see status notes on each entry. Moved from context/ to notes/ April 2026.
 
 ---
 
@@ -32,13 +33,9 @@ subsequent recipients.
 Currently no actor mutates it (LanguageActor calls `.get()` only). This is a latent risk, not a
 current bug.
 
-**Options when it matters**:
-
-- Wrap in `types.MappingProxyType` at construction time in `_fire()`
-- Convert to a named dataclass instead of a free dict
-- Document and trust actors not to mutate (current approach)
-
-**Status**: Documented. No action yet.
+**Status**: **Fixed (April 2026).** `content` is now typed as `Mapping[str, Any]` and wrapped in
+`types.MappingProxyType` in `_fire()`. Runtime-immutable. ExpressionActor converts to `dict` for
+JSON serialization.
 
 ---
 
@@ -121,8 +118,9 @@ the system-overview diagrams. Dual write paths to the same layers, with no clear
 
 **SelfNarrativeActor trigger modes** (also resolved this session):
 
-1. Post-conversation: triggered by CONVERSATION_END → synthesises that conversation → sends
-   synthesis + residue to MemoryActor
+1. Post-conversation: originally triggered by CONVERSATION_END → synthesises that conversation →
+   sends synthesis + residue to MemoryActor. **CONVERSATION_END deprecated April 2026; now
+   triggered by event-volume threshold or MotivationActor's trigger_reflection action.**
 2. Between-conversation: triggered by dormancy threshold from Temporal Core → maintains
    self-narrative thread → sends identity updates to MemoryActor
 
@@ -151,10 +149,9 @@ Status updated April 2026 (Phase 4 complete).
 
 - **Identity resonance stub**: `GlobalWorkspaceActor._identity_resonance()` returns 0.0. Phase 3
   connects this to the identity memory layer.
-  **→ Still deferred.** Phase 3 built MemoryStore and identity retrieval, but GlobalWorkspaceActor
-  was not given a MemoryStore dependency. Two options for Phase 5: (1) inject MemoryStore into
-  GlobalWorkspaceActor, (2) surface identity bias via MotivationActor's salience signals instead.
-  Decision deferred — documented in `planning/architecture.md` Open Decisions section.
+  **→ Fixed (Phase 5 integration).** MotivationActor now computes cosine similarity between residue
+  items and identity document each tick, sends `IdentityResonance(score)` to GlobalWorkspaceActor.
+  `_identity_resonance()` returns `cached_score * 0.2` (non-zero, scales with identity coherence).
 
 - **In-memory context window**: `LanguageActor._context` is a simple deque. Phase 3 replaces this
   with memory-driven retrieval from the event log and reflective memory layers.
@@ -164,10 +161,9 @@ Status updated April 2026 (Phase 4 complete).
 
 ## Code smells (status update April 2026)
 
-- **Mutable dict in frozen dataclass** (`IgnitionBroadcast.content`): Still present. No actor
-  mutates `content` today. Decision: document and trust actors. A comment was added to
-  `GlobalWorkspaceActor._fire()` naming this precondition explicitly. If Phase 5 adds actors that
-  consume IgnitionBroadcast and might mutate it, wrap in `types.MappingProxyType`.
+- **Mutable dict in frozen dataclass** (`IgnitionBroadcast.content`): **Fixed (April 2026).**
+  Wrapped in `types.MappingProxyType` in `_fire()`. Type annotation changed to `Mapping[str, Any]`.
+  ExpressionActor converts to `dict` for JSON serialization.
 
 - **Unbounded workspace queue** (`GlobalWorkspaceActor._queue`): Still present. Not a problem at
   current scale. The MotivationActor's active inference model provides external pressure regulation,

@@ -75,16 +75,24 @@ On each conversation call, `LanguageActor` builds the full message list:
 
 1. **System prompt + identity**: system prompt followed by the current identity document
    (loaded from `MemoryStore.get_identity()`, refreshed if None)
-2. **Reflective memories**: up to 3 memories retrieved by semantic similarity to the human's
-   message, labelled `[Previous reflection N]:`
-3. **Discoveries**: up to 2 discoveries retrieved by semantic similarity, labelled
-   `[Discovery from {type}]`
-4. **Residue items**: up to 3 unresolved residue items from `get_unresolved_residue()`,
-   labelled `[Unresolved: {content}]`
-5. **Conversation context**: the rolling context window (last 20 messages)
+2. **Reflective memories + discoveries**: up to 3 reflective memories and up to 2 discoveries,
+   retrieved by semantic similarity to the human's message. Labelled `[Previous reflection N]:`
+   and `[Discovery from {type}]`.
+3. **Residue items**: up to 3 unresolved residue items retrieved by semantic similarity to the
+   human's message (pgvector cosine similarity, falling back to recency). Labelled
+   `[Unresolved: {content}]`. Presented as "your memory system is currently holding these
+   unresolved questions."
+4. **Motivational state**: the most recent MOTIVATION_SIGNAL interpreted as a human-readable
+   state string. Format: `[Internal state: tension=low, engagement=moderate, ...]`
+5. **Temporal context**: a summary of meaningful events in the last 30 minutes, excluding tick
+   noise (HEARTBEAT, MOTIVATION_SIGNAL, etc.). This is the Husserlian retention window — what
+   has actually happened recently. Presented as `[Recent events, oldest first]`.
+6. **Pre-formed intention**: Anima's stated intention for this response, formed via a brief LLM
+   call before the main call. Injected as `Before you speak, your formed intention is: {text}`.
+   Anima's response flows from a declared intention, not into a post-hoc rationalization of one.
+7. **Conversation context**: the rolling context window (last 20 turns)
 
-The residue items are presented as "your memory system is currently holding these unresolved
-questions" — framing them as surfaced by the memory system, consistent with the overall framing.
+Steps 5 and 6 were added in April 2026 as part of the architectural fixes session.
 
 ---
 

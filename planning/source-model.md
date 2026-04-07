@@ -1,8 +1,14 @@
 # Source Model — Architecture for Multi-Channel Input/Output
 
-> Status: **deferred**. The minimal fix (output cooldown replacing conversation gate) is in place.
-> This document captures the fuller architecture so the shape isn't lost.
-> Implement when a second input source arrives (Discord, voice, etc.).
+> Status: **partially implemented (April 2026)**. The core source annotation is in place.
+> The fuller multi-channel routing remains deferred until a second source arrives.
+>
+> **What's implemented:** `HumanInput` carries `source_id`/`source_type`; `PerceptionActor`
+> records source in event payloads; `LanguageOutput` carries `target`; `ANIMA_RESPONSE` events
+> include `source_id`. CONVERSATION_START/END deprecated and removed from all actor logic.
+>
+> **What's deferred:** ExpressionActor routing by target; memory annotations with source context;
+> `target=None` → JOURNAL.md path; event log schema columns (source currently in payload JSON).
 
 ---
 
@@ -122,13 +128,14 @@ When implementing, the key changes are:
 
 ---
 
-## What to keep from the conversation model
+## What was kept / what changed from the conversation model
 
-- **CONVERSATION_START/END events in the log**: keep as informational events, just don't use them
-  as gates. They're useful for "Drew arrived at this time, left at this time" context.
-- **TemporalCoreActor conversation tracking**: keep for the heartbeat status display and for
-  providing "time since last human contact" to MotivationActor's time_obs observation.
-- **The reflection pipeline itself**: unchanged. Only the trigger changes.
+- **CONVERSATION_START/END events**: deprecated and removed from all actor logic. The enum values
+  remain so old log entries don't break anything, but nothing emits them.
+- **TemporalCoreActor**: unchanged. `time_since_last_human_contact` is now derived from the most
+  recent HUMAN_MESSAGE event — more accurate than CONVERSATION_END was.
+- **InternalStateActor**: fixed to query HUMAN_MESSAGE instead of CONVERSATION_END for time metrics.
+- **The reflection pipeline**: volume-based trigger implemented; CONVERSATION_END dependency removed.
 
 ---
 

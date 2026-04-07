@@ -147,7 +147,8 @@ The reflection pipeline is the first trigger mode of `SelfNarrativeActor`. It ru
 end and produces synthesis (what resolved or shifted) and residue (what didn't). Both are sent to
 `MemoryActor` for storage — MemoryActor is the sole writer to all higher memory layers.
 
-- [x] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast
+- [x] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast _(CONVERSATION_END
+      deprecated April 2026; trigger changed to event-volume threshold / trigger_reflection action)_
 - [x] LLM call: given event log for the conversation, produce synthesis + residue
 - [x] Send synthesis and residue to `MemoryActor` — not written to storage directly
 - [x] `MemoryActor` writes synthesis → reflective memory; residue → residue store
@@ -226,8 +227,9 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
 - [x] Observation encoding: residue_obs (bucketed), time_obs (bucketed), ignition_obs (bool)
 - [x] Action decoding: `trigger_reflection` → `SalienceSignal(TIME_PASSING)` to workspace;
       `surface_*` deferred (TODO comment); `rest` → nothing beyond telemetry
-- [x] Warm start: queries MemoryStore residue count + last CONVERSATION_END timestamp; shapes D
-      prior accordingly. Cold start on DB unavailable.
+- [x] Warm start: queries MemoryStore residue count + time since last contact; shapes D prior
+      accordingly. Cold start on DB unavailable. _(Originally used CONVERSATION_END timestamp;
+      fixed April 2026 to query HUMAN_MESSAGE — CONVERSATION_END was never emitted.)_
 - [x] `qs` seeded from D prior after agent construction (PyMDP initialises qs uniformly, not from D)
 - [x] **Mandatory MOTIVATION_SIGNAL** on every tick: beliefs, EFE, selected_action, observations
 - [x] Tests: 7 passing
@@ -238,8 +240,8 @@ mandatory — it is the instrument panel for debugging. See Drew's notes in `con
       observations; accumulated tension raises EFE for `trigger_reflection`
 - [x] `SelfNarrativeActor` between-conversation mode: `TIME_PASSING` ignition →
       `_run_between_conversation_reflection()`
-- [x] Queries event log for events since last `CONVERSATION_END` (or last 24h); returns early if no
-      meaningful events found
+- [x] Queries event log for events since last reflection (or last 24h); returns early if no
+      meaningful events found _(original: since last CONVERSATION_END — deprecated April 2026)_
 - [x] LLM call with lightweight between-conversation prompt; sends `StoreReflection` and optionally
       `UpdateIdentity` to MemoryActor
 - [x] `memory_store` parameter added to `SelfNarrativeActor`; passed from `main.py`

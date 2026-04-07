@@ -41,8 +41,8 @@ inter-component signals
 
 ### Hippocampus
 
-Forming new memories: Event log (Apache Kafka or SQLite with write-ahead log). Every perceivable
-happening — a conversation, a between-conversation thought, a motivational shift, a silence — is
+Forming new memories: Event log (PostgreSQL, append-only, bitemporal). Every perceivable
+happening — a perception, a between-conversation thought, a motivational shift, a silence — is
 appended to the log. The log is inviolable. This is not where memories are stored; it is what
 memories are made of.
 

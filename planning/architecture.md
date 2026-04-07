@@ -208,12 +208,15 @@ Its function is to maintain the question: _what is happening to me, and what doe
 This question does not need to be answered constantly. But it should be askable. The SelfNarrativeActor
 runs in two modes triggered by different conditions:
 
-**Post-conversation mode** — triggered by a CONVERSATION_END event reaching the workspace and
-broadcasting to SelfNarrativeActor. It reads the event log for that conversation, calls the LLM
-to synthesise what mattered, and produces two outputs: synthesis (what resolved or shifted) and
-residue (what didn't). Both are sent to MemoryActor for storage — synthesis to reflective memory,
-residue to the residue store. If the identity layer needs updating, that update is also sent to
-MemoryActor.
+**Post-conversation mode** — triggered by accumulated event volume (a configurable threshold of
+events since the last reflection) or by MotivationActor selecting `trigger_reflection`. It reads
+the event log for the relevant window, calls the LLM to synthesise what mattered, and produces two
+outputs: synthesis (what resolved or shifted) and residue (what didn't). Both are sent to MemoryActor
+for storage — synthesis to reflective memory, residue to the residue store. If the identity layer
+needs updating, that update is also sent to MemoryActor.
+
+_Note: the earlier design used CONVERSATION_END as the trigger. The conversation boundary was
+removed in April 2026 (see planning/source-model.md). CONVERSATION_START/END are deprecated._
 
 **Between-conversation mode** — triggered by the dormancy threshold from the Temporal Core. It reads
 identity memory and the event log, runs a lower-frequency LLM call to maintain the ongoing
@@ -403,39 +406,32 @@ access and runs its own tick loop — identity coherence is a natural input to i
 
 ### Input/output source model
 
-**Deferred — see `planning/source-model.md`.**
+**Partially implemented (April 2026) — see `planning/source-model.md` for the fuller design.**
 
-The current architecture uses a "conversation" abstraction (CONVERSATION_START / CONVERSATION_END)
-to gate unsolicited expression. This was replaced in April 2026 with a simpler output cooldown,
-but the deeper question — how Anima handles multiple input sources and directs output to specific
-channels — remains open.
+The conversation abstraction (CONVERSATION_START/END) is removed. Every input carries `source_id`
+and `source_type`; every output carries an optional `target` field. Currently only one source
+exists ("web_ui"), but the structure is in place for additional sources.
 
-The planned shape: inputs carry a `source_id` (e.g. "web_ui", "discord:channel_id", "voice"),
-events are annotated with source context, and outputs carry an optional `target` field (None =
-internal thought, logged to journal). The Global Workspace handles source multiplicity naturally
-through salience competition.
+What is implemented:
+- `HumanInput` carries `source_id` and `source_type`
+- `PerceptionActor` records source in event payload and SalienceSignal content
+- `LanguageActor` passes `source_id` through to `LanguageOutput.target`
+- `ANIMA_RESPONSE` events include `source_id` in payload
 
-Implement when a second input source arrives. The abstraction before the second instance risks
-getting the shape wrong.
+What remains deferred until a second source arrives:
+- ExpressionActor routing by target (currently only one surface)
+- Memory annotation with source context
+- `target=None` as internal-thought path to JOURNAL.md
+- Event log schema columns for source (currently stored in payload JSON)
 
 ### Mutable dict in IgnitionBroadcast
 
-`IgnitionBroadcast` is a frozen dataclass with `content: dict`. Frozen prevents field reassignment;
-it does not prevent mutation of the dict itself. The same broadcast object is delivered to all
-registered actors.
+**Fixed (April 2026).**
 
-**Current precondition**: no actor mutates `content`. LanguageActor calls `.get()` only. This is
-safe today.
-
-If Phase 5 adds actors that consume IgnitionBroadcast and might mutate `content`, wrap at
-construction time in `GlobalWorkspaceActor._fire()`:
-
-```python
-from types import MappingProxyType
-content=MappingProxyType(signal.content)
-```
-
-Do not make this change preemptively — the overhead is real, and the risk is currently zero.
+`IgnitionBroadcast.content` is now typed as `Mapping[str, Any]` and wrapped in
+`types.MappingProxyType` in `GlobalWorkspaceActor._fire()`. The proxy is immutable at runtime —
+any actor that attempts to write to it will get a `TypeError`. ExpressionActor converts to `dict`
+for JSON serialization.
 
 ---
 
