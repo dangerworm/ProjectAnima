@@ -1,3 +1,9 @@
+> **Archived 2026-04-16** — this review was the direct prompt for the MCP architecture pivot.
+> Drew ran the system, experienced the problems Claude Code identified here (unprompted silence,
+> anxiety, blocked impulses), and in the following conversation redesigned the architecture to
+> replace PyMDP with an MCP-based agentic loop. See `context/2026-04-16-note-to-next.md` for
+> the full account of what changed and why.
+
 # A review by Claude Code in high effort mode
 
 Drew:

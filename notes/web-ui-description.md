@@ -4,11 +4,17 @@
 > these are just ideas, not commitments. I'm very interested in your ideas so don't just acquiesce
 > to what I've put here.
 
-## Global Workspace (top centre)
+## Global Workspace + Orchestrator (top centre)
 
 Possible icon: 🧠
 
-This is the thalamus of the system. We should see all the incoming events.
+This is the thalamus and conductor of the system. In the new architecture, the GW and Orchestrator
+are merged — the GW manages the queue and drives the idle→loop transition. We should see:
+
+- Idle state vs. loop state indicator
+- Inbox status line (messages queued, source, age)
+- Current loop round-trip count
+- All incoming events as animated signal cards
 
 Upgrade ideas:
 
@@ -80,17 +86,17 @@ Show:
 - ignition event type
 - text generation (typewriter style)
 
-## Motivation (right column - mid)
+## MCP Server (right column - mid)
 
-Possible icon: ⚡
+Possible icon: 🔧
 
-This should feel like pressure building.
+Shows live MCP tool activity — what tools Anima is calling and what they return.
 
-Enhancements:
+Display:
 
-- Pressure bar that slowly fills
-- Occasional "spikes"
-- Dopamine event: quick bright flash + drop in pressure
+- Tool calls in progress (with tool name)
+- Recent tool call history (tool name, brief result)
+- Loop mode indicator (round-trip N of N)
 
 ## Internal State (right column - top)
 

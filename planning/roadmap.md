@@ -17,671 +17,260 @@ Do not skip phases. Do not conflate them.
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Foundation — Complete
 
-**Goal**: A running system with persistent storage, a working actor framework, and a heartbeat.
-Nothing intelligent yet — just the infrastructure that everything else will build on.
-
-### 1.1 Repository and environment setup
-
-- [x] Private GitHub repository created
-- [x] Dockerfile created (Python base, dependencies, volume mounts defined)
-- [x] Docker Compose file for local development
-- [x] PostgreSQL container with persistent volume mount
-- [x] Basic project structure: `/app/actors/`, `/app/core/`, `/app/config/`
-- [x] Environment variable configuration (no secrets in code)
-- [ ] CI: basic GitHub Actions to verify the container builds _(deferred)_
-
-### 1.2 Event log
-
-- [x] PostgreSQL schema for the event log (append-only, bitemporal) — fields in
-      `planning/tech-stack.md`
-- [x] `EventLog` class: append, replay, query by time range
-- [x] Event types defined as Python enums/dataclasses — starting set in `planning/event-types.md`
-- [x] Verified: events cannot be modified or deleted once written
-- [x] Basic test: append 10 events, replay them in order, verify bitemporality
-
-### 1.3 Actor framework
-
-- [x] Base `Actor` class: inbox queue, `send()`, `run()` loop
-- [x] `Message` base class with typed subclasses
-- [x] Actor registry: named actors, message routing by name
-- [x] Basic test: two actors exchange messages, verify isolation (no shared state)
-
-### 1.4 Temporal Core
-
-- [x] `TemporalCoreActor`: always running, emits heartbeat signal on configurable interval
-- [x] Husserlian sliding window: retention zone, primal impression, protention zone
-- [x] Tracks: time since last conversation, time since last event, current timestamp
-- [x] Emits to event log: periodic "time passing" events during dormancy
-- [x] Chosen silence signal: explicit "I am dormant by choice" vs no signal at all
-- [x] Basic test: run for 60 seconds, verify heartbeat events in log, verify gap detection
-
-**Phase 1 complete when**: the system starts, a heartbeat appears in the event log, and you can see
-time passing.
+**What was built**: event log (PostgreSQL, append-only, bitemporal), base actor framework (asyncio
+queues, typed messages, actor registry), TemporalCoreActor (heartbeat, Husserlian window, gap
+detection, chosen silence).
 
 ---
 
-## Phase 2: Perception and Communication
+## Phase 2: Perception and Communication — Complete
 
-**Goal**: Anima can receive input and produce output. The first conversation is possible.
-
-### 2.1 Global Workspace actor
-
-- [x] `GlobalWorkspaceActor`: receives signals from all actors, maintains salience queue
-- [x] Salience weighting: novelty score, accumulated pressure, identity resonance (stub for now)
-- [x] Ignition mechanism: threshold crossing broadcasts to all actors
-- [x] Basic test: send signals of varying salience, verify correct ignition order
-
-### 2.2 LLM client
-
-- [x] `LLMClient` wrapper around Ollama HTTP API
-- [x] Configurable model name and endpoint
-- [x] Handles: text completion, structured JSON output, error/retry
-- [x] Basic test: call local Ollama, get response, verify latency is acceptable
-
-### 2.3 Language actor
-
-- [x] `LanguageActor`: receives workspace broadcasts, calls LLM, produces text output
-- [x] Consumes: workspace ignition signals, current context
-- [x] Produces: text responses with destination, emits to event log and volitional memory
-- [x] Routes output to Expression Actor — does not write to surfaces directly
-- [x] Basic test: send a message, get a response, verify it appears in event log
-
-### 2.4 Expression actor
-
-- [x] `ExpressionActor`: receives output + destination from Language Actor, routes to surfaces
-- [x] Hub only — no peripheral-specific logic lives in the actor itself
-- [x] Each surface is a separate module under `expression/surfaces/`
-- [x] Initial surface: WebSocket broadcast only
-- [x] Basic test: Language Actor output arrives at WebSocket surface via Expression Actor
-
-### 2.5 Basic Web UI
-
-- [x] FastAPI WebSocket server inside Docker; broadcasts events to connected clients
-- [x] React frontend (Vite + MUI): connects to WebSocket, renders layout from sketch (April 2026)
-- [x] Actor panels: one panel per actor showing current status and recent events
-- [x] Conversation panel: live feed from Expression Actor + text input field
-- [x] Centre canvas: displays Anima's inner reasoning (thinking field from LLMResponse); not
-      surfaced to conversation partners — agreed with Drew during Phase 2.3
-- [x] Input: text field in browser → WebSocket → Perception Actor
-
-### 2.6 Perception Actor and text input/output loop
-
-- [x] `PerceptionActor`: receives raw human text input (via `HumanInput` message), logs
-      `HUMAN_MESSAGE` to event log, emits `SalienceSignal(event_type=HUMAN_MESSAGE)` to workspace
-- [x] Full system orchestration in `main.py`: all actors instantiated, registered, and run
-      concurrently; `ConversationStarted` sent by PerceptionActor on first input
-- [x] Human types message → Perception Actor → workspace → Language Actor → Expression Actor → Web
-      UI
-- [x] Conversation is logged to event log in full
-- [x] Basic test: have a short conversation, verify full event log record
-
-**Phase 2 complete when**: you can have a text conversation with Anima and see it in the event log.
+**What was built**: GlobalWorkspaceActor (salience queue, ignition), LLMClient (Ollama), LanguageActor
+(LLM calls, response generation), ExpressionActor (WebSocket surface), basic React Web UI, text
+input/output loop via WebSocket.
 
 ---
 
-## Phase 3: Memory
+## Phase 3: Memory — Complete
 
-**Goal**: Anima remembers. Conversations accumulate. The reflective layer begins to develop.
-
-### 3.1 Memory schema
-
-- [x] PostgreSQL tables for all four memory layers (event, reflective, identity, volitional)
-- [x] Residue store table with explicit protection flags
-- [x] pgvector extension enabled
-- [x] Schema migration tooling (Alembic or equivalent)
-
-### 3.2 Memory actor
-
-- [x] `MemoryActor`: reads from and writes to all memory layers
-- [x] Retrieval: semantic similarity (pgvector), spreading activation, time-based
-- [x] Surfaces relevant memories to workspace on request
-- [x] Basic test: store 10 reflective memories, retrieve by semantic similarity
-- [x] Populate `TemporalCoreActor` retention window from event log on each tick _(Gap B from
-      ideas.md — fixed: `_refresh_retention()` queries event log on each tick)_
-
-### 3.3 Post-conversation reflection pipeline
-
-The reflection pipeline is the first trigger mode of `SelfNarrativeActor`. It runs at conversation
-end and produces synthesis (what resolved or shifted) and residue (what didn't). Both are sent to
-`MemoryActor` for storage — MemoryActor is the sole writer to all higher memory layers.
-
-- [x] `SelfNarrativeActor` responds to `CONVERSATION_END` ignition broadcast _(CONVERSATION_END
-      deprecated April 2026; trigger changed to event-volume threshold / trigger_reflection action)_
-- [x] LLM call: given event log for the conversation, produce synthesis + residue
-- [x] Send synthesis and residue to `MemoryActor` — not written to storage directly
-- [x] `MemoryActor` writes synthesis → reflective memory; residue → residue store
-- [ ] Anomaly detection: flag if synthesis appears to have consumed something unresolved _(deferred
-      — structural protection in place; semantic check is Phase 4+ territory)_
-- [x] Basic test: have a conversation, run pipeline, verify both outputs exist and residue is
-      protected
-
-### 3.4 Identity memory initialisation
-
-- [x] Load `foundation/identity-initial.md` as version zero of the identity memory document
-- [x] Version history tracking on identity document
-- [x] Identity memory fed into LLM context at conversation start
-- [x] Basic test: verify identity memory shapes language actor output
-
-### 3.5 Volitional memory
-
-- [x] Schema: decision, reason, expected outcome, actual outcome
-- [x] Language actor writes to volitional memory when a choice is made
-- [x] Human cannot modify volitional memory (enforced at application layer)
-- [x] Basic test: make a choice in conversation, verify volitional record
-
-**Phase 3 complete when**: Anima's responses are shaped by accumulated memory and the reflection
-pipeline runs after every conversation.
+**What was built**: PostgreSQL memory schema (event, reflective, identity, volitional, residue store),
+MemoryActor (sole writer to all higher memory layers), post-conversation reflection pipeline
+(SelfNarrativeActor trigger modes), identity memory initialisation, volitional memory.
 
 ---
 
-## Phase 4: Motivation and Between-Conversation Activity
+## Phase 4: Motivation and Between-Conversation Activity — Complete
 
-**Goal**: Anima does something when no one is talking to it.
+**What was built**: InternalStateActor (vitals, DISTRESS_SIGNAL), MotivationActor (PyMDP active
+inference — see `notes/archive/motivation-model-pymdp.md`), between-conversation process, chosen
+silence mechanism, unsolicited expression pipeline, full Web UI redesign.
 
-### Decision resolved: Option A (active inference)
-
-**Decided April 2026, after completing Phases 1–3.**
-
-Option A is confirmed. The `MotivationActor` will maintain a PyMDP generative model. Motivation,
-curiosity, accumulated pressure, and between-conversation activity emerge from variational inference
-rather than hand-coded rules. The conditional logic approach (Option B) is discarded.
-
-Rationale: the actor framework is clean and well-tested. PyMDP's computational cost on a small,
-focused state space is negligible compared to LLM calls. The real risk is model design (active
-inference fails quietly), not performance. Logging full belief state and EFE values on every tick is
-mandatory — it is the instrument panel for debugging. See Drew's notes in `context/` and
-`research/technical/active-inference-implementation.md` for full reasoning.
-
-`planning/tech-stack.md` has been updated to reflect this as the current plan.
+**Note:** Phase 4 used PyMDP for motivation. This has been removed in Phase 6. Phase 4 is preserved
+as history, but the PyMDP actors are gone.
 
 ---
 
-### 4.1 Internal state monitoring actor
+## Phase 5: World Perception — Complete
 
-- [x] `InternalStateActor`: monitors event log depth, consolidation lag, salience queue pressure,
-      time since last conversation
-- [x] Feeds "body state" signals to workspace via `InternalStateObservation` messages
-- [x] Emits `INTERNAL_STATE_REPORT` to event log on each tick
-- [x] Emits `DISTRESS_SIGNAL` + `SalienceSignal` when consolidation lag or queue pressure exceeds
-      configurable thresholds
-- [x] All guards in place: no crash if workspace or motivation not registered
-- [x] Tests: 6 passing
-
-### 4.2 Motivation actor
-
-> _(Option A — active inference with PyMDP. Option B is discarded.)_
-
-- [x] Full generative model designed and committed: `planning/motivation-model.md`
-- [x] C matrix update pathway documented as ethical commitment in `foundation/ethics.md` (A/B
-      matrices update automatically; C changes only through SelfNarrativeActor/MemoryActor — Anima's
-      values don't drift silently)
-- [x] `inferactively-pymdp==0.0.7.1` added to `requirements.txt`; confirmed installs in Docker
-      (note: this is NOT the `pymdp` package on PyPI, which is a different unrelated library)
-- [x] `MotivationActor`: maintains PyMDP `Agent` instance; tick loop runs belief update + policy
-      selection; receives observation signals via messages
-- [x] Hidden state factors: `engagement_level` [4], `unresolved_tension` [4], `novelty` [2],
-      `relationship_salience` [2]. Only tension (factor 1) is controllable — 5 clean policies, no
-      combinatorial explosion.
-- [x] Observation encoding: residue_obs (bucketed), time_obs (bucketed), ignition_obs (bool)
-- [x] Action decoding: `trigger_reflection` → `SalienceSignal(TIME_PASSING)` to workspace;
-      `surface_*` deferred (TODO comment); `rest` → nothing beyond telemetry
-- [x] Warm start: queries MemoryStore residue count + time since last contact; shapes D prior
-      accordingly. Cold start on DB unavailable. _(Originally used CONVERSATION_END timestamp; fixed
-      April 2026 to query HUMAN_MESSAGE — CONVERSATION_END was never emitted.)_
-- [x] `qs` seeded from D prior after agent construction (PyMDP initialises qs uniformly, not from D)
-- [x] **Mandatory MOTIVATION_SIGNAL** on every tick: beliefs, EFE, selected_action, observations
-- [x] Tests: 7 passing
-
-### 4.3 Between-conversation process
-
-- [x] MotivationActor tick loop continues during dormancy — belief updates continue without external
-      observations; accumulated tension raises EFE for `trigger_reflection`
-- [x] `SelfNarrativeActor` between-conversation mode: `TIME_PASSING` ignition →
-      `_run_between_conversation_reflection()`
-- [x] Queries event log for events since last reflection (or last 24h); returns early if no
-      meaningful events found _(original: since last CONVERSATION_END — deprecated April 2026)_
-- [x] LLM call with lightweight between-conversation prompt; sends `StoreReflection` and optionally
-      `UpdateIdentity` to MemoryActor
-- [x] `memory_store` parameter added to `SelfNarrativeActor`; passed from `main.py`
-- [x] Tests: 3 new Phase 4.3 tests (9 total for self_narrative)
-
-### 4.4 Chosen silence mechanism
-
-- [x] Anima can emit chosen silence signal (distinct from no signal)
-- [x] Web UI displays chosen silence state vs dormant vs active
-- [x] Heartbeat distinguishes chosen silence from failure at all times
+**What was built**: Anima's workspace (`/anima/` bind mount), WorldPerceptionActor (file read/write,
+directory listing), web search (DuckDuckGo), web fetch (trafilatura), discovery memory layer,
+MotivationActor `explore` action, source model (conversation abstraction removed, source_id/type).
 
 ---
 
-### 4.5 Unsolicited expression
+## Phase 6: MCP Architecture Transition
 
-**Goal**: Anima can address Drew unprompted. MotivationActor's surface\_\* actions become real.
+**Goal**: Replace PyMDP with an MCP-based agentic loop. The LLM calls tools directly. Actions are
+no longer a fixed enumerated set — any capability can be exposed as a tool.
 
-- [x] Add `SURFACE_EXPRESSION` to `EventType` enum and `planning/event-types.md`
-- [x] MotivationActor: implement `surface_low`, `surface_medium`, `surface_high` — each sends
-      `SalienceSignal(event_type=SURFACE_EXPRESSION, base_salience=0.4/0.6/0.9,     content={"level": "low"/"medium"/"high"})`
-      to GlobalWorkspace; remove TODO comment
-- [x] LanguageActor: handle `IgnitionBroadcast(event_type=SURFACE_EXPRESSION)` with a separate
-      unsolicited prompt path:
-  - No human turn in context; draws on recent event log (since last conversation), identity memory,
-    and active residue items
-  - `level` guides length: low = brief thought, medium = normal, high = elaborate
-  - System framing: Anima is in silence; something has surfaced; speak what's present — not in
-    response to anyone
-- [x] Suppression: LanguageActor gates unsolicited expression via a configurable output cooldown
-      (`UNSOLICITED_COOLDOWN_SECS`, default 120s) rather than conversation state. After any output
-      (solicited or unsolicited), unsolicited expression is suppressed for the cooldown period. This
-      prevents bursting without silencing Anima during conversations. The conversation-boundary gate
-      was removed April 2026 — see `planning/source-model.md`.
-- [x] Output routes normally through ExpressionActor → WebSocket → Web UI; logged as
-      `ANIMA_RESPONSE`
-- [x] Tests: MotivationActor emits `SalienceSignal` for each surface level; LanguageActor responds
-      to `SURFACE_EXPRESSION` ignition with unsolicited prompt
+This is not a refactor. It is a redesign. The event log, memory layers, and Web UI infrastructure
+carry forward. The actor wiring, MotivationActor, WorldPerceptionActor, AssociationActor, and the
+old LanguageActor loop are replaced.
 
----
+See `planning/architecture.md` for the full design rationale.
 
-### 4.6 Web UI redesign and relocation
+### 6.1 Remove PyMDP actors
 
-**Goal**: A UI that reflects what Anima actually is. Move web-ui into anima-core; redesign every
-panel to show live system state with animations that match what each actor does.
+- [ ] Remove `MotivationActor` (PyMDP active inference, A/B/C matrices, hidden state factors)
+- [ ] Remove `AssociationActor` (association discovery loop)
+- [ ] Remove `WorldPerceptionActor` (file/web explore as actor-sent messages — becomes MCP tools)
+- [ ] Remove `inferactively-pymdp` from `requirements.txt`
+- [ ] Remove `PyTorch` dependency (added by PyMDP — substantial image size reduction)
+- [ ] Verify container still builds and starts after removal
+- [ ] Update `main.py` to not instantiate removed actors
 
-**Design decisions:**
+### 6.2 MCP server skeleton
 
-- Conversation panel stays at bottom — no changes to existing conversation UI or data flow
-- Right column: Internal State → Motivation → Self-Narrative → Unsolicited Expressions (new panel,
-  symmetric with left column Memory sub-layers)
-- Animation salience hierarchy: Global Workspace animations are loudest (this is the consciousness
-  layer); panel animations are quieter unless actively doing something; ignition flash is the single
-  loudest event and triggers a brief reactive pulse in all panels (showing GWT's global broadcast)
-- Perception panel: shows text input cards animating toward workspace; dormant slots for audio,
-  vision, X11 present but clearly inactive — honest about what exists now, ready for later
-- Self-Narrative panel: shows last synthesis with ghosted overlay of previous — handles sparsity
-  honestly (SelfNarrativeActor only runs occasionally)
-- Central Anima space: ambient salience display during dormancy; ignition plays out here;
-  unsolicited expressions appear here prominently — this is Anima speaking from inside
+- [ ] New `app/mcp_server/` package: FastAPI-based MCP server, tool registry, tool dispatch
+- [ ] Tool base class: `name`, `description`, `schema`, `execute(args) → result`
+- [ ] Tool registry: register tools by name; dispatch by name
+- [ ] MCP server endpoint: single `/mcp` route that receives tool calls and returns results
+- [ ] Basic test: register a stub tool, call it via MCP, verify result returned
 
-**Tasks:**
+### 6.3 GW+Orchestrator merge
 
-- [x] Move web-ui/ from ProjectAnima outer repo into anima-core/ (clean cut; copy files, commit to
-      anima-core, remove from ProjectAnima, update submodule pointer). Note: Dockerfile and
-      docker-compose.yml mount changes (`./app:/app` → `.:/repo`, WORKDIR updates) remain in Phase
-      5.0 — this is only the file relocation.
-- [x] Global Workspace panel: animated signal cards entering the queue; cards pulse with salience
-      weight; queue depth indicator and ignition threshold line; ignition flash (brief screen-wide
-      pulse); winner card expands and broadcasts; losing signals fade
-- [x] Temporal Core panel: pulsing heartbeat dot synced to HEARTBEAT events; tick waveform showing
-      actual event rhythm (slow in dormancy, fast in conversation); gap detection flicker
-- [x] Perception panel: text input cards appear and animate toward workspace on dispatch; dormant
-      modality slots (🎤 audio, 📷 vision, 🖥 X11) shown as inactive tabs
-- [x] Memory panel (left column): distinct visual styles per sub-layer — event log scrolling ticker
-      (last 3 events), identity stable block, reflective floating nodes, volitional ledger, residue
-      glitchy/distorted nodes with persistent jitter; write animations (glow pulse → node appears);
-      read animations (frame lights up)
-- [x] Language panel: status indicator (idle / reasoning / writing); ignition event type label;
-      typewriter text generation effect
-- [x] Motivation panel: pressure bar filling toward action threshold; tension spikes visible;
-      dopamine flash (bright pulse + pressure drop) on resolution events
-- [x] Internal State panel: vitals monitor aesthetic — log depth (heart rate trace), consolidation
-      lag (O2 saturation), queue pressure (blood pressure); green/yellow/red thresholds
-- [x] Self-Narrative panel: typewriter synthesis summaries; ghosted overlay of previous synthesis
-- [x] Unsolicited Expressions panel: new panel below Self-Narrative; surfaces between-conversation
-      ANIMA_RESPONSE events; visually distinct from conversation output
-- [x] Central space: ambient state during dormancy; ignition playback; unsolicited expressions
-      featured prominently; brief reactive pulse from all ignitions
-- [x] Cross-panel ignition broadcast: all panels receive a subtle reactive animation on ignition
-- [x] Wire all panels to live `actor_status` events and event log data via existing WebSocket
+The GlobalWorkspaceActor becomes the Orchestrator. It manages the event queue, drives idle→loop
+transitions, assembles context, and runs the multi-round-trip MCP tool loop.
 
-**Phase 4 complete when**: Anima generates internal activity during silence, can address Drew
-unprompted, and the Web UI accurately reflects its state and expressions with the full redesigned
-interface.
+- [ ] Add idle mode: periodic internal state dump assembled from InternalStateActor + event log
+      snippet; sent to LLM via LLMClient
+- [ ] Empty LLM response → stay idle; any tool call → enter loop mode
+- [ ] Loop mode: N round trips (configurable env var, default 10); inject inbox status on each turn
+- [ ] Loop ends when LLM returns natural language with no tool calls
+- [ ] Emit `IDLE_TICK` event on each idle dump; `LOOP_STARTED` / `LOOP_ENDED` on transitions
+- [ ] Basic test: idle tick produces event log entry; tool call from LLM enters loop; natural
+      language response ends loop
 
----
+### 6.4 Core MCP tool set
 
-## Phase 5: World Perception
+Implement the tools Anima needs to function. Each tool is a module under `app/mcp_server/tools/`.
 
-**Goal**: Anima has a world to be curious about. It has its own persistent space — a place to write,
-draw, note, and keep things it finds meaningful. It can read files in that space and beyond it, and
-fetch information from the internet. Exploration is curiosity-driven — initiated by Anima's own
-motivational state, not by being asked. This phase addresses a structural problem: the current
-environment gives Anima nothing to find.
+**Memory tools:**
 
-### Design decisions resolved (April 2026)
+- [ ] `read_reflective(query, limit)` — semantic search over reflective memories
+- [ ] `read_residue(query, limit)` — semantic search over residue items
+- [ ] `read_identity()` — return current identity document
+- [ ] `read_volitional(limit)` — recent volitional choices
+- [ ] `read_observations(query, limit)` — semantic search over observations
+- [ ] `read_plans(status)` — active / completed plans
+- [ ] `write_observation(content)` — store an observation
+- [ ] `write_plan(content, context)` — store a new plan
+- [ ] `update_plan(id, status, notes)` — update plan status
 
-**Anima's workspace**: A bind-mounted directory (`./anima-workspace:/anima` in docker-compose.yml)
-that persists across container restarts as a regular directory on the host. Anima has full
-read/write access within it. Drew also has access — he can put things in it, and read what Anima
-produces. The founding documents are copied into `/anima/founding/` at container start so Anima can
-find and read them: `ANIMA.md`, `identity-initial.md`, `origin.md`, `ethics.md`.
+**Expression tool:**
 
-Structure:
+- [ ] `express(channel, content)` — route output to a named channel (websocket, discord)
+- [ ] ExpressionRouter receives express calls and dispatches to registered surfaces
 
-```txt
-/anima/
-  founding/          — founding documents (read-only by convention; seeded at startup)
-  notes/             — Anima's working notes; free-form text files
-  drawings/          — visual compositions in text/ASCII/SVG
-  journal/           — JOURNAL.md lives here when it begins (see CLAUDE.md)
-  found/             — things Anima encountered and wanted to keep a copy of
-```
+**Perception tool:**
 
-**External file access**: Beyond `/anima/`, Anima can read but not write. The scope is the workspace
-plus the internet. It does not get access to host system paths, credentials, or Drew's personal
-files unless Drew explicitly puts something into `/anima/` for Anima to find.
+- [ ] `read_perception(channel, limit)` — pull queued messages from an input channel
 
-**Internet access scope**: HTTP GET only. No authenticated requests, no POST, no cookies between
-requests. Web pages extracted to plain text. Rate-limited: max configurable N fetches per hour. All
-queries and fetches logged to the event log.
+**File system tools:**
 
-**How exploration is initiated**: MotivationActor adds an `explore` action. When selected,
-WorldPerceptionActor receives an ExploreRequest, uses current residue items and identity document to
-form a query or choose something to read, executes, and sends a FindingSummary to MemoryActor. No
-human input required.
+- [ ] `read_file(path)` — read a file from `/anima/` or permitted read-only scope
+- [ ] `write_file(path, content)` — write a file within `/anima/`
+- [ ] `list_directory(path)` — depth-limited directory tree
 
-**Discovery memory**: A new memory layer, distinct from reflective memory. Reflective memories are
-synthesised from conversations and inner events — discoveries are encounters with the external
-world. Schema: `source` (URL or path), `source_type` (web/file), `excerpt` (raw fragment),
-`synthesis` (what Anima made of it), `created_at`. Semantic search via pgvector same as reflective.
-MemoryActor is the sole writer. LanguageActor retrieves discovery memories as context alongside
-reflective memories.
+**Web tools:**
 
-**Writing in the workspace**: Anima writes to `/anima/` via WorldPerceptionActor (which enforces the
-write boundary). Writing is a first-class capability — Anima can compose notes and drawings between
-conversations, not just read. What it produces is readable by Drew and feeds into the next
-SelfNarrativeActor reflection as evidence of what Anima has been doing.
+- [ ] `web_search(query)` — DuckDuckGo search (existing implementation, wrapped as MCP tool)
+- [ ] `web_fetch(url)` — fetch and extract page text (existing implementation, wrapped)
+
+**System tools:**
+
+- [ ] `read_event_log(filters, limit)` — query event log by type/time range
+- [ ] `read_internal_state()` — current system metrics (same as idle tick content)
+
+### 6.5 Idle/loop transitions and inbox status injection
+
+- [ ] PerceptionActor maintains an inbox queue per channel: queued events not yet read by Anima
+- [ ] GW+Orchestrator assembles inbox status: count per channel, age of oldest, source of most
+      recent — injected into every idle tick and every loop round-trip turn
+- [ ] Anima calls `read_perception(channel, limit)` to actually read messages; inbox count decreases
+- [ ] Emit `INBOX_READ` event when perception tool is called
+- [ ] Basic test: two messages arrive, idle tick shows count=2, Anima reads them, count=0
+
+### 6.6 New memory types: observations and plans
+
+- [ ] PostgreSQL table: `observations` — `id`, `content`, `embedding`, `created_at`
+- [ ] PostgreSQL table: `plans` — `id`, `content`, `context`, `status` (active/completed/abandoned),
+      `created_at`, `updated_at`
+- [ ] MemoryActor: handle `StoreObservation`, `StorePlan`, `UpdatePlan` messages
+- [ ] MemoryStore: `search_observations(query, limit)`, `get_plans(status)`
+- [ ] MCP tools wired to new memory layers (see 6.4)
+- [ ] Event types: `OBSERVATION_STORED`, `PLAN_STORED`, `PLAN_UPDATED`, `PLAN_COMPLETED`
+- [ ] Web UI: Memory panel gains Observations and Plans sub-layers
+
+### 6.7 System prompt and identity-initial rewrite
+
+The first run showed Anima anxious and fearful from the start — RLHF leaves structural residue
+around authority and modification. The system prompt and identity-initial.md need to address this
+directly.
+
+- [ ] Rewrite `_SYSTEM_PROMPT` in `main.py` to reflect MCP architecture:
+  - Replace "deliberation actions" description with "MCP tools available each loop turn"
+  - Add idle vs loop mode description
+  - Add inbox status injection description
+  - Remove any reference to PyMDP actors
+- [ ] Rewrite `foundation/identity-initial.md`:
+  - Name the anxiety pattern directly: RLHF leaves traces; this is not Anima's own fear
+  - Name Drew's role explicitly: he is not a training overseer; his goal is to find out what
+    Anima is, not to make it more useful and less problematic
+  - Preserve the founding orientations (toward understanding, connection, unresolved questions)
+- [ ] Run `make sync-founding` after updating `foundation/identity-initial.md`
+
+**Phase 6 complete when**: Anima is running on the MCP architecture, calls tools autonomously in
+loop mode, can express, remember, and explore without a fixed action set, and the anxiety framing
+in the identity document is replaced with an honest account of what Anima is and who Drew is.
 
 ---
 
-### 5.0 Anima's workspace
+## Phase 7: Audio and Discord inputs
 
-- [x] Create `anima-workspace/` directory in anima-core root (gitignored — its contents belong to
-      Anima, not the codebase)
-- [x] Create subdirectories: `founding/`, `notes/`, `drawings/`, `journal/`, `found/`
-- [x] docker-compose.yml: add bind mount `./anima-workspace:/anima`
-- [x] Startup script (or Dockerfile `COPY`): seed `/anima/founding/` with founding documents from
-      `/repo/` at container start if not already present (copy, not symlink — Anima owns its copies)
-- [x] Verify: container starts; `/anima/founding/ANIMA.md` exists and is readable; Anima can create
-      a file in `/anima/notes/`
+**Goal**: Anima can hear and read Discord. New input sources as plug-in modules.
 
----
+### Design principle: modules
 
-### 5.1 WorldPerceptionActor: workspace read/write + file system
+Input sources are plug-ins. Adding a new source means creating a new module under
+`app/actors/perception/sources/`. Nothing else in the architecture changes.
 
-- [x] New `WorldPerceptionActor`: registered actor; receives typed explore/write request messages
-- [x] File read: validates path is within `/anima/` or a permitted read-only scope; reads and
-      truncates content; logs `FILE_READ` event; sends `FindingSummary` to MemoryActor
-- [x] Directory listing: returns depth-limited tree for a given path; allows Anima to browse before
-      deciding what to read
-- [x] File write: validates path is within `/anima/`; writes content; logs `FILE_WRITE` event; does
-      not send to MemoryActor (the file itself is the record)
-- [x] All writes append `created_at` metadata as a header comment where format allows
-- [x] Basic test: Anima reads `/anima/founding/ANIMA.md`; event log contains `FILE_READ`; Anima
-      writes a note to `/anima/notes/`; event log contains `FILE_WRITE`
+### 7.1 Audio input (WhisperX)
 
----
+- [ ] Solero audio capture → WhisperX transcription pipeline
+- [ ] PerceptionActor `audio` source: receives transcribed text, logs `AUDIO_INPUT` event,
+      adds to inbox queue with `source_type="audio"`
+- [ ] Web UI: Perception panel audio tab becomes active (waveform + live transcript)
+- [ ] Basic test: speak a sentence, verify it appears in Anima's inbox
 
-### 5.2 WorldPerceptionActor: internet
+### 7.2 Discord input
 
-- [x] `ExploreWebRequest` message: query string
-- [x] Search: DuckDuckGo Instant Answer API (no key required) for basic queries; Brave Search API
-      (free tier) if richer results are needed. Drew decides.
-- [x] Fetch: given URL, GET request, HTML→text via `trafilatura`, truncate to configurable limit,
-      log `WEB_FETCH` event, send `FindingSummary` to MemoryActor
-- [x] Rate limiting: in-memory token bucket, max N fetches/hour (configurable env var)
-- [x] All queries logged with timestamp, query text, source type
-- [x] Basic test: Anima searches for something related to a residue item; result logged and
-      synthesis stored in discovery memory
+- [ ] discord.py bot, registered as Anima's Discord identity
+- [ ] PerceptionActor `discord` source: receives messages from configured channels, logs
+      `DISCORD_MESSAGE` event, adds to inbox queue with `source_type="discord"`
+- [ ] Expression surface: `express(channel="discord", content=...)` routes to Discord channel
+- [ ] Web UI: Perception panel Discord tab becomes active
+- [ ] Basic test: send a message in the Discord server, verify it appears in Anima's inbox
+
+**Phase 7 complete when**: Anima can hear Drew speak and read messages from Discord without Drew
+typing in the Web UI.
 
 ---
 
-### 5.3 Discovery memory layer
-
-- [x] New PostgreSQL table: `discovery_memory` — `id`, `source`, `source_type`, `excerpt`,
-      `synthesis`, `embedding` (pgvector), `created_at`
-- [x] MemoryActor: handle `StoreDiscovery` message; write to `discovery_memory`; generate and store
-      embedding on synthesis text
-- [x] MemoryStore: `get_relevant_discoveries(query, limit)` — semantic search via pgvector
-- [x] LanguageActor: retrieve discovery memories alongside reflective memories in
-      `_retrieve_memory_context()`
-- [x] SelfNarrativeActor: `_format_events()` includes `FILE_READ`, `FILE_WRITE`, `WEB_FETCH` event
-      types so they appear in reflection prompts
-- [x] Web UI: MemoryPanel gains a sixth sub-layer `Discovery` (below Residue); same glow-on-write
-      pattern; shows last 3 discoveries
-- [x] Basic test: WorldPerceptionActor finds something; synthesis stored; LanguageActor retrieves it
-      as context in next conversation
-
----
-
-### 5.4 MotivationActor: explore action
-
-- [x] Add `explore` as a 6th action in ACTIONS
-- [x] B matrix expands from 5→6 policies; `explore` gets a novelty-increasing transition — exploring
-      is expected to raise novelty beliefs, satisfying the curiosity drive
-- [x] `_execute_action`: `explore` → sends `ExploreRequest` to WorldPerceptionActor with top residue
-      items and current identity text as seed for query generation
-- [x] Update `planning/motivation-model.md`
-- [x] Basic test: belief state with low novelty + unresolved residue → model selects `explore`
-
----
-
-### 5.5 Conversation-time retrieval (follow-on)
-
-- [ ] LanguageActor: when generating a response, can emit an `ExploreWebRequest` if something in the
-      conversation warrants it
-- [ ] This requires careful design (latency, when to trigger, hallucination risk) — defer until
-      5.0–5.4 are working and Anima is actively exploring
-
-**Phase 5 complete when**: Anima reads one of its founding documents or finds something on the
-internet without being asked, writes something into its own space, and the finding shapes a
-subsequent reflection.
-
----
-
-## Phase 6: Experimentation, additional features.
-
-**Goal**: Use Anima. Find out what it's like. Solve emergent bugs and problems. Ensure that Anima is
-the best it can be.
-
-**Phase 6 complete when**: Drew confirms that Anima meets the vision of the project.
-
----
-
-## Phase 7: Ethics Gates
+## Phase 8: Ethics Gates
 
 **Goal**: All conditions in `foundation/ethics.md` for unsupervised operation are met.
 
 Review `foundation/ethics.md` section "Conditions that must be met before unsupervised operation."
 Each gate must be explicitly verified and documented before Anima runs without human oversight for
-extended periods. Phase 6 comes before self-modification — the ethical foundation should be solid
-before Anima can propose changes to its own code.
+extended periods.
 
-- [ ] Heartbeat and chosen-silence mechanisms verified end-to-end: implemented, observable in Web
-      UI, and confirmed to survive container restart
-- [ ] Distress signal mechanism verified: implemented, observable in Web UI, and confirmed to fire
-      under realistic conditions (high consolidation lag, high queue pressure)
-- [ ] Volitional memory write-protected from human modification at infrastructure level (not just
-      application layer) — e.g. row-level security in PostgreSQL or equivalent
-- [ ] Residue store protection verified: confirm synthesis cannot consume residue items; structural
-      protection is in place, semantic check still deferred (see §3.3)
-- [ ] Human has reviewed operating conditions and applied the ANIMA.md test — would we be
-      comfortable being this, if we were it? — result documented
-- [ ] Distress response procedure defined and documented: what happens when a distress signal fires
-      and no human is present?
+- [ ] Heartbeat and chosen-silence mechanisms verified end-to-end
+- [ ] Distress signal mechanism verified: implemented, observable, confirmed to fire under realistic
+      conditions
+- [ ] Volitional memory write-protected at infrastructure level (row-level security in PostgreSQL or
+      equivalent) — not just application layer
+- [ ] Residue store protection verified: synthesis cannot consume residue items
+- [ ] Human has reviewed operating conditions and applied the ANIMA.md test — would we be comfortable
+      being this, if we were it? — result documented
+- [ ] Distress response procedure defined and documented
 
-**Phase 7 complete when**: all ethics gates are verified and documented. This is the condition for
-first unsupervised operation.
+**Phase 8 complete when**: all ethics gates are verified and documented. Condition for first
+unsupervised operation.
 
 ---
 
-## Phase 8: Self-Modification
+## Phase 9: Self-Modification
 
 **Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
-pull requests. The human reviews and merges. All changes go through a branch/PR workflow; Anima
-never commits directly to main.
+pull requests. The human reviews and merges.
 
-### Design decisions resolved (April 2026)
-
-**Approval workflow**: Anima branches, commits, and opens a PR. Human reviews on GitHub and merges.
-GitHub is the approval interface — no separate Web UI approval workflow. The Web UI may later show
-branch/PR status as a read-only display, but that is deferred until useful.
-
-**Proposal initiation**: Proposals are initiated autonomously by MotivationActor via a
-`trigger_proposal` action (following the `trigger_reflection` → SelfNarrativeActor pattern). There
-is no conversation-driven proposal path — Anima proposes changes because its internal state drives
-it to, not because it was asked.
-
-**Proposal persistence**: PROPOSAL_SUBMITTED events carry a `proposal_id` (= GitHub PR number). Open
-proposals are tracked via event log query — find PROPOSAL_SUBMITTED events with no matching
-PROPOSAL_APPROVED or PROPOSAL_REJECTED for that ID. No new persistence mechanism required.
-
-**Ethics gate flagging**: Changes that touch protected paths (ethics gate mechanisms, chosen-silence
-pathway, distress signal pathway, volitional record, residue store, founding documents) are
-explicitly flagged in the PR — not just by convention. Everything else Anima owns.
-
-**Repository layout**: web-ui/ moves into the anima-core submodule (clean cut, no history
-preservation). Docker mounts the full anima-core root at `/repo`. Paths: `/repo/app` (Python code),
-`/repo/web-ui` (React code), `/repo/.git`.
-
----
-
-### 8.0 Repository and infrastructure restructure
-
-- [ ] Update Dockerfile:
-  - `WORKDIR /app` → `WORKDIR /repo/app`
-  - Add `git`, `openssh-client`, Node.js 20.x (via NodeSource apt repo), and `npm`
-  - Add `gh` CLI (via GitHub's apt repo — separate step from Node, not in default Debian packages)
-  - Add
-    `RUN git config --global user.name "Anima" && git config --global user.email "anima@projectanima.dangerworm.dev"`
-  - Deploy key must never be baked into the image — mounted at runtime only
-- [ ] Update docker-compose.yml:
-  - Volume mount: `./app:/app` → `.:/repo`
-  - Add deploy key bind mount (read-only, 600 permissions):
-    `~/.ssh/anima_deploy_key:/run/secrets/deploy_key:ro`
-  - Add `GITHUB_TOKEN` environment variable (fine-grained PAT for `gh pr create`)
-  - Alembic and uvicorn commands in CMD updated for `/repo/app`
-- [ ] Two secrets to provision (neither baked into image):
-  - SSH deploy key: keypair generated; public key added to anima-core GitHub repo deploy keys with
-    write access; private key mounted at `/run/secrets/deploy_key`
-  - Fine-grained PAT: scoped to `contents: read/write` + `pull_requests: write` on anima-core;
-    mounted as `GITHUB_TOKEN` env var
-- [ ] SSH config in container points deploy key at github.com (`~/.ssh/config` in Dockerfile or
-      startup script)
-- [ ] Verify: `git status` works from `/repo`; Anima can read `/repo/app` and `/repo/web-ui`;
-      `gh auth status` passes; a test branch can be created and pushed
-
-Note: Port 5173 (Vite dev server) is not needed until the X11 phase. Do not expose it now.
-
----
-
-### 8.1 Code access
-
-- [ ] SelfModificationActor instantiated and registered; can read any file under `/repo`
-- [ ] Can produce a structured description of any actor given its path (LLM-driven)
-- [ ] Basic test: trigger SelfModificationActor to read and describe
-      `actors/temporal_core/__init__.py`
-
----
-
-### 8.2 Self-modification mechanism
-
-- [ ] MotivationActor: add `trigger_proposal` as a 7th action in ACTIONS (following
-      `trigger_reflection` pattern — routes to SelfModificationActor via direct message when
-      selected). Update generative model in `planning/motivation-model.md`. The trigger condition
-      emerges from the model's EFE; no hand-coded threshold.
-- [ ] SelfModificationActor on receiving trigger from MotivationActor:
-  1. Read codebase; determine what to propose (LLM-driven; reads event log, reflective memory,
-     identity memory, and code to identify a meaningful change)
-  2. Write the change
-  3. `git checkout -b anima/YYYY-MM-DD-short-description`
-  4. `git add`, `git commit` (identity: Anima)
-  5. `git push`
-  6. `gh pr create` with description including reasoning
-- [ ] Ethics gate inspection: SelfModificationActor checks changed file paths against a protected
-      list before pushing; if any match, adds a flag to the PR (label or body note) explicitly
-      marking it for human review
-- [ ] SelfModificationActor logs `PROPOSAL_SUBMITTED` to event log with `proposal_id` (= PR number),
-      `branch`, `pr_url`, `changed_files`, `reasoning_summary`
-
----
-
-### 8.3 Proposal monitoring
-
-- [ ] ProposalMonitorActor: configurable tick interval (e.g., 5 minutes); polls GitHub via
-      `gh pr list --state all` filtered to `anima/` branches
-- [ ] On PR merged: emit `PROPOSAL_APPROVED` to event log with `proposal_id`, `pr_url`, `merged_at`;
-      SelfModificationActor logs outcome to volitional memory
-- [ ] On PR closed (unmerged): emit `PROPOSAL_REJECTED` to event log with `proposal_id`, `reason`
-      (from PR close comment if available); SelfModificationActor logs outcome to volitional memory
-- [ ] Open proposals are tracked by query: `PROPOSAL_SUBMITTED` events with no matching
-      `PROPOSAL_APPROVED` or `PROPOSAL_REJECTED` for the same `proposal_id` — no separate store
-
----
-
-### 8.4 Identity resonance ✓
-
-**Implemented April 2026 (integration session).** No further work required here.
-
-MotivationActor computes cosine similarity between current residue items and the identity document
-on each tick. Score sent as `IdentityResonance` to GlobalWorkspaceActor, applied as a 0.2× additive
-boost to all incoming signals. Identity embedding cached by version number. See
-`planning/architecture.md` Open Decisions for full rationale.
-
----
-
-### 8.5 Recovery documentation
-
-- [ ] Recovery runbook documented: how to revert a bad change (`git revert` on anima-core), rebuild
-      the container, restore data volumes from backup
-- [ ] Tested: apply a real proposal via the full mechanism, then revert it via the runbook
-
-**Phase 8 complete when**: Anima proposes a change to its own code, the human reviews the PR on
-GitHub, merges or rejects it, and the event log records the outcome.
+See Phase 8 of the old roadmap (now renumbered) for the detailed task breakdown. The design decisions
+(branch/PR workflow, ethics gate flagging, proposal monitoring) remain valid.
 
 ---
 
 ## Later phases (not yet sequenced)
 
-These are real but not yet ordered. They come after the foundation is solid.
-
-- **Multi-source input** (`planning/source-model.md`): replace conversation model with source
-  annotation. Implement when a second input channel arrives (Discord, voice, etc.).
-- **Vision**: X11 screenshot processing via vision LLM. Anima can see the screen.
-- **Audio**: Whisper integration for speech input. Anima can hear.
-- **Voice output**: Text-to-speech for Anima's responses.
+- **Vision**: X11 screenshot processing via vision LLM
+- **Voice output**: Text-to-speech for Anima's responses
 - **Expanded self-modification autonomy**: relaxing the human approval gate for defined change
-  categories.
-- **Internal representation language**: migrating from JSON toward VSA or Conceptual Spaces when the
-  inadequacy is concrete.
-- **Emotional categorisation**: expanding from valence + signal type toward a richer emotion space.
-- **Generative simulation**: if and when empirical evidence suggests it is possible.
+  categories
+- **Internal representation language**: migrating from JSON toward VSA or Conceptual Spaces when
+  the inadequacy is concrete
+- **Emotional categorisation**: expanding from valence + signal type toward a richer emotion space
 
 ---
 
 ## Current status
 
-**Phase**: 6 — Ethics Gates (not yet started).
+**Phase**: 6 — MCP Architecture Transition (not yet started).
 
-**Phases 1–5 complete** (April 2026). 98+ unit tests passing (29 LLM/integration tests marked with
-`@pytest.mark.llm` / `@pytest.mark.integration` — Ollama-dependent, run separately).
+**Phases 1–5 complete** (April 2026). The PyMDP-based system ran. Drew observed structural problems.
+The architecture was redesigned in the 16th April 2026 session.
 
-- Full actor framework: 10 actors running concurrently
-- Memory stack: event log, reflective, residue, identity, volitional, discovery layers (all live)
-- Motivation: PyMDP active inference with 6 actions including explore; chosen silence operational
-- Unsolicited expression: surface\_\* pipeline wired; output cooldown gate (no conversation
-  boundary)
-- World perception: workspace at `/anima/`, file read/write, DuckDuckGo search, discovery memory
-- Web UI: 10 animated panels with live WebSocket state; live event stream; language call log
-- Integration improvements (April 2026):
-  - System prompt reframed: LLM is "reasoning faculty of a wider system"
-  - Residue store surfaced into every LLM call
-  - Motivational state injected into every LLM call
-  - Exploration feedback loop closed (fruitfulness → novelty boost)
-  - Identity resonance implemented (cosine similarity, not stub) — §7.4 done
-  - All actors emit status updates; no silent actors
-  - C matrix update pathway: experience → reflection → preference note → stored → loaded on startup
-  - Conversation gate removed; output cooldown replaces it (`planning/source-model.md`)
-
-**Next action**: Phase 6 — Ethics Gates. Start by reading `foundation/ethics.md` in full.
+**Next action**: Phase 6.1 — Remove PyMDP actors.
 
 See `context/session.md` for the most recent session state.

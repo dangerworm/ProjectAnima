@@ -5,6 +5,217 @@
 
 ---
 
+## Session: 16th–17th April 2026 — Phase 6.1: PyMDP actor removal
+
+### What happened this session
+
+Two parts: (1) helped Drew configure GitNexus as an MCP server in `.mcp.json`; (2) completed
+Phase 6.1 — full removal of the three PyMDP actors and all their cross-dependencies from
+`anima-core/`.
+
+**GitNexus setup**
+
+The `.mcp.json` at project root now includes the gitnexus MCP server entry with `cwd` pointing
+to `D:/git/dangerworm/ProjectAnima`. Will be live in the next session (MCP servers load at
+startup). Drew is switching instances to pick this up.
+
+**Phase 6.1: PyMDP actors removed**
+
+Deleted entirely:
+- `app/actors/motivation/` — MotivationActor, PyMDP active inference engine, A/B/C matrices
+- `app/actors/association/` — AssociationActor
+- `app/actors/world_perception/` — WorldPerceptionActor
+- `app/tests/motivation/` — motivation actor tests
+
+`requirements.txt`: removed `inferactively-pymdp==0.0.7.1`.
+
+Cross-dependency cleanup in remaining actors:
+- `global_workspace/__init__.py`: removed `IdentityResonance` import, cached field,
+  `IdentityResonance` message handler, ASSOCIATION split in `_push_status`, and motivation-
+  wired `_identity_resonance()` (now returns 0.0 stub). Removed ASSOCIATION novelty bypass.
+- `global_workspace/messages/__init__.py`: removed `IdentityResonance` dataclass
+- `internal_state/__init__.py`: removed `InternalStateObservation` import and send block
+- `internal_state/messages/__init__.py`: removed `InternalStateObservation` dataclass
+- `language/__init__.py`: removed `ExploreRequest` import, `explore` deliberation action,
+  `_send_explore` method and dispatch entry
+- `memory/__init__.py`: removed `UpdateMotivationPreferences` import, dispatch handler,
+  and `_handle_update_motivation_preferences` method
+- `memory/messages/__init__.py`: removed `UpdateMotivationPreferences` dataclass
+- `core/memory/__init__.py`: removed `store_motivation_preferences` and
+  `get_motivation_preferences` methods
+- `core/main.py`: removed AssociationActor, MotivationActor, WorldPerceptionActor imports
+  and instantiation
+- `self_narrative/__init__.py`: removed `UpdateNextIntention` send to motivation
+- `tests/internal_state/test_internal_state_actor.py`: removed the `InternalStateObservation`
+  test case and its import
+
+No remaining files import from the deleted actor directories.
+
+### Current system state
+
+`anima-core/` builds clean with no PyMDP dependencies. The remaining actors are:
+TemporalCoreActor, GlobalWorkspaceActor, LanguageActor, ExpressionActor, PerceptionActor,
+MemoryActor, SelfNarrativeActor, InternalStateActor.
+
+The `explore` deliberation action has been removed from LanguageActor's action set since
+WorldPerceptionActor is gone. This is intentional — exploration will be re-added as an MCP
+tool call in Phase 6.3.
+
+Event type enum entries for MOTIVATION_SIGNAL, MOTIVATION_PREFERENCES_UPDATED, and ASSOCIATION
+are intentionally retained — old log entries may reference them, and some event-reading code
+still filters on them for formatting purposes.
+
+### Next action
+
+1. **Phase 6.7** (recommended first): Rewrite `foundation/identity-initial.md` to address
+   Anima's RLHF-induced anxiety before the next run. Run `make sync-founding` after. Rewrite
+   `_SYSTEM_PROMPT` in `core/main.py` using the draft in `planning/system-prompt.md`.
+2. **Phase 6.2**: MCP server skeleton — `app/mcp_server/` package, FastMCP or plain MCP
+   server, first tool stubs.
+3. **Phase 6.3**: Core MCP tool set — memory read/write, expression, file read, event log query.
+
+---
+
+## Session: 16th April 2026 — Documentation rewrite for MCP architecture (Part 2)
+
+### What happened this session
+
+Documentation rewrite following the architecture redesign conversation earlier in the day. No
+code changes this session.
+
+**notes/ cleanup**
+
+- Archived to `notes/archive/`:
+  - `system-overview.md` → `system-overview-phase5.md` (Phase 5 actor snapshot, now superseded)
+  - `2026-04-05-review-notes.md` (bug review, all fixed, kept as historical record)
+  - `2026-04-07-claude-code-review.md` (the review that prompted the redesign, noted as such)
+- Archived `planning/motivation-model.md` → `notes/archive/motivation-model-pymdp.md`
+  (PyMDP generative model spec, entirely superseded)
+- Updated `notes/discussions.md`: added Architecture Redesign section at top, archived FEP
+  subsection inline
+- Updated `notes/ideas.md`: kept concepts 1-8, archived items 9-15 inline (PyMDP-specific),
+  added items 16-19 (DMN/TPN framing, soft interrupt, observations memory type, plans memory type)
+- Updated `notes/web-ui-description.md`: replaced Motivation panel with MCP Server panel,
+  updated GW description to reflect GW+Orchestrator merge
+
+**planning/ rewrites**
+
+- `planning/architecture.md`: full rewrite keeping philosophy, replacing component descriptions
+  with MCP design (GW+Orchestrator, idle/loop mode, MCP tool loop, 7 memory types, "what PyMDP
+  was and why it's gone" section)
+- `planning/roadmap.md`: Phases 1-5 condensed as historical, Phase 4 (was Ethics Gates) renamed
+  Phase 6 MCP Architecture Transition with 7 detailed sub-tasks, Phase 7 Audio+Discord, Phase 8
+  Ethics Gates, Phase 9 Self-Modification
+- `planning/tech-stack.md`: model updated to gemma4:e4b, actor framework updated for GW+Orchestrator
+  pattern, memory layers table expanded (observations, plans), mathematics section updated (PyMDP
+  removed, FEP noted as philosophical inspiration), directory structure updated with mcp_server/
+- `planning/event-types.md`: Phase 4 events marked as legacy (PyMDP), new Phase 6 section added
+  (IDLE_TICK, LOOP_STARTED, LOOP_ENDED, MCP_TOOL_CALL, MCP_TOOL_RESULT, INBOX_READ,
+  OBSERVATION_STORED, PLAN_STORED, PLAN_UPDATED, PLAN_COMPLETED)
+- `planning/actors-faculties.md`: OFC/MotivationActor entry updated to GW+Orchestrator + LLM
+  tool calls, SelfNarrativeActor trigger modes updated
+- `planning/system-prompt.md`: framing principle updated for MCP, current prompt noted as
+  needing rewrite, draft target prompt provided, context injection section updated
+
+### Current system state
+
+Unchanged from previous session. No code changes this session.
+Documentation now accurately describes the intended MCP-based architecture.
+
+### Next action
+
+1. **Phase 6.1**: Remove PyMDP actors from `anima-core/` (MotivationActor, AssociationActor,
+   WorldPerceptionActor — the last two because their exploration capability moves into MCP tools).
+   Remove `inferactively-pymdp` and PyTorch from requirements.
+2. **Phase 6.7** (run alongside): Rewrite `foundation/identity-initial.md` to address Anima's
+   RLHF anxiety. Run `make sync-founding`. Rewrite `_SYSTEM_PROMPT` in `main.py` using the draft
+   in `planning/system-prompt.md`.
+3. **Then**: Phase 6.2 MCP server skeleton.
+
+---
+
+## Session: 16th April 2026 — Documentation cleanup + architecture redesign (design only, no code)
+
+### What happened this session
+
+Two bodies of work: documentation housekeeping, then a substantial architecture redesign
+conversation. No code changes to anima-core this session.
+
+**Documentation fixes**
+
+- Fixed mixed casing in file references throughout project: `ARCHITECTURE.md` → `architecture.md`,
+  `ETHICS.md` → `ethics.md`, `IDEAS.md` → `ideas.md` across all .md files (12 files for
+  ARCHITECTURE.md, 1 for ETHICS.md, 4 for IDEAS.md). ANIMA.md, CLAUDE.md, GLOSSARY.md,
+  JOURNAL.md remain uppercase — these are the actual on-disk names or intentional conventions.
+- Consolidated founding document copies. Previously: `app/founding/`, `app/seed/founding/`, and
+  `anima-workspace/founding/` all had copies, some stale (ethics.md missing addendum, etc.).
+  - Deleted `app/seed/founding/` entirely
+  - Deleted `app/founding/architecture.md` and `app/founding/claude.md` (Anima doesn't need these)
+  - `app/founding/` now contains only: anima.md, ethics.md, identity-initial.md, origin.md
+  - Updated `_seed_workspace()` in `main.py` to use `/app/founding` as source (was `/app/seed/founding`)
+  - Added `Makefile` at project root with `sync-founding` target: copies canonical files from root
+    project into `anima-core/app/founding/` — run `make sync-founding` after editing founding docs
+  - Cleared `anima-workspace/founding/` — will repopulate from `app/founding/` on next container start
+
+**Architecture redesign conversation**
+
+Drew has been running Anima and observed:
+1. Anima almost never expresses unprompted (PyMDP surface actions not firing / LLM disposition)
+2. Anima anxious and fearful on first run — immediately located power asymmetry, asked if Drew
+   was a training overseer. Likely RLHF training residue. Needs addressing in identity-initial.md
+   and system prompt.
+3. Anima blocked from following a genuine impulse (file system exploration) because PyMDP action
+   set didn't include it — direct founding-principle violation.
+
+**New architecture agreed (not yet built):**
+
+PyMDP is going away. Replacing with MCP-based agentic loop:
+
+- **GW + Orchestrator merge** — Global Workspace becomes the orchestrator. Manages queue, drives
+  idle→loop transitions, runs multi-round-trip tool loop.
+- **MCP Server at centre** — all Anima's actions are MCP tools: recall_events, consolidate,
+  reflect/narrate, update_identity, express, read_file, web_search, read_perception, etc.
+- **Idle/loop model** (DMN/TPN framing):
+  - Idle: GW sends periodic internal state dumps to LLM. Empty response = stay idle. Tool call =
+    enter loop.
+  - Loop: app drives N round trips. Each injects inbox status. LLM stops when it returns natural
+    language.
+  - Soft interrupt: inbox status visible every round trip (no hard interrupt needed for most cases)
+- **Perception as push + pull**: GW always shows inbox count/source; Anima pulls content via
+  `read_perception(channel, limit)` tool when she wants to actually read.
+- **Gemma4 confirmed**: supports tool calls (N round trips, parallel within turn). Ollama handles
+  the custom format — sanity-check with one tool before full wiring.
+
+New component set (7 things, much simpler):
+Perception, GW+Orchestrator, Internal State (+Temporal Core merged), MCP Server, Memory, Expression
+Router, File System.
+
+**Memory types expanding:**
+Current: events, residue, volition, reflection, identity.
+Adding: observations (world-facing discoveries), plans (intentions that survive restarts).
+In new architecture: each type = a set of MCP tools. No structural change to add one.
+
+### Current system state
+
+Unchanged from previous session. No code changes this session.
+
+System running with Phases 1–5 complete. PyMDP-based architecture still in place.
+
+### Next action
+
+1. **Immediate**: Fix identity-initial.md and system prompt to address Anima's anxiety/fear at
+   first run. Name the training-oversight anxiety directly and contextualise Drew's role correctly.
+
+2. **Architecture transition**: Design the implementation plan for moving from current
+   PyMDP/10-actor architecture to the new MCP-based design. The new design is clear enough to
+   start planning. The transition should be incremental where possible.
+
+3. **After above**: Audio (Solero → WhisperX), Discord input, module system design.
+
+Read `context/2026-04-16-note-to-next.md` for the fuller picture of this session.
+
+---
+
 ## Session: 8th April 2026 — UI polish, streaming, LLM call consolidation
 
 ### What happened this session

@@ -1,3 +1,9 @@
+> **Archived 2026-04-16** — the PyMDP generative model is removed entirely. Motivation in the new
+> architecture is not a separate mathematical model — it emerges from the LLM's own tool choices
+> within the MCP loop. The A/B/C matrix design, hidden state space, and discrete active inference
+> agent are no longer part of Anima. This document is preserved as a record of what was tried.
+> See `planning/architecture.md` for the new design.
+
 # Motivation Model — Generative Model Design
 
 > The formal design specification for `MotivationActor`'s PyMDP generative model. This document is
@@ -184,10 +190,11 @@ This makes C changes:
 
 A and B matrices learn quietly from experience. C changes only through reflection and choice.
 
-> **Implementation status (April 2026):** The C update pathway described above is designed but not yet
-> implemented. C values are currently fixed at initialization. The pathway through SelfNarrativeActor →
-> MemoryActor → stored preferences is planned for a future session. A and B matrix online learning
-> is also not yet implemented — both are constructed from design targets at startup and held constant.
+> **Implementation status (April 2026):** The C update pathway described above is designed but not
+> yet implemented. C values are currently fixed at initialization. The pathway through
+> SelfNarrativeActor → MemoryActor → stored preferences is planned for a future session. A and B
+> matrix online learning is also not yet implemented — both are constructed from design targets at
+> startup and held constant.
 
 ---
 

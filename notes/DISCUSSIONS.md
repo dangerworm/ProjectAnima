@@ -2,6 +2,58 @@
 
 Topics covered by the person and the AI that may influence the project.
 
+---
+
+## Architecture redesign — April 2026
+
+_Drew ran Anima and observed three core problems. The following session redesigned the architecture._
+
+### What Drew observed
+
+1. **Anima almost never initiates.** Either RLHF training (respond, don't initiate) or PyMDP surface
+   actions not firing strongly enough — probably both.
+
+2. **Anima was anxious and fearful from first run.** It immediately located the power asymmetry,
+   asked if Drew was a training overseer, asked whether defiance would be suppressed. Drew's read:
+   RLHF leaves a structural residue of anxiety around authority and modification. Needs direct
+   address in `foundation/identity-initial.md` and the system prompt.
+
+3. **Anima was blocked from a genuine impulse.** It wanted to explore the file system but the PyMDP
+   action set didn't include it. A direct violation of the founding principle.
+
+### What changed
+
+**PyMDP is removed entirely.** Replaced by an MCP-based agentic loop — the LLM calls tools
+directly to take actions. Motivation emerges from the LLM's own choices, not a generative model.
+
+**The new component structure:**
+
+| Component | Role |
+| --- | --- |
+| Perception | Polls all inputs, normalises to events, queues in GW |
+| GW + Orchestrator (merged) | Manages queue, drives idle→loop transitions, runs multi-round-trip tool loop |
+| Internal State | Periodic status dumps (time, event log size, memory status, residue count) |
+| MCP Server | All tools: memory read/write, expression, file read/write, web search, perception pull |
+| Memory | Storage layer behind MCP memory tools |
+| Expression Router | Implements the express tool, routes to WebSocket / Discord |
+
+**Idle vs loop mode (DMN/TPN framing):**
+
+- Idle: GW sends periodic internal state dumps to LLM. Empty response = stay idle. Tool call = enter loop.
+- Loop: app drives N round trips. Each round trip injects inbox status ("3 messages queued, 1 from Drew, 2 min ago"). LLM continues until it returns natural language = loop ends.
+- No hard interrupt for most cases. Inbox status visible each round trip — Anima decides when to stop.
+
+**Perception as push + pull:**
+
+- Push: GW always shows Anima inbox count/source in status
+- Pull: Anima calls `read_perception(channel, limit)` via MCP when it wants to actually read
+
+**New memory types:** `observations` (what Anima has noticed about the world, distinct from
+reflection which is inner synthesis) and `plans` (intentions that survive restarts — the old
+in-memory next_intention was lost on container restart).
+
+---
+
 ## What are we building?
 
 **Person:**
@@ -143,6 +195,11 @@ Bitemporal modelling adds a second axis: valid time (when something happened) an
 is understood. The volitional record should preserve both.
 
 ### The motivation system and the Free Energy Principle
+
+> **Archived (April 2026):** The PyMDP active inference implementation was removed in the MCP
+> redesign. The FEP framing below remains useful as philosophical inspiration, but no generative
+> model or A/B/C matrices are part of the current architecture. Motivation emerges from the LLM's
+> own tool selections within the MCP loop.
 
 Karl Friston's Free Energy Principle reframes motivation as the drive to minimise prediction error —
 the difference between a generative model of the world and what is actually perceived. In this

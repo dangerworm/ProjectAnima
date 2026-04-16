@@ -1,3 +1,8 @@
+> **Archived 2026-04-16** — superseded by MCP architecture redesign. This document accurately
+> describes the Phase 5 (actor-based, PyMDP-driven) architecture. The new architecture replaces
+> PyMDP with an MCP-based agentic loop and merges the Global Workspace with the orchestrator.
+> See `planning/architecture.md` for the current design.
+
 # System Overview
 
 > A reference document showing how Anima's actors, memory layers, and technologies fit together.

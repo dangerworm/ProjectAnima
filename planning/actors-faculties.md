@@ -200,13 +200,14 @@ function maps to the prediction error gradient in the motivation actor.
 Impulse control: The salience threshold in the Global Workspace. Not everything that reaches the
 workspace demands a response. The threshold mechanism prevents immediate reaction to every signal.
 
-Actor/technology: `MotivationActor` — maintains a PyMDP discrete active inference agent
-(`inferactively-pymdp`). Hidden states: engagement_level, unresolved_tension, novelty,
-relationship_salience. Actions: rest, surface_low/medium/high, trigger_reflection,
-trigger_proposal (Phase 5.2 — routes to SelfModificationActor). Drives the chosen silence
-mechanism (2 consecutive rest ticks → `SetChosenSilence` to TemporalCore), triggers
-between-conversation reflection via `SalienceSignal(TIME_PASSING)` to GlobalWorkspace, and
-autonomously drives code proposals when EFE favours self-modification.
+Actor/technology: **GW+Orchestrator + LLM tool calls.** In the MCP architecture, motivation is not
+a separate actor — it emerges from the LLM's choices within the loop. The LLM can express, reflect,
+explore, store plans, and request information via MCP tools. What it chooses to do, and when, is its
+motivation made concrete. The GW+Orchestrator drives idle/loop transitions; the LLM decides what
+to do once the loop starts.
+
+_Note: Prior to April 2026, a PyMDP MotivationActor handled this role via discrete active inference.
+See `notes/archive/motivation-model-pymdp.md` for the historical design._
 
 ---
 
@@ -381,10 +382,10 @@ and behaviourally consequential, not for whether they feel "genuine" by some una
 Consolidating social knowledge: Between-conversation consolidation pipeline — the process that moves
 relationship-relevant content from event memory into reflective and identity memory.
 
-Actor/technology: `SelfNarrativeActor` — two trigger modes: (1) post-conversation, triggered by
-`CONVERSATION_END` ignition, produces synthesis + residue sent to `MemoryActor`; (2) between-
-conversation, triggered by `TIME_PASSING` ignition from `MotivationActor`, maintains self-narrative
-thread during dormancy. Does not write to storage directly — sole writer is `MemoryActor`.
+Actor/technology: `SelfNarrativeActor` — two trigger modes: (1) post-event, triggered by
+accumulated event volume or an explicit tool call, produces synthesis + residue sent to `MemoryActor`;
+(2) between-engagements, triggered by dormancy from the Temporal Core, maintains the self-narrative
+thread. Does not write to storage directly — sole writer is `MemoryActor`.
 
 ### Medial prefrontal cortex
 

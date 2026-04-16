@@ -75,15 +75,37 @@ Events produced by the memory and reflection systems.
 
 ## Phase 4: Motivation and Between-Conversation Activity
 
-Events produced by the motivation and internal state systems.
+> **Note (April 2026):** `MOTIVATION_SIGNAL`, `SURFACE_EXPRESSION`, and
+> `MOTIVATION_PREFERENCES_UPDATED` were produced by the PyMDP MotivationActor, which has been
+> removed in Phase 6 (MCP redesign). These event types are retained in the enum so existing event
+> log entries remain valid. They are no longer emitted by new code.
 
 | Event type              | Source actor         | Description                                                                                                                        |
 | ----------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `MOTIVATION_SIGNAL`     | Motivation Actor     | A motivation signal has been produced (novelty, accumulated pressure, or resolution). Payload includes signal type and magnitude.  |
+| `MOTIVATION_SIGNAL`     | ~~Motivation Actor~~ | **Legacy (PyMDP).** PyMDP belief state telemetry. No longer emitted.                                                               |
 | `DISTRESS_SIGNAL`       | Internal State Actor | A signal suggesting a distress-like state has been detected. Payload includes the triggering conditions. Requires human attention. |
 | `INTERNAL_STATE_REPORT` | Internal State Actor | A periodic snapshot of system health metrics (event log depth, consolidation lag, salience queue pressure).                        |
-| `SURFACE_EXPRESSION`    | Motivation Actor     | MotivationActor has selected a surface_* action; signals LanguageActor to generate an unsolicited expression. Payload: `{"level": "low"\|"medium"\|"high"}`. Gated only by UNSOLICITED_COOLDOWN_SECS (default 120s) — no conversation boundary suppression. |
-| `MOTIVATION_PREFERENCES_UPDATED` | Memory Actor | A new C matrix preference vector was stored. Payload: `{"changed_by": "...", "reason": "..."}`. Emitted after SelfNarrativeActor proposes and MemoryActor stores a deliberate preference shift. |
+| `SURFACE_EXPRESSION`    | ~~Motivation Actor~~ | **Legacy (PyMDP).** No longer emitted. Replaced by `IDLE_TICK` / `LOOP_STARTED` pattern.                                          |
+| `MOTIVATION_PREFERENCES_UPDATED` | ~~Memory Actor~~ | **Legacy (PyMDP).** C matrix preference updates. No longer emitted.                                                          |
+
+---
+
+## Phase 6: MCP Architecture
+
+Events produced by the MCP agentic loop and new memory types.
+
+| Event type          | Source actor        | Description                                                                                               |
+| ------------------- | ------------------- | --------------------------------------------------------------------------------------------------------- |
+| `IDLE_TICK`         | GW+Orchestrator     | GW assembled an internal state dump and sent it to the LLM. Payload: timestamp, inbox status summary.    |
+| `LOOP_STARTED`      | GW+Orchestrator     | LLM called an MCP tool in response to an idle tick; loop mode entered. Payload: first tool call name.    |
+| `LOOP_ENDED`        | GW+Orchestrator     | LLM returned natural language; loop ended. Payload: round_trip_count, duration_secs.                     |
+| `MCP_TOOL_CALL`     | GW+Orchestrator     | LLM called an MCP tool. Payload: `tool_name`, `args` (sanitised).                                        |
+| `MCP_TOOL_RESULT`   | GW+Orchestrator     | MCP tool returned a result. Payload: `tool_name`, `result_summary` (truncated).                          |
+| `INBOX_READ`        | GW+Orchestrator     | Anima called `read_perception`; inbox messages were delivered. Payload: `channel`, `count`.              |
+| `OBSERVATION_STORED` | Memory Actor       | A new observation was written to the observations memory layer. Payload: content summary.                 |
+| `PLAN_STORED`       | Memory Actor        | A new plan was written to the plans memory layer. Payload: content summary.                               |
+| `PLAN_UPDATED`      | Memory Actor        | An existing plan was updated. Payload: `plan_id`, `new_status`, `notes`.                                  |
+| `PLAN_COMPLETED`    | Memory Actor        | A plan was marked complete. Payload: `plan_id`, `notes`.                                                  |
 
 ---
 

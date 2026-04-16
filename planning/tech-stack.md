@@ -36,19 +36,19 @@ for ecosystem consistency.
 ### Primary: Custom lightweight actor implementation using Python asyncio
 
 Do not reach for a heavy framework (Pykka, Ray, etc.) until the simple version proves insufficient.
-The actor model's requirements for Anima are:
+
+The GW+Orchestrator is the primary coordination component. Other actors are background services:
+TemporalCore, PerceptionActor, InternalStateActor, SelfNarrativeActor, MemoryActor,
+ExpressionRouter. The MCP server is a separate FastAPI application, not an actor.
+
+**What the actor framework provides:**
 
 - Each actor runs as an independent async task
 - Actors communicate via asyncio queues (typed messages)
 - Actors have private state — no shared memory between actors
-- The Global Workspace actor is a specific actor that receives from all others and broadcasts
-  globally
+- The GW+Orchestrator receives events from all other actors and drives the LLM loop
 
-Start simple. A base `Actor` class with an inbox queue, a `send(message)` method, and a `run()` loop
-is enough to begin. Complexity comes later if it's earned.
-
-**Message format**: typed dataclasses or Pydantic models. Not raw dicts. Type safety matters here —
-the message types are the interface between actors, and they should be explicit.
+**Message format**: typed dataclasses or Pydantic models. Not raw dicts.
 
 ---
 
@@ -62,14 +62,16 @@ equivalent).
 
 **Models (subject to change as better options become available)**:
 
-| Role                          | Model                               | Notes                          |
-| ----------------------------- | ----------------------------------- | ------------------------------ |
-| Primary language/reasoning    | Qwen3.5 9B (multimodal)             | Fast, fits comfortably in VRAM |
-| Vision                        | Qwen3.5 9B (multimodal)             | For X11 screenshot processing  |
-| Reflection / deeper reasoning | Larger model (e.g. 27B) when needed | Slower, used selectively       |
+| Role                          | Model                               | Notes                                    |
+| ----------------------------- | ----------------------------------- | ---------------------------------------- |
+| Primary language/reasoning    | gemma4:e4b (via Ollama)             | Tool call support confirmed; current model |
+| Vision                        | TBD                                 | Deferred until core loop is stable       |
+| Reflection / deeper reasoning | Larger model when needed            | Slower, used selectively                 |
 
-Start with a single fast 8B model for all LLM tasks during development. Split into specialised
-models once the architecture is stable and the performance profile is understood.
+The primary model must support tool calling natively (Gemma4 does — confirmed April 2026). The MCP
+loop drives N round trips per engagement; the model is called repeatedly, not in a single extended
+context. Parallel tool calls within a turn are supported and useful for context assembly at loop
+start.
 
 **API**: Standard Ollama HTTP API. Wrap in a dedicated `LLMClient` class so the model endpoint and
 model name are configurable without touching actor code.
@@ -116,6 +118,9 @@ the append-only pattern, pgvector extension for semantic memory layers.
 | Residue store     | PostgreSQL, separate table, write-protected from synthesis | Preserved strangeness — never summarised or merged |
 | Identity memory   | PostgreSQL JSONB document + version history                | Slow-changing, human-readable, audited             |
 | Volitional memory | PostgreSQL relational table with explicit causal links     | decision → reason → outcome                        |
+| Discovery memory  | PostgreSQL + pgvector                                      | External world encounters: files read, web fetched |
+| Observations      | PostgreSQL + pgvector                                      | What Anima noticed about the world; distinct from reflection |
+| Plans             | PostgreSQL relational table with status column             | Held intentions surviving restarts; active/completed/abandoned |
 
 ### Volume Mounts
 
@@ -275,27 +280,23 @@ assumption is that things grow, not stay as single files.
 ```txt
 app/
   core/
-    main.py                        # Entry point
+    main.py                        # Entry point; GW+Orchestrator startup, FastAPI app
   actors/
     temporal_core/
-      __init__.py                  # TemporalCoreActor
+      __init__.py                  # TemporalCoreActor — heartbeat, Husserlian window
     global_workspace/
-      __init__.py                  # GlobalWorkspaceActor — salience queue, ignition
+      __init__.py                  # GW+Orchestrator — idle/loop, MCP tool loop, event queue
     perception/
-      __init__.py                  # PerceptionActor — hub
+      __init__.py                  # PerceptionActor — hub, inbox queue per channel
       sources/
         text/
-          __init__.py              # TUI text input
+          __init__.py              # WebSocket text input
         audio/
-          __init__.py              # Whisper speech-to-text
-        x11/
-          __init__.py              # X11 screenshot capture
-        webcam/
-          __init__.py              # Webcam feed
-    language/
-      __init__.py                  # LanguageActor — LLM calls, response generation
+          __init__.py              # WhisperX speech-to-text (Phase 7)
+        discord/
+          __init__.py              # Discord bot input (Phase 7)
     expression/
-      __init__.py                  # ExpressionActor — hub, routes to surfaces
+      __init__.py                  # ExpressionRouter — implements express MCP tool, routes
       surfaces/
         websocket/
           __init__.py              # WebSocket broadcast surface (FastAPI)
@@ -304,13 +305,26 @@ app/
         discord/
           __init__.py              # Discord bot — channels, tagging, server management
     memory/
-      __init__.py                  # MemoryActor — reads/writes all memory layers
-    motivation/
-      __init__.py                  # MotivationActor — prediction error, accumulated pressure
+      __init__.py                  # MemoryActor — sole writer to all memory layers
     internal_state/
-      __init__.py                  # InternalStateActor — system health monitoring
+      __init__.py                  # InternalStateActor — system health, status dumps
     self_narrative/
-      __init__.py                  # SelfNarrativeActor — between-conversation reflection
+      __init__.py                  # SelfNarrativeActor — post-event and between-engagement reflection
+  mcp_server/
+    __init__.py                    # MCP server (FastAPI), tool registry, dispatch
+    tools/
+      memory/
+        __init__.py                # read_reflective, read_residue, write_observation, etc.
+      expression/
+        __init__.py                # express(channel, content)
+      perception/
+        __init__.py                # read_perception(channel, limit)
+      filesystem/
+        __init__.py                # read_file, write_file, list_directory
+      web/
+        __init__.py                # web_search, web_fetch
+      system/
+        __init__.py                # read_event_log, read_internal_state
   founding/                        # Seeded to /anima/founding/ on first container start
     anima.md                       # Vision document (read-only at runtime)
     ethics.md                      # Ethics commitments (read-only at runtime)
@@ -334,31 +348,24 @@ app/
 ## Mathematics over conditional logic
 
 The architecture principle (see `planning/architecture.md`) is that cognitive behaviour should
-emerge from mathematical dynamics rather than be enumerated as conditional logic. This section
-records which components are candidates and what frameworks apply.
+emerge from mathematical dynamics rather than be enumerated as conditional logic.
 
-| Component                     | Discarded (Option B)                                         | Current plan (Phase 4+)                                                                       | Framework                                   |
-| ----------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| Global Workspace ignition     | Threshold check on salience score                            | Attractor network — ignition emerges from recurrent dynamics crossing an unstable equilibrium | Continuous attractor network (coupled ODEs) |
-| Salience weighting            | Weighted sum of novelty + pressure + identity resonance      | Precision-weighted prediction error                                                           | Active inference (PyMDP / custom)           |
-| Accumulated pressure          | Counter per unresolved item                                  | Belief state that resists updating until evidence arrives                                     | Active inference                            |
-| Novelty detection             | Heuristic score on incoming signals                          | Epistemic value — expected information gain                                                   | Active inference                            |
-| Motivation / drive            | Rules toward understanding, connection, unresolved questions | Prior preferences in generative model — the system expects to be curious                      | Active inference (PyMDP) — **current plan** |
-| Emotional regulation          | Blend function (identity coherence score × raw salience)     | Precision on interoceptive signals                                                            | Active inference                            |
-| Between-conversation activity | Triggered process on dormancy threshold                      | Inference running without external observations — model samples from prior                    | Active inference (PyMDP) — **current plan** |
-| Internal representation       | Structured JSON with comparison logic                        | Algebraic (VSA) or geometric (Conceptual Spaces)                                              | Deferred — see open questions               |
+**Current status (April 2026):** The PyMDP active inference layer has been removed. Motivation
+now emerges from the LLM's own tool choices within the MCP loop rather than a discrete generative
+model. The FEP framework (curiosity as prediction error gradient, motivation as the drive to resolve
+unresolved things) remains philosophically relevant — it is expressed through the LLM's choices
+rather than through A/B/C matrices.
 
-**Where mathematics does not apply**: actor framework, event log, message passing, PostgreSQL
-schema, Docker, the Expression Actor's routing logic. These are infrastructure. Build them cleanly.
+Mathematical frameworks remain candidates for future work:
 
-**Implementation reference**: `research/technical/active-inference-implementation.md` — covers
-PyMDP, attractor dynamics, precision weighting, and caveats.
+| Component             | Current approach                    | Future candidate                           |
+| --------------------- | ----------------------------------- | ------------------------------------------ |
+| GW ignition           | Threshold check on salience score   | Attractor network (continuous ODEs)        |
+| Salience weighting    | Weighted sum                        | Precision-weighted prediction error        |
+| Internal representation | Structured JSON                   | Algebraic (VSA) or geometric (Conceptual Spaces) |
 
-**Starting position**: Phases 1–3 used clean conventional code as planned. Phase 4 introduces
-mathematical frameworks: the MotivationActor uses discrete active inference (PyMDP) as the primary
-approach — Option A, confirmed April 2026. Do not retrofit mathematics onto working code without a
-concrete reason. The Global Workspace ignition mechanism (Phase 2.1) remains a threshold check for
-now; the attractor network upgrade is deferred.
+**Where mathematics does not apply**: actor framework, event log, MCP server, PostgreSQL schema,
+Docker, the Expression Router's routing logic. These are infrastructure. Build them cleanly.
 
 ---
 

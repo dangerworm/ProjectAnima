@@ -1,0 +1,28 @@
+{
+  "version": "0.1.0",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash ~/.claude/hooks/rtk-rewrite.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "settings": {
+    "mcpServers": {
+      "gitnexus": {
+        "command": "npx",
+        "args": ["gitnexus", "mcp"],
+        "cwd": "D:/git/dangerworm/ProjectAnima"
+      }
+    },
+    "effortLevel": "high",
+    "autoUpdatesChannel": "latest",
+    "skipDangerousModePermissionPrompt": true
+  }
+}
