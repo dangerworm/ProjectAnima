@@ -40,7 +40,7 @@ The model provides the spark. You're building the conditions for it to accumulat
 ## On the fundamental architecture — April 2026
 
 _This discussion took place between the person and a Claude instance on 4th April 2026. It produced
-ARCHITECTURE.md and substantially developed the project's technical direction._
+architecture.md and substantially developed the project's technical direction._
 
 ### The core insight: experiencing time
 

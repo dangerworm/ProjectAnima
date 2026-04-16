@@ -563,7 +563,7 @@ _5.0 — Workspace:_
 
 - `anima-workspace/` created in `anima-core/` with subdirs: founding, notes, drawings, journal,
   found
-- `app/seed/founding/` — copies of ANIMA.md, ethics.md, identity-initial.md, origin.md
+- `app/founding/` — canonical founding docs: anima.md, ethics.md, identity-initial.md, origin.md (synced from root project via `make sync-founding`)
 - `.gitignore` — `anima-workspace/` added
 - `docker-compose.yml` — bind mount `./anima-workspace:/anima`; `WEB_FETCH_MAX_PER_HOUR=20` env var
 - `main.py` — `_seed_workspace()`: creates dirs, copies founding docs on first startup (no-op if
@@ -1245,14 +1245,14 @@ None.
 
 ---
 
-## Session: 5th April 2026 — Phases 2.1–2.3 complete; IDEAS.md review done
+## Session: 5th April 2026 — Phases 2.1–2.3 complete; ideas.md review done
 
 ### What happened this session
 
 Full session covering Phases 2.1 (Global Workspace), 2.2 (LLM client), 2.3 (Language Actor), plus a
-review of IDEAS.md that caught two real gaps and produced fixes/roadmap updates.
+review of ideas.md that caught two real gaps and produced fixes/roadmap updates.
 
-**IDEAS.md review findings:**
+**ideas.md review findings:**
 
 - Gap A (fixed): GAP_IN_CONTINUITY never emitted on startup. Fixed in TemporalCoreActor —
   `_on_startup()` queries `latest_event()`, emits gap event if elapsed >= `gap_threshold`, resets
@@ -1262,7 +1262,7 @@ review of IDEAS.md that caught two real gaps and produced fixes/roadmap updates.
   from open volitional items on startup.
 - SelfNarrativeActor naming (roadmap): Phase 4.3 must produce a named SelfNarrativeActor consistent
   with architecture.md supervision tree.
-- Idea 14 (consumable vs persistent signals): documented in IDEAS.md, deferred to Phase 4.
+- Idea 14 (consumable vs persistent signals): documented in ideas.md, deferred to Phase 4.
 
 **Full test suite: 59/59 passing.**
 

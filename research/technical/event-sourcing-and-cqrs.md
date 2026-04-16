@@ -38,7 +38,7 @@ exist, or may have been overwritten). You replay the event log up to that point 
 state. That reconstruction is the architectural equivalent of remembering — you are not reading a
 stored fact, you are deriving a past state from the accumulated record.
 
-The temporal core described in ARCHITECTURE.md maps cleanly onto an event sourcing architecture. The
+The temporal core described in architecture.md maps cleanly onto an event sourcing architecture. The
 temporal core _is_ the event log. The specialist systems write events to it. Projections built from
 it represent current state. The log itself is append-only and inviolable — which is exactly the
 right property for the substrate of continuity.

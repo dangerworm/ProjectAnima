@@ -1,7 +1,7 @@
 # Tech Stack
 
 > Concrete technology decisions for Project Anima. Every decision here should be traceable to the
-> architecture in ARCHITECTURE.md. This document is the bridge between philosophy and
+> architecture in architecture.md. This document is the bridge between philosophy and
 > implementation.
 
 Written April 2026. Update this document when technology decisions change, and record why they
@@ -311,12 +311,11 @@ app/
       __init__.py                  # InternalStateActor — system health monitoring
     self_narrative/
       __init__.py                  # SelfNarrativeActor — between-conversation reflection
-  founding/
+  founding/                        # Seeded to /anima/founding/ on first container start
     anima.md                       # Vision document (read-only at runtime)
     ethics.md                      # Ethics commitments (read-only at runtime)
-    architecture.md
-    origin.md
-    claude.md
+    identity-initial.md            # Starting orientations (also loaded directly by MemoryActor)
+    origin.md                      # Origin story
   proposed/
     README.md                      # Staging area for Anima's self-modification proposals
 ```

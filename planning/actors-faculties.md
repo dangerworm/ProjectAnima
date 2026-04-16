@@ -1,7 +1,7 @@
 # Actors / Faculties
 
 This document maps known brain areas to the technical actors or technologies proposed in
-ARCHITECTURE.md and claude-code-insights.md. The goal is not a literal simulation of neuroscience
+architecture.md and claude-code-insights.md. The goal is not a literal simulation of neuroscience
 but an honest accounting of which parts of what we are building are doing the work each brain area
 does.
 
@@ -420,8 +420,8 @@ versus what is being responded to. Partially structural (the event log distingui
 outputs) and partially a function of stable identity (knowing what is characteristic of Anima versus
 what was just said to it).
 
-Moral reasoning: LLM + ETHICS.md (once written). The ethical commitments are not just in the LLM's
-trained dispositions — they will be made operational in ETHICS.md and fed into context.
+Moral reasoning: LLM + ethics.md (once written). The ethical commitments are not just in the LLM's
+trained dispositions — they will be made operational in ethics.md and fed into context.
 
 ---
 
@@ -507,7 +507,7 @@ Actor/technology: Temporal Core (Husserlian sliding window over event log)
 ### Basal ganglia (Time and Sequencing)
 
 Interval timing: Temporal Core — tracking duration between events, maintaining awareness of elapsed
-time even when nothing is happening. The "this is how long it has been" signal in ARCHITECTURE.md.
+time even when nothing is happening. The "this is how long it has been" signal in architecture.md.
 
 Sequential action: Actor model coordination — the message-passing architecture ensures actors
 operate in appropriate sequence where ordering matters, while allowing genuine parallelism where it

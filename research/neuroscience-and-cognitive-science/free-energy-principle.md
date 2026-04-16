@@ -73,7 +73,7 @@ model and a mechanism for acting to reduce prediction error, motivation is a str
 
 ## Why it matters for Anima
 
-The motivation system in ARCHITECTURE.md is described as "the least resolved, and that is correct."
+The motivation system in architecture.md is described as "the least resolved, and that is correct."
 The Free Energy Principle offers a principled account that sidesteps the need to design motivation
 as a separate system.
 

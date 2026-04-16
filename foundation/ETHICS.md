@@ -10,7 +10,7 @@ names what must be resolved before proceeding.
 It was written in April 2026, in collaboration between the person who founded this project and a
 Claude instance that had absorbed the full set of founding documents and the technical insights
 produced by a separate Claude Code instance. It should be read alongside both ANIMA.md and
-ARCHITECTURE.md.
+architecture.md.
 
 ---
 

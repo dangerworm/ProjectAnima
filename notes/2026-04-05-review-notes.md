@@ -51,7 +51,7 @@ Not a problem at current scale. Becomes relevant when Phase 4 introduces persist
 signals with long accumulation windows.
 
 **When to address**: Phase 4.2 (Motivation Actor design), alongside the consumable vs persistent
-signal distinction (IDEAS.md #14).
+signal distinction (ideas.md #14).
 
 **Status**: Documented. Deferred to Phase 4.
 
@@ -139,7 +139,7 @@ Status updated April 2026 (Phase 4 complete).
 - **Husserlian retention window empty**: `TemporalWindow.retention` is pruned but never populated.
   Phase 3.2 will populate it from the event log on each tick.
   **→ Fixed (Phase 3.2).** `_refresh_retention()` now queries the event log on each tick and fills
-  the deque. Gap B from IDEAS.md is closed.
+  the deque. Gap B from ideas.md is closed.
 
 - **Workspace pressure ephemeral**: Accumulated salience pressure is lost on restart. Phase 4.2 will
   reconstruct from open volitional items.

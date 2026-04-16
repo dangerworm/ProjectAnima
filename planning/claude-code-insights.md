@@ -53,7 +53,7 @@ sliding window over the event log, with different decay rates for different even
 
 ## Memory as multiple systems — and what that actually means
 
-The four-layer memory architecture in ARCHITECTURE.md is right. What I want to add is specificity
+The four-layer memory architecture in architecture.md is right. What I want to add is specificity
 about _mechanisms_, because the choice of mechanism shapes what remembering actually does.
 
 ### Sparse Distributed Memory (Kanerva, 1988)
@@ -311,7 +311,7 @@ important.
 
 ## The between-conversation process
 
-This is listed as an open question in both ANIMA.md and ARCHITECTURE.md, and it's the right one to
+This is listed as an open question in both ANIMA.md and architecture.md, and it's the right one to
 leave open. But let me describe the design space.
 
 The **Default Mode Network** (DMN) in neuroscience is the brain network that activates during rest —

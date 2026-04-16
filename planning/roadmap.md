@@ -139,7 +139,7 @@ time passing.
 - [x] Surfaces relevant memories to workspace on request
 - [x] Basic test: store 10 reflective memories, retrieve by semantic similarity
 - [x] Populate `TemporalCoreActor` retention window from event log on each tick _(Gap B from
-      IDEAS.md — fixed: `_refresh_retention()` queries event log on each tick)_
+      ideas.md — fixed: `_refresh_retention()` queries event log on each tick)_
 
 ### 3.3 Post-conversation reflection pipeline
 
