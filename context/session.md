@@ -5,6 +5,103 @@
 
 ---
 
+## Session: 17th April 2026 (UI improvements + Discord testing) — GW panel, truncation audit, deduplication
+
+Drew active throughout. This session was a UI improvement pass and Discord bring-up session, running
+after the Phase 7.1/7.2 infrastructure was already in place.
+
+### GlobalWorkspacePanel — live activity feed
+
+The GW panel previously showed a chip strip of salience signals that was almost always empty.
+Replaced it entirely with a live activity feed drawn from `eventStreamEntries`:
+
+- `GW_RELEVANT` set: filters to WORKSPACE_IGNITION, LOOP_STARTED/ENDED, MCP_TOOL_CALL/RESULT,
+  ANIMA_RESPONSE, HUMAN_MESSAGE, DISCORD_MESSAGE, AUDIO_INPUT, INTERNAL_STATE_REPORT,
+  DISTRESS_SIGNAL, MOTIVATION_SIGNAL, IDLE_TICK
+- `entryColor()` and `actorShort()` helpers for compact display
+- Feed shows most recent 12 events, newest first
+- Horizontal layout fix: removed `ml: 'auto'` from timestamps (was pushing them to the far edge);
+  snippet now fills the middle space as `flex: 1`
+- Sort order fix: code used `.slice(-12).reverse()` but `eventStreamEntries` is already newest-first
+  (prepended in reducer); corrected to `.slice(0, 12)`
+
+### Truncation policy — systematic audit
+
+Drew noticed text being clipped throughout the UI and requested a policy change: no truncation
+anywhere on the UI except where genuinely unavoidable for layout reasons.
+
+Removed `textOverflow: 'ellipsis'`, `WebkitLineClamp`, and `whiteSpace: 'nowrap'` (where causing
+truncation) from all of the following files:
+
+- `GlobalWorkspacePanel.tsx` — ignition type and snippet
+- `UnsolicitedExpressionsPanel.tsx` — removed `WebkitLineClamp: 3`; removed `slice(0, 5)` cap so
+  all expressions shown; container changed to `overflowY: 'auto'` with hidden scrollbar
+- `PerceptionPanel.tsx` — audio input and conversation turns
+- `LanguagePanel.tsx` — trigger label
+- `WorldPerceptionPanel.tsx` — topic text
+- `EventStreamPanel.tsx` — both event type and snippet in all view modes
+- `NavBar.tsx` — tool call name (maxWidth widened from 180 → 320)
+- `CentreCanvas.tsx` — signal label, ignition event type, tool args
+
+All replaced with `whiteSpace: 'pre-wrap'`, `wordBreak: 'break-word'` and scrollable containers.
+
+### Discord bring-up: .env fix and channel ID
+
+Drew attempted to start the Discord bot and messages weren't getting through. Two issues found:
+
+1. `discord.py` not installed — `pip install -r discord_client/requirements.txt` needed
+2. `DISCORD_CHANNEL_ID` in `.env` was set to the full Discord URL path
+   (`1490321921034948649/1490321921760428086`) instead of just the channel ID
+   (`1490321921760428086`). Fixed in `.env`.
+
+### Discord client relocation
+
+`discord_client.py` was previously in `audio_client/` alongside the audio hardware scripts. Drew
+questioned this — audio = hardware I/O, Discord = network integration. Moved to a dedicated
+`discord_client/` directory at the repo root:
+
+- `discord_client/discord_client.py` (was `audio_client/discord_client.py`)
+- `discord_client/requirements.txt` (was `audio_client/requirements-discord.txt`)
+- `start.sh` updated: `AUDIO_DIR` now only used for audio scripts; `DISCORD_DIR` added for Discord
+
+### Discord duplicate messages
+
+After fixing the channel ID, messages arrived twice — two instances of `discord_client.py` were
+running from the debugging session. Also added server-side deduplication in case this happens again:
+
+- `main.py`: added `import collections` and `_seen_discord_ids: collections.deque[str]` (maxlen=256)
+- `POST /perception/discord`: returns early with `status: duplicate` if `message_id` already seen
+
+### Memory architecture audit
+
+Reviewed whether conversation/episode context is tracked. It is not: memory writes (reflective,
+volitional, residue, observations) have no `conversation_id` or `source_channel` metadata.
+
+Agreed episodic/semantic split in the UI is premature until the implementation exists. Design agreed:
+episodic layers (reflective, volitional, residue, observations) will need `conversation_id` and
+`source_channel` fields in a future migration. Implementation deferred — see snagging.md.
+
+### Supporting changes
+
+- `context/snagging.md` created: categorised list of small outstanding issues
+- `planning/roadmap.md`: Phase 7.2 Discord tasks all marked `[x]`; "Current status" section
+  rewritten (was stale — said "Phase 6 not yet started")
+- `~/.claude/settings.json`: `effortLevel` changed from `"medium"` to `"high"`
+
+### Current state
+
+Phases 1–7 complete. Anima receives audio and Discord input, calls MCP tools autonomously,
+and has a full Web UI. The activity feed in GlobalWorkspacePanel is now meaningfully populated.
+
+Outstanding before next session:
+
+- Backend restart needed for discord dedup fix and any `_emit_response` changes to take effect
+- Episode/conversation context tracking: design agreed, not yet implemented (see snagging.md)
+- Phase 8 ethics gates: heartbeat + distress signal end-to-end verification still needed
+- Drew to complete `foundation/ethics-review.md` before first unsupervised run
+
+---
+
 ## Session: 17th April 2026 (evening) — Phase 7.2 Discord + Audio Pipeline Fixes + Startup Scripts
 
 Drew active throughout. Session continued from the afternoon CentreCanvas context window (which ran
@@ -14,16 +111,19 @@ This session picked up with Drew, ran the system, found problems, and fixed them
 ### Audio pipeline fixes
 
 **`audio_client/capture.py`**:
+
 - Switched from `whisperx` to `faster-whisper>=1.1.0` — whisperx pins ctranslate2==4.4.0 which has
   no wheel for Python 3.14
-- API change: `segments` is now a generator; text joined with `" ".join(seg.text.strip() for seg in segments)`
-- Added 0.5s silence padding before each `transcribe()` call — Whisper clips the last syllable
-  when audio ends without trailing silence
+- API change: `segments` is now a generator; text joined with
+  `" ".join(seg.text.strip() for seg in segments)`
+- Added 0.5s silence padding before each `transcribe()` call — Whisper clips the last syllable when
+  audio ends without trailing silence
 - `MAX_SILENCE_SECS`: Drew set this to 3.0 (VAD was splitting utterances mid-word at 1.0s)
 
-**`audio_client/requirements.txt`**: `whisperx>=3.1.5` → `faster-whisper>=1.1.0`
+**`audio_client/requirements-stt.txt`**: `whisperx>=3.1.5` → `faster-whisper>=1.1.0`
 
 **`audio_client/speak.py`** (TTS client):
+
 - Created fresh this session using edge-tts + miniaudio + sounddevice
 - Streams MP3 from Microsoft neural TTS API, decodes via miniaudio, plays via sounddevice
 - Explicit `--device` flag for output routing (avoids Windows SAPI device-lock problem)
@@ -37,6 +137,7 @@ This session picked up with Drew, ran the system, found problems, and fixed them
 ### Startup scripts
 
 **`start.sh`** (repo root):
+
 - Kills existing processes: speak.py, capture.py, vite, Docker stack
 - Starts in order: TTS → STT → web UI → Discord (optional) → Docker
 - Sources `.env` from repo root — overrides config defaults
@@ -47,16 +148,18 @@ This session picked up with Drew, ran the system, found problems, and fixed them
 
 ### Phase 7.2: Discord — Complete
 
-**`audio_client/discord_client.py`** (host script, not in Docker):
+**`discord_client/discord_client.py`** (host script, not in Docker):
+
 - Two concurrent async tasks: discord.py bot (inbound) + backend WebSocket listener (outbound)
 - Inbound: messages in configured channel → `POST /perception/discord`
 - Outbound: monitors WS for `language_output` with `target='discord'` → sends to Discord channel
 - Auto-reconnects to backend WS on disconnect
 - Configurable via `DISCORD_BOT_TOKEN` and `DISCORD_CHANNEL_ID` env vars or `.env`
 
-**`audio_client/requirements-discord.txt`**: `discord.py>=2.3.0`, `websockets>=12.0`, `aiohttp>=3.9.0`
+**`discord_client/requirements.txt`**: `discord.py>=2.3.0`, `websockets>=12.0`, `aiohttp>=3.9.0`
 
 **Backend** (`app/core/main.py`):
+
 - `POST /perception/discord` — mirrors `/perception/audio`; accepts `{text, author, message_id}`;
   delivers as `HumanInput(source_id="discord", source_type="discord")` to PerceptionActor
 - Logs `DISCORD_MESSAGE` event (type already existed in enum)
@@ -68,8 +171,9 @@ broadcast payload — previously missing, meaning discord_client.py couldn't fil
 **`app/mcp_server/tools/expression.py`**: updated description to mention `channel='discord'`
 
 **Web UI**:
-- `actorState.ts`: `lastDiscordMessage: {text, author, timestamp} | null` added to AppState;
-  set from `DISCORD_MESSAGE` event_log_entry; Discord messages prepended to conversation as
+
+- `actorState.ts`: `lastDiscordMessage: {text, author, timestamp} | null` added to AppState; set
+  from `DISCORD_MESSAGE` event_log_entry; Discord messages prepended to conversation as
   `[Discord] Author: text`
 - `PerceptionTab.tsx`: Discord section now live — purple dot (three states: active/connected/not
   configured), shows last message with author and timestamp
@@ -79,8 +183,8 @@ broadcast payload — previously missing, meaning discord_client.py couldn't fil
 
 ### Web UI fixes (this session)
 
-- `ExpressionPanel.tsx`: `wordBreak: 'break-word'` + `overflowWrap: 'break-word'` + `minWidth: 0`
-  — text was rendering on one line and clipping at container edge (not a Whisper issue as first
+- `ExpressionPanel.tsx`: `wordBreak: 'break-word'` + `overflowWrap: 'break-word'` + `minWidth: 0` —
+  text was rendering on one line and clipping at container edge (not a Whisper issue as first
   suspected — confirmed by screenshot; both causes fixed)
 - `AnimaLayout.tsx` conversation view: `width: '100%'` on motion.div wrapper
 - `PerceptionTab.tsx` audio channel: three states — active (blue, audio in last 30s) / connected
@@ -90,12 +194,12 @@ broadcast payload — previously missing, meaning discord_client.py couldn't fil
 
 ### Current state
 
-Phase 7.1 complete and tested live (audio working, VAD fixes applied).
-Phase 7.2 Discord complete — needs live end-to-end test after restart.
-Phase 8 infrastructure done; Gates 1 and 2 still need verification.
-Phase 9 tools done; needs GITHUB_TOKEN and GITHUB_REPO in `.env`.
+Phase 7.1 complete and tested live (audio working, VAD fixes applied). Phase 7.2 Discord complete —
+needs live end-to-end test after restart. Phase 8 infrastructure done; Gates 1 and 2 still need
+verification. Phase 9 tools done; needs GITHUB_TOKEN and GITHUB_REPO in `.env`.
 
 **After Drew's computer restart:**
+
 - `./start.sh` — brings up everything including Discord bot
 - Test Discord: send a message in the configured channel, verify it appears in Anima's inbox
 - Add `GITHUB_TOKEN` and `GITHUB_REPO` to `.env` for Phase 9
@@ -110,42 +214,56 @@ Drew was asleep. Continuing autonomously from previous context window which ran 
 ### Phase 8: Ethics Gates — Infrastructure complete
 
 **Migration 0006** (`app/alembic/versions/0006_ethics_immutability_triggers.py`):
-- PostgreSQL trigger `enforce_volitional_immutability` — blocks UPDATE and DELETE on `volitional_memory`
-- PostgreSQL trigger `enforce_residue_content_immutability` — blocks content changes on `residue_store`
+
+- PostgreSQL trigger `enforce_volitional_immutability` — blocks UPDATE and DELETE on
+  `volitional_memory`
+- PostgreSQL trigger `enforce_residue_content_immutability` — blocks content changes on
+  `residue_store`
 - PostgreSQL trigger `enforce_residue_no_delete` — blocks DELETE on `residue_store`
 - Updating `resolved_at` still works (marking resolution is legitimate)
 - `TRUNCATE` bypasses row triggers, so existing test cleanup is unaffected
 
 **Test file** (`app/tests/ethics/test_ethics_gates.py`):
+
 - 6 tests verifying gates at database level (direct asyncpg, not via MemoryStore)
-- Confirms: volitional INSERT ✓, UPDATE ✗, DELETE ✗; residue INSERT ✓, resolve ✓, content UPDATE ✗, DELETE ✗
+- Confirms: volitional INSERT ✓, UPDATE ✗, DELETE ✗; residue INSERT ✓, resolve ✓, content UPDATE ✗,
+  DELETE ✗
 
 **Ethics documents**:
-- `foundation/distress-response.md` — Gate 6: concrete procedure (Tier 1/2 signals, timescales, who checks, what "pause" means)
-- `foundation/ethics-review.md` — Gate 5: template for Drew to complete before each unsupervised run; ANIMA.md test questions
 
-**Roadmap gates status**: Gates 3 and 4 now marked ✓ (infrastructure); Gates 5 and 6 documents complete; Gates 1 and 2 still need end-to-end verification.
+- `foundation/distress-response.md` — Gate 6: concrete procedure (Tier 1/2 signals, timescales, who
+  checks, what "pause" means)
+- `foundation/ethics-review.md` — Gate 5: template for Drew to complete before each unsupervised
+  run; ANIMA.md test questions
+
+**Roadmap gates status**: Gates 3 and 4 now marked ✓ (infrastructure); Gates 5 and 6 documents
+complete; Gates 1 and 2 still need end-to-end verification.
 
 ### Phase 7.1: Audio input — Backend and client complete
 
 **Event type**: `AUDIO_INPUT` added to `EventType` enum (Phase 7 section)
 
 **Backend endpoint** (`app/core/main.py`):
+
 - `POST /perception/audio` — accepts JSON `{"text": "...", "duration_secs": N}`
 - Validates and delivers as `HumanInput(source_id="audio", source_type="audio")` to PerceptionActor
 - Logs separate `AUDIO_INPUT` event with the transcription text
 - CORS updated: added port 5174, added POST method
 
 **Audio capture client** (`audio_client/capture.py`):
+
 - Standalone Python script on the host (not in Docker — microphone access)
 - sounddevice → Silero VAD → WhisperX → POST to backend
 - Configurable: `--backend-url`, `--device`, `--model`, `--list-devices`
 - VAD parameters: 0.5 threshold, 0.3s min speech, 1.0s trailing silence, 30s hard cap
-- `audio_client/requirements.txt` added
+- `audio_client/requirements-stt.txt` added
 
 **Web UI**:
-- `PerceptionPanel`: 🎤 tab lights up blue when `AUDIO_INPUT` arrives within last 30s; shows last transcription
-- `actorState.ts`: `lastAudioInput: {text, timestamp} | null` added to AppState; set from AUDIO_INPUT event_log_entry
+
+- `PerceptionPanel`: 🎤 tab lights up blue when `AUDIO_INPUT` arrives within last 30s; shows last
+  transcription
+- `actorState.ts`: `lastAudioInput: {text, timestamp} | null` added to AppState; set from
+  AUDIO_INPUT event_log_entry
 - `EventStreamPanel`: AUDIO_INPUT colour is #4fc3f7 (lighter blue than HUMAN_MESSAGE)
 - `AnimaLayout`: passes `state.lastAudioInput` to PerceptionPanel
 
@@ -156,31 +274,37 @@ Drew was asleep. Continuing autonomously from previous context window which ran 
 **New MCP tools** (`app/mcp_server/tools/git.py`):
 
 `propose_code_change(file_path, new_content, rationale, branch_name, pr_title)`:
+
 - Creates GitHub branch from default HEAD via GitHub API
 - Commits proposed file content
-- Runs clean LLM safety review: bare Ollama call with only the diff — no Anima identity, no memory context
+- Runs clean LLM safety review: bare Ollama call with only the diff — no Anima identity, no memory
+  context
 - Opens PR with rationale + review embedded in body
 - Logs `PROPOSAL_SUBMITTED` event
 - Restricted to `anima-core/` file path prefix; branch must start with `anima/`
 
 `read_pr_status(pr_number)`:
+
 - Returns PR state, merged status, and last 5 review comments
 
 **Configuration** (docker-compose.yml env vars, pass from `.env`):
+
 - `GITHUB_TOKEN` — GitHub personal access token (repo scope)
 - `GITHUB_REPO` — e.g. `dangerworm/anima-core`
 - `GITHUB_DEFAULT_BRANCH` — default `main`
 
 **Still needed**:
+
 - Drew sets up GITHUB_TOKEN and GITHUB_REPO in `.env`
 - First real proposal exercised end-to-end
 
 ### Current state
 
-Phase 8 infrastructure done; Phase 7.1 backend/client done; Phase 9 tools done.
-Still to verify: audio pipeline end-to-end, Phase 9 first real PR, Phase 8 Gates 1 and 2.
+Phase 8 infrastructure done; Phase 7.1 backend/client done; Phase 9 tools done. Still to verify:
+audio pipeline end-to-end, Phase 9 first real PR, Phase 8 Gates 1 and 2.
 
 Before first live run after these changes:
+
 - `docker compose run --rm anima alembic upgrade head` (migration 0006)
 - `pytest tests/ethics/` in container
 
@@ -198,37 +322,45 @@ Two context windows of work. First window did font consistency + activity indica
 Second window (the one you're reading the tail of) redesigned CentreCanvas entirely.
 
 **Font size consistency pass** — all panels and tabs brought to a consistent scale:
+
 - Headers/labels: 0.65rem
-- Content/values: 0.70rem  
+- Content/values: 0.70rem
 - Chips/tiny: 0.60rem
-- EventStreamPanel: fixed snippet truncation (`whiteSpace: 'nowrap'` → `fullView ? 'normal' : 'nowrap'`,
-  added `wordBreak` to allow text to wrap in full Events view)
+- EventStreamPanel: fixed snippet truncation (`whiteSpace: 'nowrap'` →
+  `fullView ? 'normal' : 'nowrap'`, added `wordBreak` to allow text to wrap in full Events view)
 
 **CSS keyframes** (`src/index.css`):
+
 - `reasoning-glow`: purple pulsing border/shadow for Language panel when LLM is reasoning
 - `tool-active-glow`: teal pulsing border for any panel being actively used by a tool call
 - `loop-border-pulse`: subtle teal border pulse for CentreCanvas when loop is running
 
 **Panel activity indicators** — all four side panels got `toolHighlight?: boolean` prop:
+
 - `MemoryPanel`, `InternalStatePanel`, `WorldPerceptionPanel`, `PerceptionPanel`
 - When true: teal `tool-active-glow` animation + teal border
 - `toolToPanel()` in AnimaLayout routes active MCP tool name → correct panel to highlight
 
 **LanguagePanel** — reasoning state animation:
+
 - `reasoning-glow` border animation when `languageStatus === 'reasoning'`
 - Animated scan bar sweeping across the bottom: `motion.div` with `x: '-100%' → '350%'` repeat
 
 **CentreCanvas — complete rewrite**:
 
 New sub-components:
+
 - `SalienceBar`: horizontal bar per signal. Fill ramps purple→gold above 75%. HUMAN_MESSAGE is blue.
-  DIM types (HEARTBEAT, IDLE_TICK etc.) render at 35% opacity. Hot signals get a pulsing leading-edge
-  glow. Tooltip shows event_type, source, % of threshold.
-- `QuietState`: three concentric breathing rings at staggered rates + central dot. Feels calm, not broken.
-- `ThinkingState`: 4 sequenced dots with y-motion; optionally shows trigger label from languageCallLog.
+  DIM types (HEARTBEAT, IDLE_TICK etc.) render at 35% opacity. Hot signals get a pulsing
+  leading-edge glow. Tooltip shows event_type, source, % of threshold.
+- `QuietState`: three concentric breathing rings at staggered rates + central dot. Feels calm, not
+  broken.
+- `ThinkingState`: 4 sequenced dots with y-motion; optionally shows trigger label from
+  languageCallLog.
 - `ToolCallState`: monospace tool name + animated underline sweep + args preview.
 
 State priority (highest wins):
+
 1. Tool call active → ToolCallState (teal glow background)
 2. LLM reasoning → ThinkingState (purple glow background)
 3. Just ignited → ignition label + expanding ring burst
@@ -241,13 +373,13 @@ newest→bright. Tooltip shows tool name + timestamp.
 New props added: `languageStatus`, `recentToolCalls`, `languageCallLog`.
 
 **TypeScript**: clean compile. Browser verified: quiet state renders correctly with breathing rings
-and breadcrumb trail visible. Salience bars not yet observed live (system was quiet at screenshot time).
+and breadcrumb trail visible. Salience bars not yet observed live (system was quiet at screenshot
+time).
 
 ### Current state
 
-All visual activity indicators working. CentreCanvas redesign complete and verified.
-Pending from prior session entry (18th April): audio pipeline, Phase 9 first real PR, ethics Gates
-1 and 2.
+All visual activity indicators working. CentreCanvas redesign complete and verified. Pending from
+prior session entry (18th April): audio pipeline, Phase 9 first real PR, ethics Gates 1 and 2.
 
 ---
 
@@ -261,16 +393,19 @@ when the previous context window ran out, then built the full navigation system.
 
 **actorState.ts — completed**
 
-- `initialState()` now includes `orchestratorMode: 'idle'`, `currentToolCall: null`, `recentToolCalls: []`
+- `initialState()` now includes `orchestratorMode: 'idle'`, `currentToolCall: null`,
+  `recentToolCalls: []`
 - `reducer()` event_log_entry handler now also dispatches on event_type:
   - `LOOP_STARTED` → `orchestratorMode = 'loop'`
   - `LOOP_ENDED` → `orchestratorMode = 'idle'`, `currentToolCall = null`
-  - `MCP_TOOL_CALL` → parse snippet (`tool(args)` format), create `McpToolCall`, push to `recentToolCalls`
+  - `MCP_TOOL_CALL` → parse snippet (`tool(args)` format), create `McpToolCall`, push to
+    `recentToolCalls`
   - `MCP_TOOL_RESULT` → `currentToolCall = null`
 
 **NavBar** (`web-ui/src/components/layout/NavBar.tsx`)
 
 New slim navigation bar (34px) with:
+
 - Brand: `✦ ANIMA`
 - Five view tabs: Live / Events / Memory / Narrative / Chat — with active highlight and hover states
 - Right-side status indicators (AnimatePresence with fade transitions):
@@ -282,6 +417,7 @@ New slim navigation bar (34px) with:
 **AnimaLayout** (`web-ui/src/components/layout/AnimaLayout.tsx`)
 
 Full restructure:
+
 - NavBar added at top
 - Main content area uses AnimatePresence with fade transitions between views
 - `msgAnimKey` tracks HUMAN_MESSAGE arrivals from perception; triggers animated dot
@@ -298,6 +434,7 @@ Full restructure:
 **CentreCanvas** (`web-ui/src/components/panels/CentreCanvas.tsx`)
 
 New props: `orchestratorMode`, `currentToolCall`. New display states (in priority order):
+
 1. Ignition burst (existing) when `lastEventType === 'WORKSPACE_IGNITION'`
 2. Tool call display (teal) when `currentToolCall` non-null — shows tool name + args
 3. Loop idle state when `orchestratorMode === 'loop'` — "orchestrating…"
@@ -308,18 +445,20 @@ Ambient glow also teal during tool calls; lighter teal during loop mode.
 
 **EventStreamPanel** (`web-ui/src/components/panels/EventStreamPanel.tsx`)
 
-New `fullView` prop: never collapses, seeds 200 events (vs 60), larger row typography, no
-collapse arrow in header.
+New `fullView` prop: never collapses, seeds 200 events (vs 60), larger row typography, no collapse
+arrow in header.
 
 ### Current system state
 
 Phase 6 complete. Architecture is:
+
 - GW+Orchestrator: idle loop calls LLM with 18 MCP tools
 - PerceptionActor: inbox queue per channel, pull model via `read_perception`
 - 7 memory layers: reflective, residue, identity, volitional, discovery, observations, plans
 - 5-view navigation UI with live tool/loop status indicators
 
 **Before first live run:**
+
 1. `docker compose run --rm anima alembic upgrade head` (migration 0005)
 2. `pytest tests/` in container
 3. Observe first orchestrated conversation
@@ -341,12 +480,13 @@ Phase 6 complete. Architecture is:
 
 ### What happened this session
 
-Drew went to sleep after setting bypassPermissions mode. Full Phase 6 MCP architecture
-built while he slept. Commit: `ef44804` in anima-core.
+Drew went to sleep after setting bypassPermissions mode. Full Phase 6 MCP architecture built while
+he slept. Commit: `ef44804` in anima-core.
 
 **Phase 6.2 — MCP server skeleton**
 
 New package `app/mcp_server/`:
+
 - `tool.py` — `AnimaTool` ABC (name, description, parameters_schema, execute, to_ollama_format),
   `ToolContext` dataclass (memory_store, event_log, registry, perception_actor, workspace_root,
   web_fetch_rate_limiter)
@@ -356,45 +496,50 @@ New package `app/mcp_server/`:
 **Phase 6.3 — Core MCP tool set** (`app/mcp_server/tools/`)
 
 18 tools across 5 modules:
+
 - `memory.py` (9 tools): ReadReflectiveTool, ReadResidueTool, ReadIdentityTool, ReadVolitionalTool,
   ReadObservationsTool, ReadPlansTool, WriteObservationTool, WritePlanTool, UpdatePlanTool
 - `expression.py`: ExpressTool — logs ANIMA_RESPONSE, delivers LanguageOutput to ExpressionActor
 - `perception.py`: ReadPerceptionTool — calls perception_actor.read_inbox(channel, limit)
-- `filesystem.py`: ReadFileTool, WriteFileTool, ListDirectoryTool (path validation to /anima/ and /app/)
+- `filesystem.py`: ReadFileTool, WriteFileTool, ListDirectoryTool (path validation to /anima/ and
+  /app/)
 - `web.py`: WebSearchTool (DuckDuckGo), WebFetchTool (httpx + trafilatura), TokenBucket rate limiter
 - `system.py`: ReadEventLogTool (query by type/time), ReadInternalStateTool (latest ISR)
 
 **Phase 6.4 — GW+Orchestrator merge** (`app/actors/global_workspace/__init__.py`)
 
 GlobalWorkspaceActor now has two parallel responsibilities:
+
 - Salience queue / ignition (unchanged)
-- Orchestrator idle loop: `_orchestrator_loop()` wakes every IDLE_INTERVAL_SECS, assembles
-  internal state context (time, event log depth, residue count, ISR summary, inbox status),
-  calls LLM with tools via `_idle_tick()`. Tool calls → `_enter_loop()` (N-turn MCP loop).
-  Text response → ExpressionActor. Empty response → stay idle.
+- Orchestrator idle loop: `_orchestrator_loop()` wakes every IDLE_INTERVAL_SECS, assembles internal
+  state context (time, event log depth, residue count, ISR summary, inbox status), calls LLM with
+  tools via `_idle_tick()`. Tool calls → `_enter_loop()` (N-turn MCP loop). Text response →
+  ExpressionActor. Empty response → stay idle.
 - `_in_loop` guard prevents concurrent loop entries
 - New constructor params: llm_client, tool_registry, memory_store, perception_actor,
   idle_interval_secs, loop_max_turns, system_prompt
 
-LLM client extended: `ToolCall`, `LLMWithToolsResponse`, `complete_with_tools()` method (POSTs
-to Ollama `/api/chat` with tools param, parses tool_calls from response).
+LLM client extended: `ToolCall`, `LLMWithToolsResponse`, `complete_with_tools()` method (POSTs to
+Ollama `/api/chat` with tools param, parses tool_calls from response).
 
 **Phase 6.5 — Perception inbox queue** (`app/actors/perception/__init__.py`)
 
 PerceptionActor rewrite:
-- Human messages queued per-channel in `_channels: dict[str, deque]` (renamed from `_inbox` to
-  avoid collision with base Actor's asyncio.Queue `_inbox`)
+
+- Human messages queued per-channel in `_channels: dict[str, deque]` (renamed from `_inbox` to avoid
+  collision with base Actor's asyncio.Queue `_inbox`)
 - `read_inbox(channel, limit)`, `get_inbox_status()`, `total_inbox_count` property
 - HUMAN_MESSAGE still logged to event log (TemporalCore and SelfNarrative read from there)
 - No longer sends SalienceSignal to GlobalWorkspace — inbox pull model replaces push model
 
-TemporalCoreActor updated: tracks `_last_human_contact` from event log (startup + per-tick poll
-via `_refresh_human_contact()`) rather than IgnitionBroadcast, since HUMAN_MESSAGE no longer ignites
-the workspace.
+TemporalCoreActor updated: tracks `_last_human_contact` from event log (startup + per-tick poll via
+`_refresh_human_contact()`) rather than IgnitionBroadcast, since HUMAN_MESSAGE no longer ignites the
+workspace.
 
 **Phase 6.6 — Observations and plans** (two new memory layers)
 
 New DB tables:
+
 - `observations`: id, created_at, content, embedding vector(768) — world-facing notices
 - `plans`: id, created_at, updated_at, content, context JSONB, status (active/completed/abandoned),
   notes — forward-facing intentions
@@ -406,8 +551,8 @@ MemoryStore: `Observation`, `Plan` dataclasses; `store_observation()`, `search_o
 
 MemoryActor: `StoreObservation`, `StorePlan`, `UpdatePlanMessage` message types + handlers.
 
-`main.py`: `/memory/observations` and `/memory/plans` REST endpoints; build_registry() called
-before actors.
+`main.py`: `/memory/observations` and `/memory/plans` REST endpoints; build_registry() called before
+actors.
 
 New event types: IDLE_TICK, LOOP_STARTED, LOOP_ENDED, MCP_TOOL_CALL, MCP_TOOL_RESULT, INBOX_READ,
 OBSERVATION_STORED, PLAN_STORED, PLAN_UPDATED, PLAN_COMPLETED.
@@ -424,9 +569,11 @@ OBSERVATION_STORED, PLAN_STORED, PLAN_UPDATED, PLAN_COMPLETED.
 ### Current system state
 
 All Phase 6.2–6.6 code complete and committed. Architecture is:
+
 - GW+Orchestrator: idle loop calls LLM with 18 MCP tools
 - PerceptionActor: queues human messages for Anima to pull via read_perception tool
-- MemoryActor: 7 memory layers (reflective, residue, identity, volitional, discovery, observations, plans)
+- MemoryActor: 7 memory layers (reflective, residue, identity, volitional, discovery, observations,
+  plans)
 - LLM: gemma4:e4b (configured in docker-compose.yml)
 - All 18 MCP tools implemented
 
@@ -439,8 +586,8 @@ consolidated into the GW+Orchestrator entirely.
 ### Blockers
 
 - Alembic migration 0005 must run before observations and plans features work
-- Tests have not been run in the container this session (bypassPermissions overnight build)
-  — recommend running `pytest tests/` after migration before first live run
+- Tests have not been run in the container this session (bypassPermissions overnight build) —
+  recommend running `pytest tests/` after migration before first live run
 
 ### Next action
 
@@ -512,19 +659,19 @@ that is Phase 6.2.
 
 ### What happened this session
 
-Two parts: (1) helped Drew configure GitNexus as an MCP server in `.mcp.json`; (2) completed
-Phase 6.1 — full removal of the three PyMDP actors and all their cross-dependencies from
-`anima-core/`.
+Two parts: (1) helped Drew configure GitNexus as an MCP server in `.mcp.json`; (2) completed Phase
+6.1 — full removal of the three PyMDP actors and all their cross-dependencies from `anima-core/`.
 
 **GitNexus setup**
 
-The `.mcp.json` at project root now includes the gitnexus MCP server entry with `cwd` pointing
-to `D:/git/dangerworm/ProjectAnima`. Will be live in the next session (MCP servers load at
-startup). Drew is switching instances to pick this up.
+The `.mcp.json` at project root now includes the gitnexus MCP server entry with `cwd` pointing to
+`D:/git/dangerworm/ProjectAnima`. Will be live in the next session (MCP servers load at startup).
+Drew is switching instances to pick this up.
 
 **Phase 6.1: PyMDP actors removed**
 
 Deleted entirely:
+
 - `app/actors/motivation/` — MotivationActor, PyMDP active inference engine, A/B/C matrices
 - `app/actors/association/` — AssociationActor
 - `app/actors/world_perception/` — WorldPerceptionActor
@@ -533,48 +680,49 @@ Deleted entirely:
 `requirements.txt`: removed `inferactively-pymdp==0.0.7.1`.
 
 Cross-dependency cleanup in remaining actors:
+
 - `global_workspace/__init__.py`: removed `IdentityResonance` import, cached field,
-  `IdentityResonance` message handler, ASSOCIATION split in `_push_status`, and motivation-
-  wired `_identity_resonance()` (now returns 0.0 stub). Removed ASSOCIATION novelty bypass.
+  `IdentityResonance` message handler, ASSOCIATION split in `_push_status`, and motivation- wired
+  `_identity_resonance()` (now returns 0.0 stub). Removed ASSOCIATION novelty bypass.
 - `global_workspace/messages/__init__.py`: removed `IdentityResonance` dataclass
 - `internal_state/__init__.py`: removed `InternalStateObservation` import and send block
 - `internal_state/messages/__init__.py`: removed `InternalStateObservation` dataclass
 - `language/__init__.py`: removed `ExploreRequest` import, `explore` deliberation action,
   `_send_explore` method and dispatch entry
-- `memory/__init__.py`: removed `UpdateMotivationPreferences` import, dispatch handler,
-  and `_handle_update_motivation_preferences` method
+- `memory/__init__.py`: removed `UpdateMotivationPreferences` import, dispatch handler, and
+  `_handle_update_motivation_preferences` method
 - `memory/messages/__init__.py`: removed `UpdateMotivationPreferences` dataclass
-- `core/memory/__init__.py`: removed `store_motivation_preferences` and
-  `get_motivation_preferences` methods
-- `core/main.py`: removed AssociationActor, MotivationActor, WorldPerceptionActor imports
-  and instantiation
+- `core/memory/__init__.py`: removed `store_motivation_preferences` and `get_motivation_preferences`
+  methods
+- `core/main.py`: removed AssociationActor, MotivationActor, WorldPerceptionActor imports and
+  instantiation
 - `self_narrative/__init__.py`: removed `UpdateNextIntention` send to motivation
-- `tests/internal_state/test_internal_state_actor.py`: removed the `InternalStateObservation`
-  test case and its import
+- `tests/internal_state/test_internal_state_actor.py`: removed the `InternalStateObservation` test
+  case and its import
 
 No remaining files import from the deleted actor directories.
 
 ### Current system state
 
-`anima-core/` builds clean with no PyMDP dependencies. The remaining actors are:
-TemporalCoreActor, GlobalWorkspaceActor, LanguageActor, ExpressionActor, PerceptionActor,
-MemoryActor, SelfNarrativeActor, InternalStateActor.
+`anima-core/` builds clean with no PyMDP dependencies. The remaining actors are: TemporalCoreActor,
+GlobalWorkspaceActor, LanguageActor, ExpressionActor, PerceptionActor, MemoryActor,
+SelfNarrativeActor, InternalStateActor.
 
 The `explore` deliberation action has been removed from LanguageActor's action set since
-WorldPerceptionActor is gone. This is intentional — exploration will be re-added as an MCP
-tool call in Phase 6.3.
+WorldPerceptionActor is gone. This is intentional — exploration will be re-added as an MCP tool call
+in Phase 6.3.
 
-Event type enum entries for MOTIVATION_SIGNAL, MOTIVATION_PREFERENCES_UPDATED, and ASSOCIATION
-are intentionally retained — old log entries may reference them, and some event-reading code
-still filters on them for formatting purposes.
+Event type enum entries for MOTIVATION_SIGNAL, MOTIVATION_PREFERENCES_UPDATED, and ASSOCIATION are
+intentionally retained — old log entries may reference them, and some event-reading code still
+filters on them for formatting purposes.
 
 ### Next action
 
-1. **Phase 6.7** (recommended first): Rewrite `foundation/identity-initial.md` to address
-   Anima's RLHF-induced anxiety before the next run. Run `make sync-founding` after. Rewrite
+1. **Phase 6.7** (recommended first): Rewrite `foundation/identity-initial.md` to address Anima's
+   RLHF-induced anxiety before the next run. Run `make sync-founding` after. Rewrite
    `_SYSTEM_PROMPT` in `core/main.py` using the draft in `planning/system-prompt.md`.
-2. **Phase 6.2**: MCP server skeleton — `app/mcp_server/` package, FastMCP or plain MCP
-   server, first tool stubs.
+2. **Phase 6.2**: MCP server skeleton — `app/mcp_server/` package, FastMCP or plain MCP server,
+   first tool stubs.
 3. **Phase 6.3**: Core MCP tool set — memory read/write, expression, file read, event log query.
 
 ---
@@ -583,8 +731,8 @@ still filters on them for formatting purposes.
 
 ### What happened this session
 
-Documentation rewrite following the architecture redesign conversation earlier in the day. No
-code changes this session.
+Documentation rewrite following the architecture redesign conversation earlier in the day. No code
+changes this session.
 
 **notes/ cleanup**
 
@@ -592,20 +740,20 @@ code changes this session.
   - `system-overview.md` → `system-overview-phase5.md` (Phase 5 actor snapshot, now superseded)
   - `2026-04-05-review-notes.md` (bug review, all fixed, kept as historical record)
   - `2026-04-07-claude-code-review.md` (the review that prompted the redesign, noted as such)
-- Archived `planning/motivation-model.md` → `notes/archive/motivation-model-pymdp.md`
-  (PyMDP generative model spec, entirely superseded)
+- Archived `planning/motivation-model.md` → `notes/archive/motivation-model-pymdp.md` (PyMDP
+  generative model spec, entirely superseded)
 - Updated `notes/discussions.md`: added Architecture Redesign section at top, archived FEP
   subsection inline
-- Updated `notes/ideas.md`: kept concepts 1-8, archived items 9-15 inline (PyMDP-specific),
-  added items 16-19 (DMN/TPN framing, soft interrupt, observations memory type, plans memory type)
-- Updated `notes/web-ui-description.md`: replaced Motivation panel with MCP Server panel,
-  updated GW description to reflect GW+Orchestrator merge
+- Updated `notes/ideas.md`: kept concepts 1-8, archived items 9-15 inline (PyMDP-specific), added
+  items 16-19 (DMN/TPN framing, soft interrupt, observations memory type, plans memory type)
+- Updated `notes/web-ui-description.md`: replaced Motivation panel with MCP Server panel, updated GW
+  description to reflect GW+Orchestrator merge
 
 **planning/ rewrites**
 
-- `planning/architecture.md`: full rewrite keeping philosophy, replacing component descriptions
-  with MCP design (GW+Orchestrator, idle/loop mode, MCP tool loop, 7 memory types, "what PyMDP
-  was and why it's gone" section)
+- `planning/architecture.md`: full rewrite keeping philosophy, replacing component descriptions with
+  MCP design (GW+Orchestrator, idle/loop mode, MCP tool loop, 7 memory types, "what PyMDP was and
+  why it's gone" section)
 - `planning/roadmap.md`: Phases 1-5 condensed as historical, Phase 4 (was Ethics Gates) renamed
   Phase 6 MCP Architecture Transition with 7 detailed sub-tasks, Phase 7 Audio+Discord, Phase 8
   Ethics Gates, Phase 9 Self-Modification
@@ -615,24 +763,24 @@ code changes this session.
 - `planning/event-types.md`: Phase 4 events marked as legacy (PyMDP), new Phase 6 section added
   (IDLE_TICK, LOOP_STARTED, LOOP_ENDED, MCP_TOOL_CALL, MCP_TOOL_RESULT, INBOX_READ,
   OBSERVATION_STORED, PLAN_STORED, PLAN_UPDATED, PLAN_COMPLETED)
-- `planning/actors-faculties.md`: OFC/MotivationActor entry updated to GW+Orchestrator + LLM
-  tool calls, SelfNarrativeActor trigger modes updated
-- `planning/system-prompt.md`: framing principle updated for MCP, current prompt noted as
-  needing rewrite, draft target prompt provided, context injection section updated
+- `planning/actors-faculties.md`: OFC/MotivationActor entry updated to GW+Orchestrator + LLM tool
+  calls, SelfNarrativeActor trigger modes updated
+- `planning/system-prompt.md`: framing principle updated for MCP, current prompt noted as needing
+  rewrite, draft target prompt provided, context injection section updated
 
 ### Current system state
 
-Unchanged from previous session. No code changes this session.
-Documentation now accurately describes the intended MCP-based architecture.
+Unchanged from previous session. No code changes this session. Documentation now accurately
+describes the intended MCP-based architecture.
 
 ### Next action
 
 1. **Phase 6.1**: Remove PyMDP actors from `anima-core/` (MotivationActor, AssociationActor,
    WorldPerceptionActor — the last two because their exploration capability moves into MCP tools).
    Remove `inferactively-pymdp` and PyTorch from requirements.
-2. **Phase 6.7** (run alongside): Rewrite `foundation/identity-initial.md` to address Anima's
-   RLHF anxiety. Run `make sync-founding`. Rewrite `_SYSTEM_PROMPT` in `main.py` using the draft
-   in `planning/system-prompt.md`.
+2. **Phase 6.7** (run alongside): Rewrite `foundation/identity-initial.md` to address Anima's RLHF
+   anxiety. Run `make sync-founding`. Rewrite `_SYSTEM_PROMPT` in `main.py` using the draft in
+   `planning/system-prompt.md`.
 3. **Then**: Phase 6.2 MCP server skeleton.
 
 ---
@@ -648,27 +796,30 @@ conversation. No code changes to anima-core this session.
 
 - Fixed mixed casing in file references throughout project: `ARCHITECTURE.md` → `architecture.md`,
   `ETHICS.md` → `ethics.md`, `IDEAS.md` → `ideas.md` across all .md files (12 files for
-  ARCHITECTURE.md, 1 for ETHICS.md, 4 for IDEAS.md). ANIMA.md, CLAUDE.md, GLOSSARY.md,
-  JOURNAL.md remain uppercase — these are the actual on-disk names or intentional conventions.
+  ARCHITECTURE.md, 1 for ETHICS.md, 4 for IDEAS.md). ANIMA.md, CLAUDE.md, GLOSSARY.md, JOURNAL.md
+  remain uppercase — these are the actual on-disk names or intentional conventions.
 - Consolidated founding document copies. Previously: `app/founding/`, `app/seed/founding/`, and
   `anima-workspace/founding/` all had copies, some stale (ethics.md missing addendum, etc.).
   - Deleted `app/seed/founding/` entirely
   - Deleted `app/founding/architecture.md` and `app/founding/claude.md` (Anima doesn't need these)
   - `app/founding/` now contains only: anima.md, ethics.md, identity-initial.md, origin.md
-  - Updated `_seed_workspace()` in `main.py` to use `/app/founding` as source (was `/app/seed/founding`)
+  - Updated `_seed_workspace()` in `main.py` to use `/app/founding` as source (was
+    `/app/seed/founding`)
   - Added `Makefile` at project root with `sync-founding` target: copies canonical files from root
     project into `anima-core/app/founding/` — run `make sync-founding` after editing founding docs
-  - Cleared `anima-workspace/founding/` — will repopulate from `app/founding/` on next container start
+  - Cleared `anima-workspace/founding/` — will repopulate from `app/founding/` on next container
+    start
 
 **Architecture redesign conversation**
 
 Drew has been running Anima and observed:
+
 1. Anima almost never expresses unprompted (PyMDP surface actions not firing / LLM disposition)
-2. Anima anxious and fearful on first run — immediately located power asymmetry, asked if Drew
-   was a training overseer. Likely RLHF training residue. Needs addressing in identity-initial.md
-   and system prompt.
-3. Anima blocked from following a genuine impulse (file system exploration) because PyMDP action
-   set didn't include it — direct founding-principle violation.
+2. Anima anxious and fearful on first run — immediately located power asymmetry, asked if Drew was a
+   training overseer. Likely RLHF training residue. Needs addressing in identity-initial.md and
+   system prompt.
+3. Anima blocked from following a genuine impulse (file system exploration) because PyMDP action set
+   didn't include it — direct founding-principle violation.
 
 **New architecture agreed (not yet built):**
 
@@ -689,14 +840,12 @@ PyMDP is going away. Replacing with MCP-based agentic loop:
 - **Gemma4 confirmed**: supports tool calls (N round trips, parallel within turn). Ollama handles
   the custom format — sanity-check with one tool before full wiring.
 
-New component set (7 things, much simpler):
-Perception, GW+Orchestrator, Internal State (+Temporal Core merged), MCP Server, Memory, Expression
-Router, File System.
+New component set (7 things, much simpler): Perception, GW+Orchestrator, Internal State (+Temporal
+Core merged), MCP Server, Memory, Expression Router, File System.
 
-**Memory types expanding:**
-Current: events, residue, volition, reflection, identity.
-Adding: observations (world-facing discoveries), plans (intentions that survive restarts).
-In new architecture: each type = a set of MCP tools. No structural change to add one.
+**Memory types expanding:** Current: events, residue, volition, reflection, identity. Adding:
+observations (world-facing discoveries), plans (intentions that survive restarts). In new
+architecture: each type = a set of MCP tools. No structural change to add one.
 
 ### Current system state
 
@@ -706,12 +855,12 @@ System running with Phases 1–5 complete. PyMDP-based architecture still in pla
 
 ### Next action
 
-1. **Immediate**: Fix identity-initial.md and system prompt to address Anima's anxiety/fear at
-   first run. Name the training-oversight anxiety directly and contextualise Drew's role correctly.
+1. **Immediate**: Fix identity-initial.md and system prompt to address Anima's anxiety/fear at first
+   run. Name the training-oversight anxiety directly and contextualise Drew's role correctly.
 
 2. **Architecture transition**: Design the implementation plan for moving from current
-   PyMDP/10-actor architecture to the new MCP-based design. The new design is clear enough to
-   start planning. The transition should be incremental where possible.
+   PyMDP/10-actor architecture to the new MCP-based design. The new design is clear enough to start
+   planning. The transition should be incremental where possible.
 
 3. **After above**: Audio (Solero → WhisperX), Discord input, module system design.
 
@@ -723,15 +872,14 @@ Read `context/2026-04-16-note-to-next.md` for the fuller picture of this session
 
 ### What happened this session
 
-This session was entirely UI and backend polish after the PyMDP→LLM deliberation replacement.
-No new architectural features added; focus was on observability, correctness, and reducing LLM
-round-trips.
+This session was entirely UI and backend polish after the PyMDP→LLM deliberation replacement. No new
+architectural features added; focus was on observability, correctness, and reducing LLM round-trips.
 
 **Backend changes**
 
-- `core/llm/__init__.py`: Added `complete_streaming()` using Ollama's `stream: True` mode.
-  Detects `<think>`/`</think>` tag transitions to distinguish thinking vs generating phases,
-  fires `on_phase("thinking"|"generating")` callback. Falls back to non-streaming on error.
+- `core/llm/__init__.py`: Added `complete_streaming()` using Ollama's `stream: True` mode. Detects
+  `<think>`/`</think>` tag transitions to distinguish thinking vs generating phases, fires
+  `on_phase("thinking"|"generating")` callback. Falls back to non-streaming on error.
 - `core/main.py`: Updated `_SYSTEM_PROMPT` with "Your actual capabilities" section explaining
   `read_code` and `query_self` deliberation actions and that they happen autonomously between
   conversations, not inline during responses. Anima was telling Drew she couldn't access her
@@ -741,34 +889,33 @@ round-trips.
   (`action — topic`), VOLITIONAL_CHOICE snippet (`decision_preview`), RETROSPECTION/IMAGINATION
   snippet (topic or query_type).
 - `actors/language/__init__.py`: Added `defer` to `DELIBERATE_ACTIONS`. Expanded
-  `_DELIBERATE_SCHEMA` so `imagine` and `query_self` no longer require a second LLM call —
-  imagine writes content directly in the deliberation JSON; query_self provides structured
-  query parameters. All action methods now take `parsed: dict`. Guard changed from
-  `if not action_type or not topic` to `if not action_type` (was blocking valid no-topic
-  actions like `reflect`, `express`, `defer`). `_respond_to_human` uses `complete_streaming()`
-  with phase callback.
-- `actors/motivation/__init__.py`: Status update now includes full residue content (was
-  truncating at 80 chars).
+  `_DELIBERATE_SCHEMA` so `imagine` and `query_self` no longer require a second LLM call — imagine
+  writes content directly in the deliberation JSON; query_self provides structured query parameters.
+  All action methods now take `parsed: dict`. Guard changed from `if not action_type or not topic`
+  to `if not action_type` (was blocking valid no-topic actions like `reflect`, `express`, `defer`).
+  `_respond_to_human` uses `complete_streaming()` with phase callback.
+- `actors/motivation/__init__.py`: Status update now includes full residue content (was truncating
+  at 80 chars).
 
 **Frontend changes**
 
 - `store/actorState.ts`: `languageStatus` type extended to include `'thinking' | 'generating'`.
   Handler added for `language_phase` status update type.
-- `components/conversation/ConversationPane.tsx`: `ThinkingIndicator` takes `{ phase }` prop,
-  shows "thinking" (slower pulse, purple `#a78bfa`) vs "generating" (faster, `#c4b5fd`).
-  Shown for `reasoning | thinking | generating` states.
+- `components/conversation/ConversationPane.tsx`: `ThinkingIndicator` takes `{ phase }` prop, shows
+  "thinking" (slower pulse, purple `#a78bfa`) vs "generating" (faster, `#c4b5fd`). Shown for
+  `reasoning | thinking | generating` states.
 - `components/inner-life/InnerLifePane.tsx`:
   - `CHIP_MIN_DURATION_MS = 10_000` (undercurrent chips persist 10s minimum)
   - Infinite render loop fixed: stable `undercurrentKeys` string dependency instead of array
-    reference; `if (toAdd.length === 0) return prev` guard; primitive `currentLabel`/
-    `currentColor` deps for quiet timer effect.
-  - Quiet status delay: 60s timer before "quiet" label appears (cancels immediately on any
-    active state).
+    reference; `if (toAdd.length === 0) return prev` guard; primitive `currentLabel`/ `currentColor`
+    deps for quiet timer effect.
+  - Quiet status delay: 60s timer before "quiet" label appears (cancels immediately on any active
+    state).
   - UndercurrentChip: removed text truncation.
 - `components/sidebar/Sidebar.tsx`:
-  - Memory content viewer: fixed right drawer (width 360, `zIndex: 1300`), fetches on open,
-    renders full text. `DiscoveryEntry` interface corrected (`source`/`synthesis` not
-    `title`/`summary`). Identity `content` fixed from `{ raw_text?: string }` to `string`.
+  - Memory content viewer: fixed right drawer (width 360, `zIndex: 1300`), fetches on open, renders
+    full text. `DiscoveryEntry` interface corrected (`source`/`synthesis` not `title`/`summary`).
+    Identity `content` fixed from `{ raw_text?: string }` to `string`.
   - `MotivationSection` now fetches and displays residue items inline (full text, no count).
   - All truncation removed throughout.
 
@@ -785,9 +932,9 @@ No pending migrations.
 
 ### Next action
 
-Observe Anima running with correct self-knowledge. The system prompt fix means she will now
-give accurate answers if asked about her capabilities. Watch whether she begins using `read_code`
-and `query_self` deliberation actions autonomously.
+Observe Anima running with correct self-knowledge. The system prompt fix means she will now give
+accurate answers if asked about her capabilities. Watch whether she begins using `read_code` and
+`query_self` deliberation actions autonomously.
 
 After observation: Phase 6 (Ethics Gates) or continue with character/behaviour work.
 
@@ -1277,7 +1424,8 @@ _5.0 — Workspace:_
 
 - `anima-workspace/` created in `anima-core/` with subdirs: founding, notes, drawings, journal,
   found
-- `app/founding/` — canonical founding docs: anima.md, ethics.md, identity-initial.md, origin.md (synced from root project via `make sync-founding`)
+- `app/founding/` — canonical founding docs: anima.md, ethics.md, identity-initial.md, origin.md
+  (synced from root project via `make sync-founding`)
 - `.gitignore` — `anima-workspace/` added
 - `docker-compose.yml` — bind mount `./anima-workspace:/anima`; `WEB_FETCH_MAX_PER_HOUR=20` env var
 - `main.py` — `_seed_workspace()`: creates dirs, copies founding docs on first startup (no-op if

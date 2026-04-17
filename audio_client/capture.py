@@ -11,8 +11,8 @@ the microphone via the default bridge network.
 Usage:
     python capture.py [--backend-url URL] [--device DEVICE_INDEX] [--model MODEL]
 
-Dependencies: see requirements.txt. Install with:
-    pip install -r requirements.txt
+Dependencies: see requirements-*.txt. Install with:
+    pip install -r requirements-*.txt
 
 Whisper models: "tiny", "base", "small", "medium", "large-v2", "large-v3"
 Smaller models are faster but less accurate. "base" is a reasonable default.

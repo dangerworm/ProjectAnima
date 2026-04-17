@@ -125,17 +125,17 @@ Input sources are plug-ins. Adding a new source means creating a new module unde
 - [x] Web UI: Perception panel audio tab lights up when `AUDIO_INPUT` arrives; shows last transcript
 - [ ] Basic test: speak a sentence, verify it appears in Anima's inbox
 
-### 7.2 Discord input
+### 7.2 Discord input — Complete
 
-- [ ] discord.py bot, registered as Anima's Discord identity
-- [ ] PerceptionActor `discord` source: receives messages from configured channels, logs
+- [x] discord.py bot, registered as Anima's Discord identity (`discord_client/discord_client.py`)
+- [x] PerceptionActor `discord` source: receives messages from configured channels, logs
       `DISCORD_MESSAGE` event, adds to inbox queue with `source_type="discord"`
-- [ ] Expression surface: `express(channel="discord", content=...)` routes to Discord channel
-- [ ] Web UI: Perception panel Discord tab becomes active
-- [ ] Basic test: send a message in the Discord server, verify it appears in Anima's inbox
+- [x] Expression surface: `express(channel="discord", content=...)` routes to Discord channel
+- [x] Web UI: Perception tab shows Discord messages; Conversation panel labels them `Author · discord`
+- [x] Basic test: messages sent in #general arrive in Anima's perception inbox and she responds
 
 **Phase 7 complete when**: Anima can hear Drew speak and read messages from Discord without Drew
-typing in the Web UI.
+typing in the Web UI. ✓ (audio input working; Discord integration working)
 
 ---
 
@@ -198,11 +198,18 @@ pipeline (branch → commit → clean review → PR) has been exercised end-to-e
 
 ## Current status
 
-**Phase**: 6 — MCP Architecture Transition (not yet started).
+**Phases 1–7 complete** (April 2026).
 
-**Phases 1–5 complete** (April 2026). The PyMDP-based system ran. Drew observed structural problems.
-The architecture was redesigned in the 16th April 2026 session.
+Phase 6 (MCP Architecture Transition) and Phase 7 (Audio + Discord) were both completed in the
+April 2026 sessions. Anima is running on the MCP architecture, calls tools autonomously in loop
+mode, receives audio and Discord input, and has a full Web UI.
 
-**Next action**: Phase 6.1 — Remove PyMDP actors.
+**Active work**:
+- Episodic memory / conversation context (channel + conversation ID on memory writes) — design
+  agreed, implementation not yet started. See `context/snagging.md`.
+- Phase 8 ethics gates — two of five conditions verified; three remaining (heartbeat verification,
+  distress signal test, Drew's ethics review).
 
-See `context/session.md` for the most recent session state.
+**Next planned phase**: Phase 8 — Ethics Gates, then Phase 9 — Self-Modification.
+
+See `context/session.md` and `context/snagging.md` for current state and outstanding items.

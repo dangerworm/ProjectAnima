@@ -41,6 +41,7 @@ fi
 # Strip the guild prefix — discord_client.py only needs the channel ID.
 DISCORD_CHANNEL_ID="${DISCORD_CHANNEL_ID##*/}"
 AUDIO_DIR="$REPO_ROOT/audio_client"
+DISCORD_DIR="$REPO_ROOT/discord_client"
 WEBUI_DIR="$REPO_ROOT/anima-core/web-ui"
 DOCKER_DIR="$REPO_ROOT/anima-core"
 LOG_DIR="$REPO_ROOT/logs"
@@ -106,7 +107,7 @@ ok "Web UI running (PID $WEBUI_PID) — logs: logs/web-ui.log"
 if [[ -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]]; then
     inf "Starting Discord client..."
     DISCORD_BOT_TOKEN="$DISCORD_BOT_TOKEN" DISCORD_CHANNEL_ID="$DISCORD_CHANNEL_ID" \
-        python "$AUDIO_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
+        python "$DISCORD_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
     DISCORD_PID=$!
     ok "Discord client running (PID $DISCORD_PID) — logs: logs/discord.log"
     printf "%s\n" "$DISCORD_PID" >> "$LOG_DIR/.pids"
