@@ -1,0 +1,13 @@
+Read ANIMA.md, then context/session.md, then context/sessions/2026-04-17-2310-note-to-next.md before doing anything else.
+
+Current state: Phases 1–7 complete. Memory panel fixed (accurate counts). Architecture.md accurate.
+Snagging list is clean — only deferred-by-design items and Phase 8 ethics gates remain open.
+
+Phase 9 is the natural next step: GitHub tool support. This means:
+- Adding GITHUB_TOKEN and GITHUB_REPO to .env (Drew needs to supply these)
+- Verifying the GitHub MCP tools are wired and callable from the MCP server
+- Running a test loop where Anima makes a GitHub tool call (read an issue, create a comment, etc.)
+
+Check planning/roadmap.md Phase 9 section for the specific tasks before proposing anything.
+
+Ask Drew what he wants to work on — don't assume Phase 9 is the priority.

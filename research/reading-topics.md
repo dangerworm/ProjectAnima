@@ -56,3 +56,6 @@ Brain systems, memory research, and theories of mind.
   — Tulving; the difference between knowing and remembering; mental time travel
 - [Default Mode Network](neuroscience-and-cognitive-science/default-mode-network.md) — what the
   brain does when it isn't doing anything; the architecture of rest
+- [Person Knowledge & Concept Nodes](neuroscience-and-cognitive-science/person-knowledge-and-concept-nodes.md)
+  — Bruce & Young PIN model; anterior temporal lobes; the generalisation from person-nodes to
+  concept-nodes; architectural mapping to kg_nodes/kg_aliases/kg_edges/kg_refs

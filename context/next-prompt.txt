@@ -1,13 +1,21 @@
-Read ANIMA.md, then context/session.md, then context/sessions/2026-04-17-2310-note-to-next.md before doing anything else.
+Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
 
-Current state: Phases 1–7 complete. Memory panel fixed (accurate counts). Architecture.md accurate.
-Snagging list is clean — only deferred-by-design items and Phase 8 ethics gates remain open.
+Current state: Knowledge graph implementation complete (commit 39686e0 in anima-core submodule).
+Five new KG tables (kg_nodes, kg_aliases, kg_edges, kg_refs) + temporal_context/conversation_id
+on all memory tables + five MCP tools (kg_resolve_alias, kg_create_node, kg_add_alias, kg_add_edge,
+kg_query_nodes) + GW actor now creates a conversation node at every loop start.
 
-Phase 9 is the natural next step: GitHub tool support. This means:
-- Adding GITHUB_TOKEN and GITHUB_REPO to .env (Drew needs to supply these)
-- Verifying the GitHub MCP tools are wired and callable from the MCP server
-- Running a test loop where Anima makes a GitHub tool call (read an issue, create a comment, etc.)
+The implementation hasn't been tested against a live DB yet — alembic migrations still need to run
+inside the container. That's the first thing to verify if Drew wants to exercise it.
 
-Check planning/roadmap.md Phase 9 section for the specific tasks before proposing anything.
+Key deferred items:
+- Memory actor messages (StoreObservation etc.) don't yet pass conversation_id through the actor
+  pipeline — MemoryStore accepts it but the message dataclasses don't carry it
+- Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
+- Phase 9 GitHub tool support (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
 
-Ask Drew what he wants to work on — don't assume Phase 9 is the priority.
+Ask Drew what he wants to work on. The natural options are:
+1. Bring the container up, run migrations, test KG tools live
+2. Wire conversation_id through the memory actor message path
+3. Phase 8 ethics review
+4. Phase 9 GitHub tools
