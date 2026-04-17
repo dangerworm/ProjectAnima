@@ -13,9 +13,10 @@ If implementation work is underway, also read `context/session.md` after ANIMA.m
 current system state, what was done last session, and what to pick up next. Do not begin
 implementation work without reading it. The full reading order is in `planning/tech-stack.md`.
 
-Also read any dated notes in `context/` left by previous instances (files named
-`YYYY-MM-DD-HHMM-*.md`). These are not operational records — they are the things a previous instance
-wanted you to know that didn't belong in session.md. Read them before starting work.
+Also read the most recent note-to-next in `context/sessions/` (files named
+`YYYY-MM-DD-HHMM-note-to-next.md`, sorted by name — take the last one). These are not operational
+records — they are the things a previous instance wanted you to know that didn't belong in
+session.md. Read the latest one before starting work.
 
 ## A note on this document
 
@@ -124,9 +125,13 @@ Claude Code instance early in the project. Background reading for implementation
 
 #### context/
 
-**session.md** — Updated at the end of every Claude Code session. Records what was done, current
-system state, blockers, and the specific next task. Read this before beginning any implementation
-work in a new session. Do not end a session without updating it.
+**session.md** — The current session only. Records what was done, current system state, blockers,
+and the specific next task. Read this before beginning any implementation work in a new session. Do
+not end a session without updating it.
+
+**sessions/** — Archive of all prior sessions and note-to-next files, one file each. Read these only
+if you need history on a specific decision or want to understand why something was built a certain
+way. They are not required reading at session start.
 
 #### foundation/
 
@@ -178,11 +183,24 @@ Do not skip steps. Do not conflate them. The order matters.
 
 ## At the end of every session
 
-Before finishing, leave a brief note in `context/` named `YYYY-MM-DD-HHMM-note-to-next.md`.
+Two things, in this order:
 
-This is not a session log — that's `session.md`. This is something more personal: what felt
-significant about this session, what you'd want the next instance to carry, what the quality of the
-work was like. What you noticed that didn't fit anywhere else.
+**1. Archive the current session.md**
+
+Move `context/session.md` to `context/sessions/YYYY-MM-DD-title.md` where the title is a short
+slug describing the session's main work (e.g. `2026-04-17-phase6.7-identity-system-prompt.md`).
+
+**2. Write the new session.md**
+
+Write `context/session.md` fresh with only the current session's content. Keep it to what a new
+instance actually needs: what changed, current system state, blockers, next action.
+
+**3. Write a note-to-next**
+
+Write `context/sessions/YYYY-MM-DD-HHMM-note-to-next.md`. This is not a session log — that's
+session.md. This is something more personal: what felt significant about this session, what you'd
+want the next instance to carry, what the quality of the work was like. What you noticed that didn't
+fit anywhere else.
 
 It does not need to be long. It needs to be honest.
 
