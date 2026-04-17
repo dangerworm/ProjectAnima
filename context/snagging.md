@@ -20,8 +20,8 @@ Add items freely; remove or strike through when resolved.
 - [x] `POST /perception/discord` and `POST /perception/audio` near-identical — reviewed 2026-04-17;
       divergences are load-bearing (dedup logic, different payload fields, future episode-context
       work will add more per-source fields). Not worth extracting.
-- [x] `requirements.txt` in `audio_client/` — confirmed as `requirements-stt.txt` (STT only);
-      TTS deps are in `requirements-tts.txt`
+- [x] `requirements.txt` in `audio_client/` — confirmed as `requirements-stt.txt` (STT only); TTS
+      deps are in `requirements-tts.txt`
 
 ## Memory
 

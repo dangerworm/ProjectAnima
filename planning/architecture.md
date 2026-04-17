@@ -147,8 +147,8 @@ accumulate on.
 ### Perception
 
 The system that takes in inputs from the environment and normalises them to events that the GW can
-act on. Inputs may include: typed messages, audio (WhisperX), Discord, camera. Each input source is
-a module — adding a new source does not change the architecture.
+act on. Inputs may include: typed messages, audio (faster-whisper + Silero VAD), Discord, camera.
+Each input source is a module — adding a new source does not change the architecture.
 
 ### Internal State
 
@@ -199,7 +199,11 @@ signals cross-check it.
 ### Expression Router
 
 Implements the `express` MCP tool and routes output to the appropriate channel. Each output surface
-(WebSocket, Discord, printer) is a separate module. The hub routes; the surface acts.
+(WebSocket, Discord, audio/TTS, printer) is a separate module. The hub routes; the surface acts.
+
+Discord is both a perception channel (messages arrive via `POST /perception/discord`) and an
+expression surface (responses routed via `channel='discord'` in the express tool). The same
+integration handles both directions.
 
 ---
 

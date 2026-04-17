@@ -187,8 +187,8 @@ Two things, in this order:
 
 **1. Archive the current session.md**
 
-Move `context/session.md` to `context/sessions/YYYY-MM-DD-title.md` where the title is a short
-slug describing the session's main work (e.g. `2026-04-17-phase6.7-identity-system-prompt.md`).
+Move `context/session.md` to `context/sessions/YYYY-MM-DD-title.md` where the title is a short slug
+describing the session's main work (e.g. `2026-04-17-phase6.7-identity-system-prompt.md`).
 
 **2. Write the new session.md**
 
@@ -229,7 +229,7 @@ Discuss your proposed approach with the human before implementing any of it.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ProjectAnima** (1897 symbols, 4324 relationships, 98 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ProjectAnima** (1807 symbols, 4232 relationships, 98 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
