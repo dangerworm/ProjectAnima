@@ -2,7 +2,7 @@
 Audio capture client for Project Anima — Phase 7.1.
 
 Pipeline:
-  sounddevice (microphone) → Silero VAD (speech detection) → WhisperX (transcription)
+  sounddevice (microphone) → Silero VAD (speech detection) → faster-whisper (transcription)
   → POST http://localhost:8000/perception/audio
 
 Run on the host (not in Docker) since Docker on Windows cannot easily access
@@ -14,7 +14,7 @@ Usage:
 Dependencies: see requirements.txt. Install with:
     pip install -r requirements.txt
 
-WhisperX models: "tiny", "base", "small", "medium", "large-v2", "large-v3"
+Whisper models: "tiny", "base", "small", "medium", "large-v2", "large-v3"
 Smaller models are faster but less accurate. "base" is a reasonable default.
 """
 
@@ -30,7 +30,7 @@ import numpy as np
 import requests
 import sounddevice as sd
 import torch
-import whisperx
+from faster_whisper import WhisperModel
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +46,7 @@ CHUNK_SAMPLES = int(SAMPLE_RATE * CHUNK_DURATION)
 
 VAD_THRESHOLD = 0.5  # Silero VAD speech probability threshold
 MIN_SPEECH_SECS = 0.3  # minimum speech duration before transcribing
-MAX_SILENCE_SECS = 1.0  # silence after speech before triggering transcription
+MAX_SILENCE_SECS = 3.0  # silence after speech before triggering transcription
 MAX_SEGMENT_SECS = 30.0  # hard cap — transcribe regardless of trailing silence
 
 
@@ -82,13 +82,8 @@ def run(backend_url: str, device_index: int | None, whisper_model: str) -> None:
     (get_speech_timestamps, _, read_audio, *_) = vad_utils
     vad_model.eval()
 
-    log.info("Loading WhisperX model '%s' on %s…", whisper_model, device)
-    wx_model = whisperx.load_model(
-        whisper_model,
-        device,
-        compute_type=compute_type,
-        language="en",
-    )
+    log.info("Loading Whisper model '%s' on %s…", whisper_model, device)
+    wx_model = WhisperModel(whisper_model, device=device, compute_type=compute_type)
 
     log.info("Starting audio capture (Ctrl+C to stop)…")
 
@@ -106,9 +101,12 @@ def run(backend_url: str, device_index: int | None, whisper_model: str) -> None:
         audio_chunks: list[np.ndarray], duration_secs: float
     ) -> None:
         audio = np.concatenate(audio_chunks)
-        result = wx_model.transcribe(audio, batch_size=8)
-        segments = result.get("segments", [])
-        text = " ".join(s["text"].strip() for s in segments).strip()
+        # Whisper clips the last syllable if audio ends abruptly; pad with silence.
+        audio = np.concatenate(
+            [audio, np.zeros(int(SAMPLE_RATE * 0.5), dtype=np.float32)]
+        )
+        segments, _ = wx_model.transcribe(audio, language="en", beam_size=5)
+        text = " ".join(seg.text.strip() for seg in segments).strip()
         if not text:
             log.debug("VAD triggered but transcription empty — skipping.")
             return

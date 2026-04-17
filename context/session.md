@@ -5,6 +5,104 @@
 
 ---
 
+## Session: 17th April 2026 (evening) — Phase 7.2 Discord + Audio Pipeline Fixes + Startup Scripts
+
+Drew active throughout. Session continued from the afternoon CentreCanvas context window (which ran
+out mid-build). The autonomous instance had already built Phase 7.1, 8, and 9 while Drew was asleep.
+This session picked up with Drew, ran the system, found problems, and fixed them.
+
+### Audio pipeline fixes
+
+**`audio_client/capture.py`**:
+- Switched from `whisperx` to `faster-whisper>=1.1.0` — whisperx pins ctranslate2==4.4.0 which has
+  no wheel for Python 3.14
+- API change: `segments` is now a generator; text joined with `" ".join(seg.text.strip() for seg in segments)`
+- Added 0.5s silence padding before each `transcribe()` call — Whisper clips the last syllable
+  when audio ends without trailing silence
+- `MAX_SILENCE_SECS`: Drew set this to 3.0 (VAD was splitting utterances mid-word at 1.0s)
+
+**`audio_client/requirements.txt`**: `whisperx>=3.1.5` → `faster-whisper>=1.1.0`
+
+**`audio_client/speak.py`** (TTS client):
+- Created fresh this session using edge-tts + miniaudio + sounddevice
+- Streams MP3 from Microsoft neural TTS API, decodes via miniaudio, plays via sounddevice
+- Explicit `--device` flag for output routing (avoids Windows SAPI device-lock problem)
+- `--voice`, `--solicited-only`, `--list-devices`, `--list-voices` flags
+- Word-count backpressure: drops new items when queue exceeds `MAX_QUEUED_WORDS = 150`
+- Reconnects to backend WS automatically (`reconnect=5`)
+
+**`audio_client/requirements-tts.txt`**: corrected to actual deps — `edge-tts`, `miniaudio`,
+`sounddevice`, `websocket-client`, `numpy` (old version had pyttsx3/soundfile)
+
+### Startup scripts
+
+**`start.sh`** (repo root):
+- Kills existing processes: speak.py, capture.py, vite, Docker stack
+- Starts in order: TTS → STT → web UI → Discord (optional) → Docker
+- Sources `.env` from repo root — overrides config defaults
+- Strips guild-ID prefix from `DISCORD_CHANNEL_ID` (Discord URLs include guild/channel)
+- All processes log to `logs/` directory
+
+**`stop.sh`** (repo root): kills speak.py, capture.py, discord_client, vite; brings down Docker
+
+### Phase 7.2: Discord — Complete
+
+**`audio_client/discord_client.py`** (host script, not in Docker):
+- Two concurrent async tasks: discord.py bot (inbound) + backend WebSocket listener (outbound)
+- Inbound: messages in configured channel → `POST /perception/discord`
+- Outbound: monitors WS for `language_output` with `target='discord'` → sends to Discord channel
+- Auto-reconnects to backend WS on disconnect
+- Configurable via `DISCORD_BOT_TOKEN` and `DISCORD_CHANNEL_ID` env vars or `.env`
+
+**`audio_client/requirements-discord.txt`**: `discord.py>=2.3.0`, `websockets>=12.0`, `aiohttp>=3.9.0`
+
+**Backend** (`app/core/main.py`):
+- `POST /perception/discord` — mirrors `/perception/audio`; accepts `{text, author, message_id}`;
+  delivers as `HumanInput(source_id="discord", source_type="discord")` to PerceptionActor
+- Logs `DISCORD_MESSAGE` event (type already existed in enum)
+- Added `DISCORD_MESSAGE` snippet to `_payload_snippet`: `"Author: text"`
+
+**`app/actors/expression/__init__.py`**: added `"target": message.target` to the `language_output`
+broadcast payload — previously missing, meaning discord_client.py couldn't filter by channel
+
+**`app/mcp_server/tools/expression.py`**: updated description to mention `channel='discord'`
+
+**Web UI**:
+- `actorState.ts`: `lastDiscordMessage: {text, author, timestamp} | null` added to AppState;
+  set from `DISCORD_MESSAGE` event_log_entry; Discord messages prepended to conversation as
+  `[Discord] Author: text`
+- `PerceptionTab.tsx`: Discord section now live — purple dot (three states: active/connected/not
+  configured), shows last message with author and timestamp
+- `AnimaLayout.tsx`: passes `lastDiscordMessage` to PerceptionTab
+
+**Drew's Discord bot**: configured. Token and channel ID in `.env` at repo root.
+
+### Web UI fixes (this session)
+
+- `ExpressionPanel.tsx`: `wordBreak: 'break-word'` + `overflowWrap: 'break-word'` + `minWidth: 0`
+  — text was rendering on one line and clipping at container edge (not a Whisper issue as first
+  suspected — confirmed by screenshot; both causes fixed)
+- `AnimaLayout.tsx` conversation view: `width: '100%'` on motion.div wrapper
+- `PerceptionTab.tsx` audio channel: three states — active (blue, audio in last 30s) / connected
+  (teal, statusHistory non-empty but no recent audio) / inactive (grey, no history at all)
+- `PerceptionTab.tsx` inbox: shows backend `inbox_count` in amber when frontend says clear but
+  backend reports pending messages (was showing "inbox clear" while live view showed "2 pending")
+
+### Current state
+
+Phase 7.1 complete and tested live (audio working, VAD fixes applied).
+Phase 7.2 Discord complete — needs live end-to-end test after restart.
+Phase 8 infrastructure done; Gates 1 and 2 still need verification.
+Phase 9 tools done; needs GITHUB_TOKEN and GITHUB_REPO in `.env`.
+
+**After Drew's computer restart:**
+- `./start.sh` — brings up everything including Discord bot
+- Test Discord: send a message in the configured channel, verify it appears in Anima's inbox
+- Add `GITHUB_TOKEN` and `GITHUB_REPO` to `.env` for Phase 9
+- `docker compose run --rm anima alembic upgrade head` (migration 0006, if not already run)
+
+---
+
 ## Session: 18th April 2026 — Phases 7.1, 8, and 9
 
 Drew was asleep. Continuing autonomously from previous context window which ran out mid-build.
@@ -85,6 +183,71 @@ Still to verify: audio pipeline end-to-end, Phase 9 first real PR, Phase 8 Gates
 Before first live run after these changes:
 - `docker compose run --rm anima alembic upgrade head` (migration 0006)
 - `pytest tests/ethics/` in container
+
+---
+
+## Session: 17th April 2026 (afternoon) — Phase 6.8: Visual Activity Indicators + CentreCanvas Redesign
+
+### What happened this session
+
+Drew's main complaint: the Global Workspace panel looked dead. Everything visible in the event log
+had no visual equivalent on the dashboard. Drew is a visual thinker — needed to see system activity
+without reading logs.
+
+Two context windows of work. First window did font consistency + activity indicators across panels.
+Second window (the one you're reading the tail of) redesigned CentreCanvas entirely.
+
+**Font size consistency pass** — all panels and tabs brought to a consistent scale:
+- Headers/labels: 0.65rem
+- Content/values: 0.70rem  
+- Chips/tiny: 0.60rem
+- EventStreamPanel: fixed snippet truncation (`whiteSpace: 'nowrap'` → `fullView ? 'normal' : 'nowrap'`,
+  added `wordBreak` to allow text to wrap in full Events view)
+
+**CSS keyframes** (`src/index.css`):
+- `reasoning-glow`: purple pulsing border/shadow for Language panel when LLM is reasoning
+- `tool-active-glow`: teal pulsing border for any panel being actively used by a tool call
+- `loop-border-pulse`: subtle teal border pulse for CentreCanvas when loop is running
+
+**Panel activity indicators** — all four side panels got `toolHighlight?: boolean` prop:
+- `MemoryPanel`, `InternalStatePanel`, `WorldPerceptionPanel`, `PerceptionPanel`
+- When true: teal `tool-active-glow` animation + teal border
+- `toolToPanel()` in AnimaLayout routes active MCP tool name → correct panel to highlight
+
+**LanguagePanel** — reasoning state animation:
+- `reasoning-glow` border animation when `languageStatus === 'reasoning'`
+- Animated scan bar sweeping across the bottom: `motion.div` with `x: '-100%' → '350%'` repeat
+
+**CentreCanvas — complete rewrite**:
+
+New sub-components:
+- `SalienceBar`: horizontal bar per signal. Fill ramps purple→gold above 75%. HUMAN_MESSAGE is blue.
+  DIM types (HEARTBEAT, IDLE_TICK etc.) render at 35% opacity. Hot signals get a pulsing leading-edge
+  glow. Tooltip shows event_type, source, % of threshold.
+- `QuietState`: three concentric breathing rings at staggered rates + central dot. Feels calm, not broken.
+- `ThinkingState`: 4 sequenced dots with y-motion; optionally shows trigger label from languageCallLog.
+- `ToolCallState`: monospace tool name + animated underline sweep + args preview.
+
+State priority (highest wins):
+1. Tool call active → ToolCallState (teal glow background)
+2. LLM reasoning → ThinkingState (purple glow background)
+3. Just ignited → ignition label + expanding ring burst
+4. Signals building → salience bar stack (up to 6 bars, max 560px wide)
+5. Quiet → QuietState breathing rings
+
+Breadcrumb trail: 5 most recent tool calls as horizontal pills at bottom-right, fading oldest→dim
+newest→bright. Tooltip shows tool name + timestamp.
+
+New props added: `languageStatus`, `recentToolCalls`, `languageCallLog`.
+
+**TypeScript**: clean compile. Browser verified: quiet state renders correctly with breathing rings
+and breadcrumb trail visible. Salience bars not yet observed live (system was quiet at screenshot time).
+
+### Current state
+
+All visual activity indicators working. CentreCanvas redesign complete and verified.
+Pending from prior session entry (18th April): audio pipeline, Phase 9 first real PR, ethics Gates
+1 and 2.
 
 ---
 
