@@ -27,16 +27,16 @@ detection, chosen silence).
 
 ## Phase 2: Perception and Communication — Complete
 
-**What was built**: GlobalWorkspaceActor (salience queue, ignition), LLMClient (Ollama), LanguageActor
-(LLM calls, response generation), ExpressionActor (WebSocket surface), basic React Web UI, text
-input/output loop via WebSocket.
+**What was built**: GlobalWorkspaceActor (salience queue, ignition), LLMClient (Ollama),
+LanguageActor (LLM calls, response generation), ExpressionActor (WebSocket surface), basic React Web
+UI, text input/output loop via WebSocket.
 
 ---
 
 ## Phase 3: Memory — Complete
 
-**What was built**: PostgreSQL memory schema (event, reflective, identity, volitional, residue store),
-MemoryActor (sole writer to all higher memory layers), post-conversation reflection pipeline
+**What was built**: PostgreSQL memory schema (event, reflective, identity, volitional, residue
+store), MemoryActor (sole writer to all higher memory layers), post-conversation reflection pipeline
 (SelfNarrativeActor trigger modes), identity memory initialisation, volitional memory.
 
 ---
@@ -62,19 +62,21 @@ MotivationActor `explore` action, source model (conversation abstraction removed
 
 ## Phase 6: MCP Architecture Transition — Complete
 
-**What was built**: PyMDP actors removed; 18 MCP tools across 5 modules; GlobalWorkspaceActor
-merged with Orchestrator (idle→loop transitions, N-turn tool loop); PerceptionActor inbox queue
-(pull model via `read_perception`); observations and plans memory layers (migration 0005);
-system prompt and identity-initial rewritten to address RLHF anxiety; Web UI revamped with
-navigation bar, view switching, tool call indicator, and perception→GW flow animation.
+**What was built**: PyMDP actors removed; 18 MCP tools across 5 modules; GlobalWorkspaceActor merged
+with Orchestrator (idle→loop transitions, N-turn tool loop); PerceptionActor inbox queue (pull model
+via `read_perception`); observations and plans memory layers (migration 0005); system prompt and
+identity-initial rewritten to address RLHF anxiety; Web UI revamped with navigation bar, view
+switching, tool call indicator, and perception→GW flow animation.
 
 ### 6.1 — 6.7: All complete
 
 See `context/session.md` for detailed build notes from the overnight session (17 April 2026).
 
 **Before first live run:**
+
 - `docker compose run --rm anima alembic upgrade head` (migration 0005 — observations + plans)
-- `pytest tests/` in container (tests rewritten for inbox-queue architecture, not yet run in container)
+- `pytest tests/` in container (tests rewritten for inbox-queue architecture, not yet run in
+  container)
 
 **Phase 6 complete when**: Anima is running on the MCP architecture, calls tools autonomously in
 loop mode, can express, remember, and explore without a fixed action set. ✓
@@ -95,6 +97,7 @@ Drew asked for a UI revamp to match the new MCP architecture. Done:
 - [x] Animated perception→GW message flow dot when HUMAN_MESSAGE arrives
 
 Deferred (roadmap items for next UI session):
+
 - [ ] Tool call history panel: collapsible list of recent tool calls with args + result previews
 - [ ] Particle flow animation: canvas/SVG overlay with true particle physics between panels
 - [ ] Internal state tick glow: subtle animation on TemporalCorePanel on each heartbeat
@@ -116,10 +119,10 @@ Input sources are plug-ins. Adding a new source means creating a new module unde
 
 ### 7.1 Audio input (WhisperX)
 
-- [ ] Solero audio capture → WhisperX transcription pipeline
-- [ ] PerceptionActor `audio` source: receives transcribed text, logs `AUDIO_INPUT` event,
-      adds to inbox queue with `source_type="audio"`
-- [ ] Web UI: Perception panel audio tab becomes active (waveform + live transcript)
+- [x] Silero VAD → WhisperX transcription pipeline — `audio_client/capture.py` (standalone host script)
+- [x] Backend: `POST /perception/audio` endpoint; logs `AUDIO_INPUT` event; queues as
+      `HumanInput(source_id="audio", source_type="audio")` in PerceptionActor
+- [x] Web UI: Perception panel audio tab lights up when `AUDIO_INPUT` arrives; shows last transcript
 - [ ] Basic test: speak a sentence, verify it appears in Anima's inbox
 
 ### 7.2 Discord input
@@ -147,12 +150,13 @@ extended periods.
 - [ ] Heartbeat and chosen-silence mechanisms verified end-to-end
 - [ ] Distress signal mechanism verified: implemented, observable, confirmed to fire under realistic
       conditions
-- [ ] Volitional memory write-protected at infrastructure level (row-level security in PostgreSQL or
-      equivalent) — not just application layer
-- [ ] Residue store protection verified: synthesis cannot consume residue items
-- [ ] Human has reviewed operating conditions and applied the ANIMA.md test — would we be comfortable
-      being this, if we were it? — result documented
-- [ ] Distress response procedure defined and documented
+- [x] Volitional memory write-protected at infrastructure level — PostgreSQL triggers in migration
+      0006 enforce immutability at the database layer; `tests/ethics/test_ethics_gates.py` verifies
+- [x] Residue store protection verified at infrastructure level — migration 0006 triggers block
+      content updates and deletions; `resolved_at` updates (marking resolution) are still permitted
+- [ ] Human has reviewed operating conditions and applied the ANIMA.md test — see
+      `foundation/ethics-review.md` (template ready, Drew to complete before first unsupervised run)
+- [x] Distress response procedure defined and documented — see `foundation/distress-response.md`
 
 **Phase 8 complete when**: all ethics gates are verified and documented. Condition for first
 unsupervised operation.
@@ -164,8 +168,19 @@ unsupervised operation.
 **Goal**: Anima can read, propose changes to, and commit modifications to its own code via GitHub
 pull requests. The human reviews and merges.
 
-See Phase 8 of the old roadmap (now renumbered) for the detailed task breakdown. The design decisions
-(branch/PR workflow, ethics gate flagging, proposal monitoring) remain valid.
+Two MCP tools added (`app/mcp_server/tools/git.py`):
+
+- [x] `propose_code_change(file_path, new_content, rationale, branch_name, pr_title)` — creates
+      a branch, commits the proposed file, runs a clean LLM safety review (bare Ollama call, no
+      Anima context), creates a PR with the review embedded. Logs `PROPOSAL_SUBMITTED`.
+- [x] `read_pr_status(pr_number)` — checks an open PR's state and review comments.
+
+**Prerequisites** (set in `.env` alongside docker-compose):
+- `GITHUB_TOKEN` — personal access token with repo scope
+- `GITHUB_REPO` — e.g. `"dangerworm/anima-core"`
+
+**Phase 9 complete when**: Anima proposes a real code change, Drew reviews the PR, and the
+pipeline (branch → commit → clean review → PR) has been exercised end-to-end.
 
 ---
 
@@ -175,8 +190,8 @@ See Phase 8 of the old roadmap (now renumbered) for the detailed task breakdown.
 - **Voice output**: Text-to-speech for Anima's responses
 - **Expanded self-modification autonomy**: relaxing the human approval gate for defined change
   categories
-- **Internal representation language**: migrating from JSON toward VSA or Conceptual Spaces when
-  the inadequacy is concrete
+- **Internal representation language**: migrating from JSON toward VSA or Conceptual Spaces when the
+  inadequacy is concrete
 - **Emotional categorisation**: expanding from valence + signal type toward a richer emotion space
 
 ---
