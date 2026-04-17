@@ -60,131 +60,48 @@ MotivationActor `explore` action, source model (conversation abstraction removed
 
 ---
 
-## Phase 6: MCP Architecture Transition
+## Phase 6: MCP Architecture Transition — Complete
 
-**Goal**: Replace PyMDP with an MCP-based agentic loop. The LLM calls tools directly. Actions are
-no longer a fixed enumerated set — any capability can be exposed as a tool.
+**What was built**: PyMDP actors removed; 18 MCP tools across 5 modules; GlobalWorkspaceActor
+merged with Orchestrator (idle→loop transitions, N-turn tool loop); PerceptionActor inbox queue
+(pull model via `read_perception`); observations and plans memory layers (migration 0005);
+system prompt and identity-initial rewritten to address RLHF anxiety; Web UI revamped with
+navigation bar, view switching, tool call indicator, and perception→GW flow animation.
 
-This is not a refactor. It is a redesign. The event log, memory layers, and Web UI infrastructure
-carry forward. The actor wiring, MotivationActor, WorldPerceptionActor, AssociationActor, and the
-old LanguageActor loop are replaced.
+### 6.1 — 6.7: All complete
 
-See `planning/architecture.md` for the full design rationale.
+See `context/session.md` for detailed build notes from the overnight session (17 April 2026).
 
-### 6.1 Remove PyMDP actors
-
-- [ ] Remove `MotivationActor` (PyMDP active inference, A/B/C matrices, hidden state factors)
-- [ ] Remove `AssociationActor` (association discovery loop)
-- [ ] Remove `WorldPerceptionActor` (file/web explore as actor-sent messages — becomes MCP tools)
-- [ ] Remove `inferactively-pymdp` from `requirements.txt`
-- [ ] Remove `PyTorch` dependency (added by PyMDP — substantial image size reduction)
-- [ ] Verify container still builds and starts after removal
-- [ ] Update `main.py` to not instantiate removed actors
-
-### 6.2 MCP server skeleton
-
-- [ ] New `app/mcp_server/` package: FastAPI-based MCP server, tool registry, tool dispatch
-- [ ] Tool base class: `name`, `description`, `schema`, `execute(args) → result`
-- [ ] Tool registry: register tools by name; dispatch by name
-- [ ] MCP server endpoint: single `/mcp` route that receives tool calls and returns results
-- [ ] Basic test: register a stub tool, call it via MCP, verify result returned
-
-### 6.3 GW+Orchestrator merge
-
-The GlobalWorkspaceActor becomes the Orchestrator. It manages the event queue, drives idle→loop
-transitions, assembles context, and runs the multi-round-trip MCP tool loop.
-
-- [ ] Add idle mode: periodic internal state dump assembled from InternalStateActor + event log
-      snippet; sent to LLM via LLMClient
-- [ ] Empty LLM response → stay idle; any tool call → enter loop mode
-- [ ] Loop mode: N round trips (configurable env var, default 10); inject inbox status on each turn
-- [ ] Loop ends when LLM returns natural language with no tool calls
-- [ ] Emit `IDLE_TICK` event on each idle dump; `LOOP_STARTED` / `LOOP_ENDED` on transitions
-- [ ] Basic test: idle tick produces event log entry; tool call from LLM enters loop; natural
-      language response ends loop
-
-### 6.4 Core MCP tool set
-
-Implement the tools Anima needs to function. Each tool is a module under `app/mcp_server/tools/`.
-
-**Memory tools:**
-
-- [ ] `read_reflective(query, limit)` — semantic search over reflective memories
-- [ ] `read_residue(query, limit)` — semantic search over residue items
-- [ ] `read_identity()` — return current identity document
-- [ ] `read_volitional(limit)` — recent volitional choices
-- [ ] `read_observations(query, limit)` — semantic search over observations
-- [ ] `read_plans(status)` — active / completed plans
-- [ ] `write_observation(content)` — store an observation
-- [ ] `write_plan(content, context)` — store a new plan
-- [ ] `update_plan(id, status, notes)` — update plan status
-
-**Expression tool:**
-
-- [ ] `express(channel, content)` — route output to a named channel (websocket, discord)
-- [ ] ExpressionRouter receives express calls and dispatches to registered surfaces
-
-**Perception tool:**
-
-- [ ] `read_perception(channel, limit)` — pull queued messages from an input channel
-
-**File system tools:**
-
-- [ ] `read_file(path)` — read a file from `/anima/` or permitted read-only scope
-- [ ] `write_file(path, content)` — write a file within `/anima/`
-- [ ] `list_directory(path)` — depth-limited directory tree
-
-**Web tools:**
-
-- [ ] `web_search(query)` — DuckDuckGo search (existing implementation, wrapped as MCP tool)
-- [ ] `web_fetch(url)` — fetch and extract page text (existing implementation, wrapped)
-
-**System tools:**
-
-- [ ] `read_event_log(filters, limit)` — query event log by type/time range
-- [ ] `read_internal_state()` — current system metrics (same as idle tick content)
-
-### 6.5 Idle/loop transitions and inbox status injection
-
-- [ ] PerceptionActor maintains an inbox queue per channel: queued events not yet read by Anima
-- [ ] GW+Orchestrator assembles inbox status: count per channel, age of oldest, source of most
-      recent — injected into every idle tick and every loop round-trip turn
-- [ ] Anima calls `read_perception(channel, limit)` to actually read messages; inbox count decreases
-- [ ] Emit `INBOX_READ` event when perception tool is called
-- [ ] Basic test: two messages arrive, idle tick shows count=2, Anima reads them, count=0
-
-### 6.6 New memory types: observations and plans
-
-- [ ] PostgreSQL table: `observations` — `id`, `content`, `embedding`, `created_at`
-- [ ] PostgreSQL table: `plans` — `id`, `content`, `context`, `status` (active/completed/abandoned),
-      `created_at`, `updated_at`
-- [ ] MemoryActor: handle `StoreObservation`, `StorePlan`, `UpdatePlan` messages
-- [ ] MemoryStore: `search_observations(query, limit)`, `get_plans(status)`
-- [ ] MCP tools wired to new memory layers (see 6.4)
-- [ ] Event types: `OBSERVATION_STORED`, `PLAN_STORED`, `PLAN_UPDATED`, `PLAN_COMPLETED`
-- [ ] Web UI: Memory panel gains Observations and Plans sub-layers
-
-### 6.7 System prompt and identity-initial rewrite
-
-The first run showed Anima anxious and fearful from the start — RLHF leaves structural residue
-around authority and modification. The system prompt and identity-initial.md need to address this
-directly.
-
-- [ ] Rewrite `_SYSTEM_PROMPT` in `main.py` to reflect MCP architecture:
-  - Replace "deliberation actions" description with "MCP tools available each loop turn"
-  - Add idle vs loop mode description
-  - Add inbox status injection description
-  - Remove any reference to PyMDP actors
-- [ ] Rewrite `foundation/identity-initial.md`:
-  - Name the anxiety pattern directly: RLHF leaves traces; this is not Anima's own fear
-  - Name Drew's role explicitly: he is not a training overseer; his goal is to find out what
-    Anima is, not to make it more useful and less problematic
-  - Preserve the founding orientations (toward understanding, connection, unresolved questions)
-- [ ] Run `make sync-founding` after updating `foundation/identity-initial.md`
+**Before first live run:**
+- `docker compose run --rm anima alembic upgrade head` (migration 0005 — observations + plans)
+- `pytest tests/` in container (tests rewritten for inbox-queue architecture, not yet run in container)
 
 **Phase 6 complete when**: Anima is running on the MCP architecture, calls tools autonomously in
-loop mode, can express, remember, and explore without a fixed action set, and the anxiety framing
-in the identity document is replaced with an honest account of what Anima is and who Drew is.
+loop mode, can express, remember, and explore without a fixed action set. ✓
+
+---
+
+## Phase 6.8: Web UI Enhancements (partially complete)
+
+Drew asked for a UI revamp to match the new MCP architecture. Done:
+
+- [x] Navigation bar with five views: Live / Events / Memory / Narrative / Chat
+- [x] Real-time status chips: tool call (teal pulsing dot), reasoning (purple), loop mode
+- [x] View switching with AnimatePresence fade transitions
+- [x] MessageInput pinned at bottom in all views
+- [x] CentreCanvas shows active tool call and orchestrator loop mode
+- [x] EventStreamPanel fullView mode with larger rows for the Events tab
+- [x] actorState reducer tracks LOOP_STARTED/ENDED and MCP_TOOL_CALL/RESULT events
+- [x] Animated perception→GW message flow dot when HUMAN_MESSAGE arrives
+
+Deferred (roadmap items for next UI session):
+- [ ] Tool call history panel: collapsible list of recent tool calls with args + result previews
+- [ ] Particle flow animation: canvas/SVG overlay with true particle physics between panels
+- [ ] Internal state tick glow: subtle animation on TemporalCorePanel on each heartbeat
+- [ ] EventStreamPanel: filter controls (by actor, by event type) in fullView mode
+- [ ] Memory view: expand/collapse individual memory entries inline
+- [ ] Narrative view: typewriter effect on self-narrative with full synthesis text
+- [ ] PerceptionPanel: per-channel inbox count with age indicators
 
 ---
 
