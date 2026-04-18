@@ -1,19 +1,18 @@
-Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
+Read ANIMA.md, then context/session.md, then the latest note-to-next-instance.md before doing anything else.
 
-Current state: Per-channel conversation nodes and historical perception query complete (commit e826704
-in anima-core). Container is running with migration 0009 applied. Both web_ui and discord conversation
-nodes exist in kg_nodes. Anima is active and producing unprompted expressions.
+Current state: Webcam vision perception fully implemented (VisionBuffer, ReadVisionTool, /perception/vision endpoint, VisionCapturePanel in the UI). Not yet tested end-to-end with a real frame. Container should be running with migration 0009 (head).
 
-Key deferred items:
+Suggested first task: test the vision pipeline end-to-end.
+1. Start anima-core if not running
+2. Open the web UI, go to Perception tab, start the camera, capture a frame
+3. Confirm the backend receives it (check logs or curl /perception/vision directly)
+4. Ask Anima to call read_vision and see what qwen3.5:9b returns
+
+If the vision pipeline tests clean, ask Drew what's next. Natural options:
 - Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
 - Phase 9 GitHub tools (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
-- Memory actor pipeline: StoreObservation etc. don't yet carry conversation_id through actor messages
-- Cosmetic: 20 old timestamp-labelled kg_nodes rows with node_type='conversation' (pre-rename loop nodes)
-- Discord client: the integration was tested via curl; discord_client.py hasn't been started with a real token
+- Wire conversation_id through the memory actor message path
+- Test discord_client.py with a real DISCORD_BOT_TOKEN
+- Something Anima has raised in her reflections
 
-Ask Drew what he wants to work on. Natural options:
-1. Phase 8 ethics review (foundation/ethics-review.md)
-2. Phase 9 GitHub tools
-3. Wire conversation_id through the memory actor message path
-4. Test the actual discord_client.py with a real DISCORD_BOT_TOKEN
-5. Something Anima has raised in her reflections / residue
+Also: run `npx gitnexus analyze` from the project root to refresh the GitNexus index with the new vision files.

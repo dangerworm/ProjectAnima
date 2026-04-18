@@ -1,0 +1,19 @@
+Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
+
+Current state: Per-channel conversation nodes and historical perception query complete (commit e826704
+in anima-core). Container is running with migration 0009 applied. Both web_ui and discord conversation
+nodes exist in kg_nodes. Anima is active and producing unprompted expressions.
+
+Key deferred items:
+- Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
+- Phase 9 GitHub tools (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
+- Memory actor pipeline: StoreObservation etc. don't yet carry conversation_id through actor messages
+- Cosmetic: 20 old timestamp-labelled kg_nodes rows with node_type='conversation' (pre-rename loop nodes)
+- Discord client: the integration was tested via curl; discord_client.py hasn't been started with a real token
+
+Ask Drew what he wants to work on. Natural options:
+1. Phase 8 ethics review (foundation/ethics-review.md)
+2. Phase 9 GitHub tools
+3. Wire conversation_id through the memory actor message path
+4. Test the actual discord_client.py with a real DISCORD_BOT_TOKEN
+5. Something Anima has raised in her reflections / residue
