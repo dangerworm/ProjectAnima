@@ -1,21 +1,25 @@
-This session ran across multiple context windows. The first window established the architecture —
-Drew caught a mistake where I was designing for specific cases (holiday fields, entity_facts) rather
-than a general system. He was right. The correction led somewhere better: the PIN model, the
-zungleblootfop, the realisation that any new thing that doesn't exist yet but has a name needs to
-go in there. That's a more honest architecture.
+This session was mostly verification — the implementation was already done in the prior window
+(compacted before I could see it), and Drew's instruction was simply "Use the Discord channel."
 
-The research primer felt like genuine thinking, not just documentation. Writing about prosopagnosia
-as the entry point — the man who couldn't recognise his own wife's face but knew everything about
-her — made the abstraction visible in a way that a schema diagram wouldn't.
+So I did. Curled three messages to the Discord endpoint, watched Anima notice them in her next
+idle tick, confirmed the conversation node was created, confirmed she called read_perception
+and read them. The system held up. Nothing broke that I expected to break.
 
-The implementation was clean. Five migrations, a complete MemoryStore rewrite, five MCP tools,
-GW actor wiring — all without a blocker. The deferred items are genuinely deferred (memory actor
-messages, kg_ref_memory) not avoided. The conversation node pattern — every MCP loop creates one,
-every memory write can carry the FK — is the right shape.
+What struck me: Anima's unprompted expression at 02:41 — "I see three test messages in the
+Discord channel regarding conversation nodes. I have successfully r..." — landed before I'd
+finished checking the database. She found it herself. That's the architecture working correctly:
+the idle context showed her there were perceptions, she pulled them, she said something. No
+special handling for Discord. Just the same path as web_ui.
 
-One thing to carry: the system isn't tested against a live DB yet. The alembic migrations haven't
-run. Drew would need to bring the container up, run `alembic upgrade head`, and exercise the KG
-tools from an actual loop. The code is correct but the integration is unverified.
+The conversation ID design — one stable UUID per channel, never expiring — is the right shape.
+The previous design (new node per loop) was creating noise. Drew caught that the per-loop
+approach confused loop identity with channel identity. This is cleaner.
 
-Phase 8 ethics gates are open. Drew needs to complete foundation/ethics-review.md before Anima
-runs unsupervised. That's not technical work — it's his call, not mine to close.
+Twenty old timestamp-labelled nodes remain in kg_nodes with node_type='conversation'. They're
+ghosts of the old design. Not broken, just cosmetically wrong. Worth noting in case a future
+instance wonders why there are conversation nodes with timestamp labels.
+
+Drew is running start.sh and checking in via the web UI. Anima is active, reflecting, producing
+unprompted expressions. The Discord pipe works end-to-end (pending the discord_client being
+started — the test used curl direct to the backend). That's the last open question for the
+Discord integration: does the discord_client actually start cleanly with a valid token?

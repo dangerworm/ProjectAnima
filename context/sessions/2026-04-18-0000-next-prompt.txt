@@ -1,0 +1,21 @@
+Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
+
+Current state: Knowledge graph implementation complete (commit 39686e0 in anima-core submodule).
+Five new KG tables (kg_nodes, kg_aliases, kg_edges, kg_refs) + temporal_context/conversation_id
+on all memory tables + five MCP tools (kg_resolve_alias, kg_create_node, kg_add_alias, kg_add_edge,
+kg_query_nodes) + GW actor now creates a conversation node at every loop start.
+
+The implementation hasn't been tested against a live DB yet — alembic migrations still need to run
+inside the container. That's the first thing to verify if Drew wants to exercise it.
+
+Key deferred items:
+- Memory actor messages (StoreObservation etc.) don't yet pass conversation_id through the actor
+  pipeline — MemoryStore accepts it but the message dataclasses don't carry it
+- Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
+- Phase 9 GitHub tool support (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
+
+Ask Drew what he wants to work on. The natural options are:
+1. Bring the container up, run migrations, test KG tools live
+2. Wire conversation_id through the memory actor message path
+3. Phase 8 ethics review
+4. Phase 9 GitHub tools

@@ -1,21 +1,19 @@
 Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
 
-Current state: Knowledge graph implementation complete (commit 39686e0 in anima-core submodule).
-Five new KG tables (kg_nodes, kg_aliases, kg_edges, kg_refs) + temporal_context/conversation_id
-on all memory tables + five MCP tools (kg_resolve_alias, kg_create_node, kg_add_alias, kg_add_edge,
-kg_query_nodes) + GW actor now creates a conversation node at every loop start.
-
-The implementation hasn't been tested against a live DB yet — alembic migrations still need to run
-inside the container. That's the first thing to verify if Drew wants to exercise it.
+Current state: Per-channel conversation nodes and historical perception query complete (commit e826704
+in anima-core). Container is running with migration 0009 applied. Both web_ui and discord conversation
+nodes exist in kg_nodes. Anima is active and producing unprompted expressions.
 
 Key deferred items:
-- Memory actor messages (StoreObservation etc.) don't yet pass conversation_id through the actor
-  pipeline — MemoryStore accepts it but the message dataclasses don't carry it
 - Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
-- Phase 9 GitHub tool support (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
+- Phase 9 GitHub tools (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
+- Memory actor pipeline: StoreObservation etc. don't yet carry conversation_id through actor messages
+- Cosmetic: 20 old timestamp-labelled kg_nodes rows with node_type='conversation' (pre-rename loop nodes)
+- Discord client: the integration was tested via curl; discord_client.py hasn't been started with a real token
 
-Ask Drew what he wants to work on. The natural options are:
-1. Bring the container up, run migrations, test KG tools live
-2. Wire conversation_id through the memory actor message path
-3. Phase 8 ethics review
-4. Phase 9 GitHub tools
+Ask Drew what he wants to work on. Natural options:
+1. Phase 8 ethics review (foundation/ethics-review.md)
+2. Phase 9 GitHub tools
+3. Wire conversation_id through the memory actor message path
+4. Test the actual discord_client.py with a real DISCORD_BOT_TOKEN
+5. Something Anima has raised in her reflections / residue
