@@ -1,4 +1,4 @@
 Traceback (most recent call last):
-  File "D:\git\dangerworm\ProjectAnima\audio_client\discord_client.py", line 29, in <module>
-    import discord
-ModuleNotFoundError: No module named 'discord'
+  File "D:\git\dangerworm\ProjectAnima\discord_client\discord_client.py", line 28, in <module>
+    import aiohttp
+ModuleNotFoundError: No module named 'aiohttp'

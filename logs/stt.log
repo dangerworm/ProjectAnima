@@ -1,5 +1,4 @@
-2026-04-17 12:54:01,415 [INFO] Loading Silero VAD model…
-Using cache found in C:\Users\drewg/.cache\torch\hub\snakers4_silero-vad_master
-2026-04-17 12:54:01,885 [INFO] Loading Whisper model 'base' on cpu…
-2026-04-17 12:54:02,432 [INFO] HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-base/revision/main "HTTP/1.1 200 OK"
-2026-04-17 12:54:02,765 [INFO] Starting audio capture (Ctrl+C to stop)…
+Traceback (most recent call last):
+  File "D:\git\dangerworm\ProjectAnima\audio_client\capture.py", line 29, in <module>
+    import numpy as np
+ModuleNotFoundError: No module named 'numpy'
