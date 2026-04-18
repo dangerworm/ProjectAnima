@@ -7,22 +7,37 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 DOCKER_DIR="$REPO_ROOT/anima-core"
 LOG_DIR="$REPO_ROOT/logs"
+PIDS_FILE="$LOG_DIR/.pids"
 
-GRN="\033[0;32m"; YLW="\033[0;33m"; RST="\033[0m"
-ok()  { echo -e "${GRN}✓ $*${RST}"; }
-inf() { echo -e "${YLW}→ $*${RST}"; }
+# shellcheck disable=SC1091
+source "$REPO_ROOT/lib.sh"
 
 inf "Stopping Project Anima..."
 
-pkill -f "speak.py"        2>/dev/null && ok "TTS stopped"     || true
-pkill -f "capture.py"     2>/dev/null && ok "STT stopped"     || true
-pkill -f "discord_client" 2>/dev/null && ok "Discord stopped" || true
-pkill -f "vite"           2>/dev/null && ok "Web UI stopped"  || true
+# ── 1. Kill by saved PID (preferred — precise, kills whole tree) ──
+if [[ -f "$PIDS_FILE" ]]; then
+    # shellcheck disable=SC1090
+    source "$PIDS_FILE"
+    kill_tree "${TTS_PID:-}"     "TTS"     || true
+    kill_tree "${STT_PID:-}"     "STT"     || true
+    kill_tree "${WEBUI_PID:-}"   "Web UI"  || true
+    kill_tree "${DISCORD_PID:-}" "Discord" || true
+else
+    inf "No .pids file — falling back to command-line matching"
+fi
 
+# ── 2. Sweep up anything the PID-based kill missed ──────────
+# (e.g. if start.sh wasn't used, or a child survived its parent)
+kill_by_cmdline "speak.py"       "TTS (stray)"     || true
+kill_by_cmdline "capture.py"     "STT (stray)"     || true
+kill_by_cmdline "discord_client" "Discord (stray)" || true
+kill_by_cmdline "vite"           "Web UI (stray)"  || true
+
+# ── 3. Docker stack ─────────────────────────────────────────
 if docker compose -f "$DOCKER_DIR/docker-compose.yml" ps --quiet 2>/dev/null | grep -q .; then
     docker compose -f "$DOCKER_DIR/docker-compose.yml" down
     ok "Docker stack stopped"
 fi
 
-rm -f "$LOG_DIR/.pids"
+rm -f "$PIDS_FILE"
 ok "Done"

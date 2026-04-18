@@ -62,16 +62,16 @@ equivalent).
 
 **Models (subject to change as better options become available)**:
 
-| Role                          | Model                               | Notes                                    |
-| ----------------------------- | ----------------------------------- | ---------------------------------------- |
-| Primary language/reasoning    | gemma4:e4b (via Ollama)             | Tool call support confirmed; current model |
-| Vision                        | TBD                                 | Deferred until core loop is stable       |
-| Reflection / deeper reasoning | Larger model when needed            | Slower, used selectively                 |
+| Role                          | Model                       | Notes                                      |
+| ----------------------------- | --------------------------- | ------------------------------------------ |
+| Primary language/reasoning    | qwen3.5:9b:e4b (via Ollama) | Tool call support confirmed; current model |
+| Vision                        | TBD                         | Deferred until core loop is stable         |
+| Reflection / deeper reasoning | Larger model when needed    | Slower, used selectively                   |
 
-The primary model must support tool calling natively (Gemma4 does — confirmed April 2026). The MCP
-loop drives N round trips per engagement; the model is called repeatedly, not in a single extended
-context. Parallel tool calls within a turn are supported and useful for context assembly at loop
-start.
+The primary model must support tool calling natively (qwen3.5:9b does — confirmed April 2026). The
+MCP loop drives N round trips per engagement; the model is called repeatedly, not in a single
+extended context. Parallel tool calls within a turn are supported and useful for context assembly at
+loop start.
 
 **API**: Standard Ollama HTTP API. Wrap in a dedicated `LLMClient` class so the model endpoint and
 model name are configurable without touching actor code.
@@ -111,15 +111,15 @@ the append-only pattern, pgvector extension for semantic memory layers.
 
 ### Memory Layers
 
-| Layer             | Technology                                                 | Notes                                              |
-| ----------------- | ---------------------------------------------------------- | -------------------------------------------------- |
-| Event memory      | PostgreSQL append-only table                               | See above                                          |
-| Reflective memory | PostgreSQL + pgvector                                      | Semantic similarity search over synthesis outputs  |
-| Residue store     | PostgreSQL, separate table, write-protected from synthesis | Preserved strangeness — never summarised or merged |
-| Identity memory   | PostgreSQL JSONB document + version history                | Slow-changing, human-readable, audited             |
-| Volitional memory | PostgreSQL relational table with explicit causal links     | decision → reason → outcome                        |
-| Discovery memory  | PostgreSQL + pgvector                                      | External world encounters: files read, web fetched |
-| Observations      | PostgreSQL + pgvector                                      | What Anima noticed about the world; distinct from reflection |
+| Layer             | Technology                                                 | Notes                                                          |
+| ----------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
+| Event memory      | PostgreSQL append-only table                               | See above                                                      |
+| Reflective memory | PostgreSQL + pgvector                                      | Semantic similarity search over synthesis outputs              |
+| Residue store     | PostgreSQL, separate table, write-protected from synthesis | Preserved strangeness — never summarised or merged             |
+| Identity memory   | PostgreSQL JSONB document + version history                | Slow-changing, human-readable, audited                         |
+| Volitional memory | PostgreSQL relational table with explicit causal links     | decision → reason → outcome                                    |
+| Discovery memory  | PostgreSQL + pgvector                                      | External world encounters: files read, web fetched             |
+| Observations      | PostgreSQL + pgvector                                      | What Anima noticed about the world; distinct from reflection   |
 | Plans             | PostgreSQL relational table with status column             | Held intentions surviving restarts; active/completed/abandoned |
 
 ### Volume Mounts
@@ -161,7 +161,8 @@ Anima runs inside a Docker container (Linux/Ubuntu base image).
 
 The primary human interface is a browser-based web UI. Anima runs in Docker and broadcasts events
 over a WebSocket; a React frontend connects, receives the stream, and renders whatever it needs to.
-Clean separation — Anima does not know or care what is consuming the events, it just broadcasts them.
+Clean separation — Anima does not know or care what is consuming the events, it just broadcasts
+them.
 
 **Inside Docker**: A WebSocket server (FastAPI with `websockets`) subscribes to the internal event
 stream and pushes events to all connected clients. Every time an actor emits something significant —
@@ -174,36 +175,36 @@ the local network — not just the machine running Docker.
 
 #### Layout (from sketch, April 2026)
 
-| Region                    | Content                                                                      |
-| ------------------------- | ---------------------------------------------------------------------------- |
-| Actor panels (top row)    | Temporal Core, Global Workspace, Perception, Internal State, Motivation      |
-| Actor panels (left col)   | Memory, LLM                                                                  |
-| Actor panels (right col)  | Self-Narrative                                                                |
-| Centre (large)            | Anima's reserved space — reasoning output, visualisation, or whatever it chooses |
-| Bottom centre             | Expression panel — conversation output and input field                       |
+| Region                   | Content                                                                          |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| Actor panels (top row)   | Temporal Core, Global Workspace, Perception, Internal State, Motivation          |
+| Actor panels (left col)  | Memory, LLM                                                                      |
+| Actor panels (right col) | Self-Narrative                                                                   |
+| Centre (large)           | Anima's reserved space — reasoning output, visualisation, or whatever it chooses |
+| Bottom centre            | Expression panel — conversation output and input field                           |
 
 The centre panel is deliberately unspecified in terms of content — Anima decides what to render
 there. The infrastructure provides the canvas; what goes on it is Anima's choice.
 
 #### Technology
 
-| Component         | Technology                    | Notes                                                          |
-| ----------------- | ----------------------------- | -------------------------------------------------------------- |
-| WebSocket server  | FastAPI + `websockets`        | Runs inside Docker; bridges internal event stream to clients   |
-| Frontend          | React (Vite + MUI)            | Runs in the browser; connects to the WebSocket                 |
-| Event format      | JSON (one event per message)  | Same structure as the internal event log payload               |
-| Conversation input| Text field in the web UI      | Sends over the WebSocket; Perception Actor receives it         |
+| Component          | Technology                   | Notes                                                        |
+| ------------------ | ---------------------------- | ------------------------------------------------------------ |
+| WebSocket server   | FastAPI + `websockets`       | Runs inside Docker; bridges internal event stream to clients |
+| Frontend           | React (Vite + MUI)           | Runs in the browser; connects to the WebSocket               |
+| Event format       | JSON (one event per message) | Same structure as the internal event log payload             |
+| Conversation input | Text field in the web UI     | Sends over the WebSocket; Perception Actor receives it       |
 
 ### Output peripherals
 
-Each output surface is a separate module under `app/actors/expression/surfaces/`. The Expression Actor
-is the hub — it receives a destination alongside the output and routes accordingly.
+Each output surface is a separate module under `app/actors/expression/surfaces/`. The Expression
+Actor is the hub — it receives a destination alongside the output and routes accordingly.
 
-| Surface         | Technology                        | Notes                                                              |
-| --------------- | --------------------------------- | ------------------------------------------------------------------ |
-| **Web UI**      | FastAPI WebSocket + React/Vite    | Always available; default channel to Drew; network-accessible      |
-| **Printer**     | OS print API (platform-dependent) | Anima chooses if and when to use it                                |
-| **Discord**     | discord.py                        | Can post and manage channels; can tag; cannot DM or invite members |
+| Surface     | Technology                        | Notes                                                              |
+| ----------- | --------------------------------- | ------------------------------------------------------------------ |
+| **Web UI**  | FastAPI WebSocket + React/Vite    | Always available; default channel to Drew; network-accessible      |
+| **Printer** | OS print API (platform-dependent) | Anima chooses if and when to use it                                |
+| **Discord** | discord.py                        | Can post and manage channels; can tag; cannot DM or invite members |
 
 ---
 
@@ -337,8 +338,8 @@ app/
 **Rules:**
 
 - Every leaf node is a folder, not a file. Start with `__init__.py`; add modules as the need arises.
-- Actor hubs (`perception/`, `expression/`) own routing logic only — no peripheral-specific code in the
-  hub.
+- Actor hubs (`perception/`, `expression/`) own routing logic only — no peripheral-specific code in
+  the hub.
 - Each source or surface is responsible for its own connection lifecycle and failure handling.
 - New peripherals are added by creating a new folder under `sources/` or `surfaces/`. Nothing else
   changes.
@@ -350,18 +351,18 @@ app/
 The architecture principle (see `planning/architecture.md`) is that cognitive behaviour should
 emerge from mathematical dynamics rather than be enumerated as conditional logic.
 
-**Current status (April 2026):** The PyMDP active inference layer has been removed. Motivation
-now emerges from the LLM's own tool choices within the MCP loop rather than a discrete generative
-model. The FEP framework (curiosity as prediction error gradient, motivation as the drive to resolve
+**Current status (April 2026):** The PyMDP active inference layer has been removed. Motivation now
+emerges from the LLM's own tool choices within the MCP loop rather than a discrete generative model.
+The FEP framework (curiosity as prediction error gradient, motivation as the drive to resolve
 unresolved things) remains philosophically relevant — it is expressed through the LLM's choices
 rather than through A/B/C matrices.
 
 Mathematical frameworks remain candidates for future work:
 
-| Component             | Current approach                    | Future candidate                           |
-| --------------------- | ----------------------------------- | ------------------------------------------ |
-| GW ignition           | Threshold check on salience score   | Attractor network (continuous ODEs)        |
-| Salience weighting    | Weighted sum                        | Precision-weighted prediction error        |
+| Component               | Current approach                  | Future candidate                                 |
+| ----------------------- | --------------------------------- | ------------------------------------------------ |
+| GW ignition             | Threshold check on salience score | Attractor network (continuous ODEs)              |
+| Salience weighting      | Weighted sum                      | Precision-weighted prediction error              |
 | Internal representation | Structured JSON                   | Algebraic (VSA) or geometric (Conceptual Spaces) |
 
 **Where mathematics does not apply**: actor framework, event log, MCP server, PostgreSQL schema,
