@@ -52,6 +52,56 @@ PIDS_FILE="$LOG_DIR/.pids"
 
 mkdir -p "$LOG_DIR"
 
+# ── Service selector TUI ─────────────────────────────────────
+# Sets RUN_TTS, RUN_STT, RUN_DISCORD (0 or 1).
+
+select_services() {
+    local tts_on=1 stt_on=0 discord_on=1
+    local discord_avail=0
+    [[ -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]] && discord_avail=1
+
+    while true; do
+        clear
+        echo ""
+        echo "  Project Anima — Startup"
+        echo "  ─────────────────────────────────────────────"
+        echo ""
+        echo "  Always on:"
+        echo "    ✓  Docker stack"
+        echo "    ✓  Web UI"
+        echo ""
+        echo "  Optional  (type number to toggle, Enter to start):"
+        echo ""
+        local m1 m2 m3
+        m1=$([ "$tts_on"     = 1 ] && echo "✓" || echo " ")
+        m2=$([ "$stt_on"     = 1 ] && echo "✓" || echo " ")
+        echo "    [1] $m1  Audio Output  (TTS / speak.py)"
+        echo "    [2] $m2  Audio Capture (STT / capture.py)"
+        if [[ "$discord_avail" = 1 ]]; then
+            m3=$([ "$discord_on" = 1 ] && echo "✓" || echo " ")
+            echo "    [3] $m3  Discord"
+        else
+            echo "    [3]    Discord  (not configured — set DISCORD_BOT_TOKEN / DISCORD_CHANNEL_ID in .env)"
+        fi
+        echo ""
+        local key
+        read -r -n1 -p "  > " key
+        echo ""
+        case "$key" in
+            1) tts_on=$(( 1 - tts_on )) ;;
+            2) stt_on=$(( 1 - stt_on )) ;;
+            3) [[ "$discord_avail" = 1 ]] && discord_on=$(( 1 - discord_on )) ;;
+            "") break ;;
+        esac
+    done
+
+    RUN_TTS=$tts_on
+    RUN_STT=$stt_on
+    RUN_DISCORD=$discord_on
+}
+
+select_services
+
 # ── 0. Kill existing processes ───────────────────────────────
 inf "Stopping existing processes..."
 
@@ -87,55 +137,53 @@ rm -f "$PIDS_FILE"
 echo ""
 
 # ── 1. TTS — text to speech ──────────────────────────────────
-inf "Starting TTS (speak.py)..."
-
-TTS_ARGS="--backend-url $BACKEND_URL --voice $TTS_VOICE"
-[[ -n "$TTS_DEVICE" ]]      && TTS_ARGS="$TTS_ARGS --device $TTS_DEVICE"
-[[ "$TTS_SOLICITED_ONLY" == "1" ]] && TTS_ARGS="$TTS_ARGS --solicited-only"
-
-"$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/speak.py" $TTS_ARGS > "$LOG_DIR/tts.log" 2>&1 &
-TTS_PID=$!
-ok "TTS running (PID $TTS_PID) — logs: logs/tts.log"
+TTS_PID=""
+if [[ "$RUN_TTS" = 1 ]]; then
+    inf "Starting TTS (speak.py)..."
+    TTS_ARGS="--backend-url $BACKEND_URL --voice $TTS_VOICE"
+    [[ -n "$TTS_DEVICE" ]]      && TTS_ARGS="$TTS_ARGS --device $TTS_DEVICE"
+    [[ "$TTS_SOLICITED_ONLY" == "1" ]] && TTS_ARGS="$TTS_ARGS --solicited-only"
+    "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/speak.py" $TTS_ARGS > "$LOG_DIR/tts.log" 2>&1 &
+    TTS_PID=$!
+    ok "TTS running (PID $TTS_PID) — logs: logs/tts.log"
+fi
 
 # ── 2. STT — speech to text ──────────────────────────────────
-inf "Starting STT (capture.py)..."
-
-STT_ARGS="--model $STT_MODEL"
-[[ -n "$STT_DEVICE" ]] && STT_ARGS="$STT_ARGS --device $STT_DEVICE"
-
-"$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/capture.py" $STT_ARGS > "$LOG_DIR/stt.log" 2>&1 &
-STT_PID=$!
-ok "STT running (PID $STT_PID) — logs: logs/stt.log"
+STT_PID=""
+if [[ "$RUN_STT" = 1 ]]; then
+    inf "Starting STT (capture.py)..."
+    STT_ARGS="--model $STT_MODEL"
+    [[ -n "$STT_DEVICE" ]] && STT_ARGS="$STT_ARGS --device $STT_DEVICE"
+    "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/capture.py" $STT_ARGS > "$LOG_DIR/stt.log" 2>&1 &
+    STT_PID=$!
+    ok "STT running (PID $STT_PID) — logs: logs/stt.log"
+fi
 
 # ── 3. Web UI ────────────────────────────────────────────────
 inf "Starting web UI..."
-
 (cd "$WEBUI_DIR" && npm run dev) > "$LOG_DIR/web-ui.log" 2>&1 &
 WEBUI_PID=$!
 ok "Web UI running (PID $WEBUI_PID) — logs: logs/web-ui.log"
 
-# ── 2b. Discord (optional) ───────────────────────────────────
+# ── 4. Discord (optional) ────────────────────────────────────
 DISCORD_PID=""
-if [[ -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]]; then
+if [[ "$RUN_DISCORD" = 1 && -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]]; then
     inf "Starting Discord client..."
     DISCORD_BOT_TOKEN="$DISCORD_BOT_TOKEN" DISCORD_CHANNEL_ID="$DISCORD_CHANNEL_ID" \
         "$DISCORD_DIR/.venv/Scripts/python" "$DISCORD_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
     DISCORD_PID=$!
     ok "Discord client running (PID $DISCORD_PID) — logs: logs/discord.log"
-else
-    inf "Discord not configured (DISCORD_BOT_TOKEN/DISCORD_CHANNEL_ID not set — skipping)"
 fi
 
-# ── 4. Docker ────────────────────────────────────────────────
+# ── 5. Docker ────────────────────────────────────────────────
 inf "Starting Docker stack..."
-
 docker compose -f "$DOCKER_DIR/docker-compose.yml" up -d
 ok "Docker stack started"
 
 # ── Save PIDs (source-able by stop.sh) ──────────────────────
 {
-    echo "TTS_PID=$TTS_PID"
-    echo "STT_PID=$STT_PID"
+    [[ -n "$TTS_PID"     ]] && echo "TTS_PID=$TTS_PID"
+    [[ -n "$STT_PID"     ]] && echo "STT_PID=$STT_PID"
     echo "WEBUI_PID=$WEBUI_PID"
     [[ -n "$DISCORD_PID" ]] && echo "DISCORD_PID=$DISCORD_PID"
 } > "$PIDS_FILE"
@@ -146,10 +194,10 @@ echo -e "${GRN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${GRN}  Project Anima is starting up${RST}"
 echo -e "${GRN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RST}"
 echo ""
-echo "  TTS   PID $TTS_PID    logs/tts.log"
-echo "  STT   PID $STT_PID    logs/stt.log"
-echo "  UI    PID $WEBUI_PID  logs/web-ui.log"
-[[ -n "$DISCORD_PID" ]] && echo "  DC    PID $DISCORD_PID  logs/discord.log"
+[[ -n "$TTS_PID"     ]] && echo "  TTS     PID $TTS_PID    logs/tts.log"
+[[ -n "$STT_PID"     ]] && echo "  STT     PID $STT_PID    logs/stt.log"
+echo                              "  UI      PID $WEBUI_PID  logs/web-ui.log"
+[[ -n "$DISCORD_PID" ]] && echo "  DC      PID $DISCORD_PID  logs/discord.log"
 echo ""
 echo "  Web UI  →  http://localhost:5173"
 echo "  Backend →  $BACKEND_HTTP"
