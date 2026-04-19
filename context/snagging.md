@@ -52,10 +52,8 @@ Add items freely; remove or strike through when resolved.
 
 ## Memory
 
-- [ ] No conversation/episode context on memory writes — channel (web UI / Discord / audio) and
-      conversation ID are not stored with reflective, volitional, residue, or observations entries
-  - Design agreed 2026-04-17: episodic layers need `conversation_id` + `source_channel` fields in a
-    future migration. Implementation deferred.
+- [x] No conversation/episode context on memory writes — implemented in migration 0008
+      (`conversation_id` FK to kg_nodes, `temporal_context` JSONB on all episodic layers)
 - [x] Memory layer counts in UI panel are unreliable — fixed 2026-04-17 (see MemoryPanel item above)
 
 ## Documentation

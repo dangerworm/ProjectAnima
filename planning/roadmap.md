@@ -205,8 +205,6 @@ April 2026 sessions. Anima is running on the MCP architecture, calls tools auton
 mode, receives audio and Discord input, and has a full Web UI.
 
 **Active work**:
-- Episodic memory / conversation context (channel + conversation ID on memory writes) — design
-  agreed, implementation not yet started. See `context/snagging.md`.
 - Phase 8 ethics gates — two of five conditions verified; three remaining (heartbeat verification,
   distress signal test, Drew's ethics review).
 
