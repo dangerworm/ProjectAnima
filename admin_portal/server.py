@@ -19,14 +19,16 @@ import asyncio
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -66,7 +68,9 @@ def _e(key: str, default: str = "") -> str:
 
 def _py(component_dir: Path) -> str:
     """Full path to Python inside a component's .venv."""
-    return str(component_dir / ".venv" / "Scripts" / "python")
+    if sys.platform == "win32":
+        return str(component_dir / ".venv" / "Scripts" / "python.exe")
+    return str(component_dir / ".venv" / "bin" / "python")
 
 
 def _npm() -> str:
@@ -359,6 +363,74 @@ async def stream_logs(sid: str) -> StreamingResponse:
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
+
+
+# ── Voice enrollment ───────────────────────────────────────────────────────────
+
+ENROLLMENTS_DIR = AUDIO_DIR / "enrollments"
+ENROLL_SCRIPT   = AUDIO_DIR / "enroll.py"
+
+_SAFE_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
+
+
+@app.get("/api/enrollment/status")
+def enrollment_status() -> dict:
+    if not ENROLLMENTS_DIR.exists():
+        return {"enrolled": False, "names": []}
+    names = [
+        f.stem.replace("_embedding", "")
+        for f in sorted(ENROLLMENTS_DIR.glob("*_embedding.npy"))
+    ]
+    return {"enrolled": bool(names), "names": names}
+
+
+@app.post("/api/enrollment/record")
+async def enrollment_record(name: str = Form(...), wav: UploadFile = File(...)) -> dict:
+    """
+    Accept a name + PCM WAV upload from the browser, run enroll.py via the
+    audio_client venv, and save the embedding to enrollments/{name}_embedding.npy.
+    """
+    if not _SAFE_NAME_RE.match(name):
+        raise HTTPException(422, "name must contain only letters, digits, hyphens, or underscores")
+
+    audio_py = _py(AUDIO_DIR)
+    if not Path(audio_py).exists():
+        raise HTTPException(500, "audio_client venv not found — run: pip install -r requirements-stt.txt")
+    if not ENROLL_SCRIPT.exists():
+        raise HTTPException(500, "enroll.py not found in audio_client")
+
+    hf_token = _e("HF_TOKEN")
+    if not hf_token:
+        raise HTTPException(422, "HF_TOKEN not set in .env — required for pyannote model download")
+
+    data = await wav.read()
+    if data[:4] == b'\x1a\x45\xdf\xa3':
+        raise HTTPException(400, "Browser sent WebM audio — hard-refresh the page (Ctrl+Shift+R) and try again")
+    if data[:4] != b'RIFF':
+        raise HTTPException(400, f"Unexpected audio format (magic: {data[:4].hex()}) — hard-refresh and retry")
+
+    with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
+        tmp.write(data)
+        tmp_path = tmp.name
+
+    try:
+        env = {**os.environ, **_env}
+        result = subprocess.run(
+            [audio_py, str(ENROLL_SCRIPT), "--name", name, "--wav", tmp_path],
+            capture_output=True,
+            text=True,
+            timeout=120,
+            env=env,
+        )
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+    if result.returncode != 0:
+        raise HTTPException(500, result.stderr[-500:] or "enroll.py failed")
+
+    output = result.stdout.strip()
+    log.info("Enrollment complete for '%s': %s", name, output)
+    return {"ok": True, "detail": output}
 
 
 if CLIENT_DIST.exists():

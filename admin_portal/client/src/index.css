@@ -258,6 +258,193 @@ html, body, #root {
   color: var(--amber);
 }
 
+/* ── Right panel wrapper ───────────────────────────────────────────────────── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── Enrollment card ───────────────────────────────────────────────────────── */
+.enrollment-card {
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.enrollment-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.enrollment-title {
+  display: flex;
+  align-items: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.enrollment-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.enrollment-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.enrollment-idle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.enrollment-name-input {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius);
+  color: var(--text);
+  padding: 5px 10px;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.enrollment-name-input:focus { border-color: var(--green); }
+.enrollment-name-input::placeholder { color: var(--text-dim); }
+
+.enrollment-btn {
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+  border-radius: 4px;
+  border: 1px solid var(--green);
+  background: transparent;
+  color: var(--green);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.enrollment-btn:hover { background: var(--green-bg); }
+
+.enrollment-btn-cancel {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-accent);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.enrollment-btn-cancel:hover { color: var(--text); }
+
+.enrollment-script {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--surface-raised);
+  border: 1px solid var(--border-accent);
+  border-radius: var(--radius);
+}
+
+.enrollment-script-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 2px;
+}
+
+.enrollment-script-line {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.enrollment-countdown {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--amber);
+}
+
+.enrollment-recording {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.enrollment-progress-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.enrollment-progress-fill {
+  height: 100%;
+  background: var(--red);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.enrollment-recording-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--red);
+}
+
+.enrollment-processing {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.enrollment-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.enrollment-result span { flex: 1; white-space: pre-wrap; word-break: break-word; }
+.enrollment-result.done  { color: var(--green); }
+.enrollment-result.error { color: var(--red); }
+
 /* ── Log panel ─────────────────────────────────────────────────────────────── */
 .log-panel {
   display: flex;

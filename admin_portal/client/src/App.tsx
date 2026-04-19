@@ -5,6 +5,7 @@ import { GROUP_ORDER, GROUP_LABELS } from './types'
 import { fetchServices, startService, stopService } from './api/client'
 import { ServiceCard } from './components/ServiceCard'
 import { LogPanel } from './components/LogPanel'
+import { EnrollmentCard } from './components/EnrollmentCard'
 
 const POLL_MS = 2000
 
@@ -91,7 +92,10 @@ export default function App() {
           </AnimatePresence>
         </aside>
 
-        <LogPanel services={services} />
+        <div className="right-panel">
+          <EnrollmentCard />
+          <LogPanel services={services} />
+        </div>
       </div>
     </div>
   )

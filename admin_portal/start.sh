@@ -17,6 +17,7 @@ kill_by_cmdline "admin_portal/server.py" "Admin server (stray)" || true
 # ── Install deps & build frontend ────────────────────────────
 inf "Installing Python dependencies..."
 source "$SCRIPT_DIR/.venv/Scripts/activate"
+python -m pip install --upgrade pip
 pip install -r "$SCRIPT_DIR/requirements.txt" --quiet
 
 inf "Building frontend..."

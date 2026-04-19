@@ -7,6 +7,9 @@ logs/
 */.venv/
 */__pycache__/
 
+# biometric — voice enrollment embeddings
+clients/audio_client/enrollments/
+
 # admin_portal
 */.pid
 */state.json

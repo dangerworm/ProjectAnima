@@ -20,11 +20,12 @@ Smaller models are faster but less accurate. "base" is a reasonable default.
 
 import argparse
 import logging
+import os
 import queue
 import sys
 import threading
 import time
-from collections import deque
+from pathlib import Path
 
 import numpy as np
 import requests
@@ -39,6 +40,9 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 # ── Constants ────────────────────────────────────────────────────────────────
+
+ENROLLMENTS_DIR = Path(__file__).parent / "enrollments"
+SPEAKER_THRESHOLD = 0.50  # cosine distance; below this → matched speaker (lower = more similar)
 
 SAMPLE_RATE = 16_000  # Hz — Silero VAD and Whisper both expect 16 kHz
 CHUNK_DURATION = 0.032  # seconds per audio chunk (512 samples at 16 kHz)
@@ -68,6 +72,64 @@ def _audio_callback(raw_queue: queue.Queue):
 # ── VAD + transcription loop ─────────────────────────────────────────────────
 
 
+def _load_speaker_models(device: str):
+    """Load pyannote + all enrolled embeddings. Returns (inference, {name: embedding}) or (None, {})."""
+    if not ENROLLMENTS_DIR.exists():
+        log.info("No enrollments directory — speaker identification disabled.")
+        return None, {}
+
+    embedding_files = list(ENROLLMENTS_DIR.glob("*_embedding.npy"))
+    if not embedding_files:
+        log.info("No enrollment files found — speaker identification disabled.")
+        return None, {}
+
+    hf_token = os.environ.get("HF_TOKEN")
+    if not hf_token:
+        log.warning("HF_TOKEN not set — speaker identification disabled.")
+        return None, {}
+
+    try:
+        from pyannote.audio import Model, Inference
+        log.info("Loading speaker embedding model…")
+        model = Model.from_pretrained("pyannote/embedding", use_auth_token=hf_token)
+        inference = Inference(model, window="whole")
+
+        enrollments: dict[str, np.ndarray] = {}
+        for f in embedding_files:
+            name = f.stem.replace("_embedding", "")
+            enrollments[name] = np.load(f)
+            log.info("Loaded enrollment for '%s'.", name)
+
+        log.info(
+            "Speaker identification active (%d enrolled, threshold=%.2f).",
+            len(enrollments), SPEAKER_THRESHOLD,
+        )
+        return inference, enrollments
+    except Exception as exc:
+        log.warning("Speaker model load failed (%s) — identification disabled.", exc)
+        return None, {}
+
+
+def _identify_speaker(inference, enrollments: dict[str, np.ndarray], audio: np.ndarray) -> str:
+    """Return name of closest enrolled speaker, or 'unknown' if none are close enough."""
+    try:
+        from scipy.spatial.distance import cdist
+        segment = {"waveform": torch.from_numpy(audio)[None], "sample_rate": SAMPLE_RATE}
+        embedding = np.squeeze(inference(segment))  # (D,)
+
+        best_name, best_dist = "unknown", float("inf")
+        for name, ref in enrollments.items():
+            dist = cdist(ref[None], embedding[None], metric="cosine")[0, 0]
+            log.debug("Speaker distance to '%s': %.3f (threshold=%.2f)", name, dist, SPEAKER_THRESHOLD)
+            if dist < best_dist:
+                best_dist, best_name = dist, name
+
+        return best_name if best_dist <= SPEAKER_THRESHOLD else "unknown"
+    except Exception as exc:
+        log.warning("Speaker identification failed: %s", exc)
+        return "unknown"
+
+
 def run(backend_url: str, device_index: int | None, whisper_model: str) -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     compute_type = "float16" if device == "cuda" else "int8"
@@ -84,6 +146,8 @@ def run(backend_url: str, device_index: int | None, whisper_model: str) -> None:
 
     log.info("Loading Whisper model '%s' on %s…", whisper_model, device)
     wx_model = WhisperModel(whisper_model, device=device, compute_type=compute_type)
+
+    embed_model, enrollments = _load_speaker_models(device)
 
     log.info("Starting audio capture (Ctrl+C to stop)…")
 
@@ -110,11 +174,21 @@ def run(backend_url: str, device_index: int | None, whisper_model: str) -> None:
         if not text:
             log.debug("VAD triggered but transcription empty — skipping.")
             return
-        log.info("Transcribed (%.1fs): %s", duration_secs, text)
+
+        speaker: str | None = None
+        if embed_model is not None and enrollments:
+            speaker = _identify_speaker(embed_model, enrollments, audio)
+
+        log.info("Transcribed (%.1fs) [%s]: %s", duration_secs, speaker or "?", text)
+
+        payload: dict = {"text": text, "duration_secs": round(duration_secs, 2)}
+        if speaker is not None:
+            payload["speaker"] = speaker
+
         try:
             resp = requests.post(
                 backend_url,
-                json={"text": text, "duration_secs": round(duration_secs, 2)},
+                json=payload,
                 timeout=10,
             )
             if resp.ok:

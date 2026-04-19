@@ -4,3 +4,6 @@ silero-vad>=5.1.0
 faster-whisper>=1.1.0
 requests>=2.31.0
 torch>=2.0.0
+pyannote.audio>=3.3.0
+scipy>=1.11.0
+soundfile>=0.12.0
