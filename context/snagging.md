@@ -15,10 +15,9 @@ Add items freely; remove or strike through when resolved.
 
 ### Vision / Perception tab
 
-- [ ] Webcam CAPTURE returns HTTP 422 from backend — confirmed in real browser (not just Claude-in-Chrome);
-      Dev console shows "Failed to load resource: 422 Unprocessable Entity"; backend is rejecting the
-      payload, not a camera-access issue — needs backend diagnosis (check `/perception/vision` handler,
-      image encoding, content-type expectations)
+- [x] Webcam CAPTURE returns HTTP 422 from backend — root cause: `video.videoWidth` is 0 when `play()`
+      resolves but before first frame decodes; fixed 2026-04-19 by awaiting `loadeddata` event in
+      `startCamera` and adding an explicit guard in `captureFrame`
 - [ ] No screen-capture section in Perception tab — skill checklist expects a screen-capture icon/indicator;
       Anima confirmed it has no screenshot tool (`read_screen` or similar not implemented)
 - [ ] No text-input channel indicator in Perception tab — skill checklist expects a dedicated text-input
@@ -26,8 +25,8 @@ Add items freely; remove or strike through when resolved.
 
 ### Activity / Log visualisation
 
-- [ ] Log depth panel shows a near-vertical straight line — time window is too narrow for the data density;
-      increase time window by ~10× to make activity patterns visible
+- [x] Log depth panel shows a near-vertical straight line — fixed 2026-04-19; increased rolling history
+      window from 10 to 100 samples (~50 min at 30s tick interval)
 
 ### Audio / TTS
 
