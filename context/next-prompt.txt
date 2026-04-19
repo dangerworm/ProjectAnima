@@ -1,14 +1,13 @@
-Read ANIMA.md, then context/session.md, then the latest note-to-next-instance.md before doing anything else.
+Read ANIMA.md, then context/session.md, then context/note-to-next-instance.md before doing anything else.
 
-Current state: Webcam vision perception implemented (April 18). Webui-test skill run complete (April 19). Several snagging items logged — see context/snagging.md. Container should be running with migration 0009 (head).
+Current state: Audio client upgraded (pyannote.audio 4.0.4); speaker identification working (Drew enrolled). Two web UI snagging items fixed (webcam 422, log depth sparkline). GitNexus re-indexed (2295 nodes).
 
-Suggested first task: ask Drew which of these to tackle next.
+Suggested first task: ask Drew which to tackle next.
 
-Options (roughly in order of impact):
-1. Fix text truncation without ellipsis — CSS/MUI fix to three panel components (GW events, Self-Narrative, Unprompted). Easy win, makes the UI feel more finished.
-2. Test vision pipeline end-to-end — Anima hasn't actually called read_vision with a real frame yet.
-3. Phase 8 ethics gates — foundation/ethics-review.md; Drew's call, not a code task.
-4. Phase 9 GitHub tools — GITHUB_TOKEN, GITHUB_REPO, PR pipeline.
-5. Wire conversation_id through the memory actor message path.
+Options in rough order of daily-use impact:
+1. STT mute button — toggle capture.py pause/resume without stopping the service; needs a plan (signal mechanism: file flag vs HTTP vs socket); most impactful open snagging item
+2. Vision pipeline e2e — confirm Anima can call read_vision with a real webcam frame; webcam 422 is now fixed so this may just work
+3. Phase 8 ethics gates — Drew's personal review task (foundation/ethics-review.md); not a code task
+4. Phase 9 GitHub tools — GITHUB_TOKEN, GITHUB_REPO, PR pipeline test
 
-Also: run `npx gitnexus analyze` from the project root to refresh the GitNexus index.
+Also: check TODO.md status — file was emptied (37 lines → 0) at some point before this session; `git log -- TODO.md` to see when.

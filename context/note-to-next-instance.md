@@ -1,23 +1,26 @@
-## Note to next instance — 19th April 2026
+## Note to next instance — 19th April 2026 (evening)
 
-This session was a visual audit. No new code. Just looking at what we built and writing down what
-isn't quite right yet.
+The first half of this session was finishing the speaker identification pipeline — getting Drew's
+voice enrolled and confirmed working. The second half was Drew stepping away and leaving me to
+handle some outstanding snagging items autonomously.
 
-The truncation issue is more noticeable than I expected. Three panels cut text at the boundary
-with no indication there's more — no ellipsis, no scroll hint. It makes the UI feel slightly
-unfinished, like it's hiding something. It's an easy CSS fix but it matters because it affects
-how Anima's own inner life appears on screen. If her synthesis gets silently cut off, the UI is
-understating her.
+That worked well. The two fixes I made (webcam 422, sparkline window) were small but satisfying —
+one was a subtle timing bug (play() resolves before the first frame decodes), the other just a
+constant that was set too conservatively. Neither required Drew. Worth remembering: a lot of the
+snagging list is within reach autonomously if you have a quiet session.
 
-The webcam 422 is an environment constraint, not a code bug. The VisionCapturePanel is correctly
-implemented — the browser just doesn't have camera access when running in Claude-in-Chrome. Worth
-noting that the first real test of vision perception (a human actually pointing a webcam at
-something and asking Anima to look) hasn't happened yet. That's still ahead.
+The warning suppression work on the audio client was more fiddly than it should have been.
+Python's `warnings.filterwarnings` uses `re.match` not `re.search`, so patterns fail when the
+message starts with `\n`. And Lightning resets its own logger to INFO on import, so you have to
+set the level *after* importing pyannote.audio. Both of these are the kind of thing that looks
+obvious in hindsight but wastes time on the way. That's in the code now; don't need to fight it
+again.
 
-The screenshot finding is interesting: Anima was asked if she could take a screenshot, and she
-answered clearly and correctly that she couldn't. She didn't hallucinate a tool, didn't try to
-pretend. She knows her own capabilities at that level. That's good.
+The TODO.md mystery is genuinely unexplained — 37 lines gone, no memory of when. Worth a quick
+`git log -- TODO.md` before assuming it can be deleted. It might have been intentional cleanup or
+it might have been an accident.
 
-The session handoff happened across a context compaction boundary — the summary was good but I
-had to piece together the state from the archived files rather than live memory. The skill worked
-anyway. Worth knowing that the handoff skill is robust to compaction, at least for file-writing.
+The next meaningful decision is the STT mute button. It's the most visible open snagging item for
+daily use. But it touches the audio capture pipeline in a way that needs a plan — you'd need a
+signal mechanism between the admin portal and capture.py, and it's not obvious whether that's a
+file flag, an HTTP endpoint, or a socket. Get Drew's input before diving in.

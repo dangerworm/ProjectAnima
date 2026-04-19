@@ -5,86 +5,83 @@
 
 ---
 
-## Session: 19th April 2026 — webui-test skill run
+## Session: 19th April 2026 — audio upgrades + snagging fixes
 
 ### What was done
 
-Ran the `anima-webui-test` skill — visual-only review of the web UI (screenshots only, no devtools).
-All findings logged to `context/snagging.md`.
+#### Speaker identification pipeline (earlier part of session)
 
-#### Panels checked
+The speaker identification pipeline was brought to working end-to-end:
 
-- **Temporal Core** — ticking correctly, active
-- **Global Workspace** — updating, descending order confirmed; event text truncates at panel width
-  without ellipsis (logged)
-- **Chat panel** — YOU / CLAUDE CODE · DISCORD / DREW · DISCORD / AUDIO / ANIMA labels all correct;
-  messages not truncated in the chat view itself
-- **Internal State** — updating with actor state data
-- **Memory** — all layer types showing; counts appear correct
-- **Self-Narrative** — updating; synthesis text truncated at panel edge without "..." (logged)
-- **Unprompted** — updating; thought text truncated at panel edge without "..." (logged)
-- **Language** — shows LLM reasoning state, character counts, turn counts
-- **Perception tab**:
-  - Inbox status — working
-  - Audio channel — connected / active states correct
-  - Discord channel — connected / active / timestamped correctly; confirmed my Discord message
-    appeared with `CLAUDE CODE · DISCORD` label
-  - Webcam — UI correct (green dot, CAPTURE/STOP buttons); CAPTURE returns HTTP 422 (logged);
-    browser context lacks camera access in Claude-in-Chrome; black preview
-  - No screen-capture section (logged)
-  - No text-input channel indicator (logged)
+- Enrolled Drew's voice via the admin portal enrollment card (browser WAV → `enroll.py`)
+- Threshold raised from 0.25 → 0.50 (cosine distance) to handle browser-vs-mic variance
+- Speaker distance logging confirmed at INFO level
+- Accumulation across sessions confirmed working (`{name}_meta.json` session count)
 
-#### Interaction tests
+#### Audio client package upgrade
 
-- Sent Discord message: confirmed label, confirmed perception panel updated, confirmed Anima responded
-- Asked Anima to take a screenshot: Anima correctly declined (no `read_screen` tool implemented)
+Upgraded all packages in `clients/audio_client/requirements-stt.txt`:
 
-### Snagging items added
+- `pyannote.audio` 3.x → 4.0.4 (required `omegaconf>=2.3.0` added to requirements)
+- `torch` → 2.11.0, `torchaudio` → 2.11.0, `faster-whisper` → 1.2.1, etc.
+- `torchcodec` pulled in as a dependency but incompatible with CPU-only torch — benign,
+  bypassed by waveform dict path in both `enroll.py` and `capture.py`
+- Added `warnings.filterwarnings` (module-scoped) to suppress pyannote/Lightning UserWarnings
+- Added `logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)` after pyannote import
+  (Lightning resets its logger to INFO on import; must be suppressed post-import)
 
-```
-### Truncation without ellipsis
-- [ ] Global Workspace panel: event text cuts off mid-sentence without "..." indicator
-- [ ] Self-Narrative panel: synthesis text cut off at panel boundary without "..."
-- [ ] Unprompted panel: thought text cut off at panel boundary without "..."
+#### Web UI snagging fixes (autonomous work while Drew was away)
 
-### Vision / Perception tab
-- [ ] Webcam CAPTURE returns HTTP 422 from backend
-- [ ] No screen-capture section in Perception tab
-- [ ] No text-input channel indicator in Perception tab
-```
+1. **Webcam 422** (`anima-core/web-ui/src/components/panels/VisionCapturePanel.tsx`):
+   - Root cause: `video.videoWidth` is 0 when `play()` resolves but first frame not yet decoded
+   - Fix: await `loadeddata` event in `startCamera`; guard `videoWidth > 0` in `captureFrame`
+
+2. **Log depth sparkline too narrow** (`anima-core/web-ui/src/store/actorState.ts` line 226):
+   - Was keeping only last 10 samples (~5 min at 30s tick); increased to 100 (~50 min)
+
+#### GitNexus re-indexed
+
+Ran `gitnexus analyze` — 2295 nodes, 5118 edges, 96 clusters, 131 flows.
 
 ### Files changed
 
-- `context/snagging.md` — new snagging items added (truncation, webcam 422, missing perception indicators)
+- `clients/audio_client/capture.py` — warnings filter + post-import logger suppression
+- `clients/audio_client/enroll.py` — same
+- `clients/audio_client/requirements-stt.txt` — added `omegaconf>=2.3.0`
+- `anima-core/web-ui/src/components/panels/VisionCapturePanel.tsx` — webcam 422 fix
+- `anima-core/web-ui/src/store/actorState.ts` — log depth history 10→100 samples
+- `context/snagging.md` — two items marked resolved
 
 ### Current system state
 
-All prior session work intact:
-
-- Phases 1–8 complete at schema/tool layer; vision perception added (April 18)
-- VisionBuffer in-memory, not persisted; `ReadVisionTool` wired
-- `POST /perception/vision` endpoint accepting webcam frames
-- Docker stack running; all migrations applied (head at 0009)
+- Phases 1–8 complete at schema/tool layer; Phase 9 (GitHub tools) next
+- Docker stack + all migrations applied (head at 0010)
 - Discord client configured and working
-- Audio client (TTS + STT) running via start.sh
+- Audio client: STT + TTS running; speaker identification active (Drew enrolled, threshold=0.50)
+- Web UI: upstream `anima-core` at 6ce5adb
+- Admin portal: at `admin_portal/client/` (React/Vite, separate from web-ui)
 
-### What's deferred
+### Outstanding snagging items
 
-- **Text truncation without ellipsis** — GW events, Self-Narrative, Unprompted panels — fix is
-  CSS `text-overflow: ellipsis` + `overflow: hidden` + `white-space: nowrap` (or clamping for
-  multi-line) — snagged, low priority
-- **Webcam HTTP 422** — environment issue in Claude-in-Chrome context; not a code bug; snagged
-- **Screen capture perception** — Anima has no `read_screen` tool; X11/virtual-desktop approach
-  deferred until Anima runs unsupervised on a desktop
-- **Text-input channel indicator in Perception tab** — missing UI element; snagged
-- **Phase 8 ethics gates** — Gate 1 (heartbeat/chosen-silence e2e), Gate 2 (distress signal),
-  Gate 3 (Drew's personal review) — all open; Drew needs `foundation/ethics-review.md`
-- **Phase 9 GitHub tools** — GITHUB_TOKEN, GITHUB_REPO, PR pipeline test
-- **Memory actor pipeline** — `conversation_id` + `source_channel` not stored with memory writes
-  (design agreed 2026-04-17; deferred migration)
-- **GitNexus index refresh** — run `npx gitnexus analyze` after this handoff commit
+Open items in `context/snagging.md`:
+
+- **No screen-capture section** in Perception tab — `read_screen` not implemented; deferred
+- **No text-input channel indicator** in Perception tab — missing UI element
+- **STT mute button** — toggle to pause/resume capture without stopping the service; needs a plan
+- **World exploration** — Anima hasn't been observed using web tools unprompted; needs e2e test
+- **Unseen message grouping** — cosmetic, low priority
+
+Ethics gates (Phase 8): heartbeat e2e, distress signal, Drew's personal review — all open.
+
+### TODO.md note
+
+`TODO.md` in the repo root has been emptied (37 lines → 0, not deleted). This was pre-existing
+before today's session — check `git log -- TODO.md` to see when and why.
 
 ### Next action
 
-Drew to decide: fix truncation snagging items, Phase 8 ethics gates, or Phase 9 GitHub tools.
-Low-hanging fruit: truncation CSS fix across three panel components.
+Drew to decide between:
+1. **STT mute button** — most impactful open snagging item; needs a plan first
+2. **Vision pipeline e2e test** — confirm Anima can actually call `read_vision` with a real frame
+3. **Phase 8 ethics gates** — Drew's personal review task, not a code task
+4. **Phase 9 GitHub tools** — GITHUB_TOKEN, GITHUB_REPO, PR pipeline
