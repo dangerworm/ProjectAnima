@@ -25,6 +25,10 @@ import queue
 import sys
 import threading
 import time
+import warnings
+
+warnings.filterwarnings("ignore", module=r"pyannote\.audio")
+warnings.filterwarnings("ignore", module=r"lightning\.pytorch")
 from pathlib import Path
 
 import numpy as np
@@ -90,6 +94,8 @@ def _load_speaker_models(device: str):
 
     try:
         from pyannote.audio import Model, Inference
+        import logging as _logging
+        _logging.getLogger("lightning.pytorch").setLevel(_logging.ERROR)
         log.info("Loading speaker embedding model…")
         model = Model.from_pretrained("pyannote/embedding", use_auth_token=hf_token)
         inference = Inference(model, window="whole")

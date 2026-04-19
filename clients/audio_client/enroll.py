@@ -17,6 +17,10 @@ import json
 import os
 import re
 import sys
+import warnings
+
+warnings.filterwarnings("ignore", module=r"pyannote\.audio")
+warnings.filterwarnings("ignore", module=r"lightning\.pytorch")
 from pathlib import Path
 
 import numpy as np
@@ -37,6 +41,8 @@ def extract_embedding(wav_path: Path) -> np.ndarray:
         sys.exit(1)
 
     from pyannote.audio import Model, Inference
+    import logging as _logging
+    _logging.getLogger("lightning.pytorch").setLevel(_logging.ERROR)
 
     print(f"Loading embedding model '{MODEL_ID}'...")
     model = Model.from_pretrained(MODEL_ID, use_auth_token=hf_token)
