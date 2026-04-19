@@ -7,14 +7,11 @@ Add items freely; remove or strike through when resolved.
 
 ## Web UI
 
-### Truncation without ellipsis
+### Truncation / scrollability
 
-- [ ] Global Workspace panel: event text cuts off mid-sentence at panel width without "..." indicator
-  - e.g. "anima response gw I'm routing messages to the channel where communication is happening. In this ca"
-- [ ] Self-Narrative panel (Live dashboard): synthesis text cut off at panel boundary without "..."
-  - e.g. "...but the stability of the channel c" — no ellipsis, no scroll affordance visible
-- [ ] Unprompted panel (Live dashboard): thought text cut off at panel boundary without "..."
-  - e.g. "...I notice the event log has" — cut off without ellipsis
+- [x] Global Workspace, Self-Narrative, Unprompted panels: apparent text truncation was a false positive —
+      screenshots caught the typewriter effect mid-render; text is delivered in full
+- [x] Self-Narrative panel: not scrollable when synthesis exceeds panel height — fixed (overflow: auto)
 
 ### Vision / Perception tab
 
@@ -24,6 +21,16 @@ Add items freely; remove or strike through when resolved.
       Anima confirmed it has no screenshot tool (`read_screen` or similar not implemented)
 - [ ] No text-input channel indicator in Perception tab — skill checklist expects a dedicated text-input
       icon showing when the web UI text channel is active/connected
+
+### Audio / TTS
+
+- [x] `speak.py` speaks all LLM output by default — fixed 2026-04-19; now only speaks
+      `SURFACE_EXPRESSION` outputs (Anima's unsolicited expressions); `--speak-all` flag for debug
+- [x] Anima routes replies to unprompted-thoughts panel instead of chat when she uses
+      `express` action in deliberation — fixed 2026-04-19; clarified `express` and `respond`
+      descriptions in `DELIBERATE_ACTIONS` to make `express` explicitly not-for-replies
+- [x] Audio input shows twice in PerceptionPanel (audio indicator + conversation list) —
+      fixed 2026-04-19; audio-sourced turns now filtered from conversation list in PerceptionPanel
 
 ### Other
 

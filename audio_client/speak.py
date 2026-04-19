@@ -1,9 +1,9 @@
 """
 TTS client for Project Anima — uses Microsoft edge-tts (neural quality).
 
-Connects to the Anima WebSocket and speaks Anima's expressions through
-edge-tts (synthesises to MP3 via Microsoft's neural TTS API) then plays
-via sounddevice so the output device can be chosen explicitly.
+Connects to the Anima WebSocket and speaks Anima's unsolicited expressions —
+i.e. only language_output messages where in_response_to == 'SURFACE_EXPRESSION'.
+Replies to human messages are intentionally not spoken (they go to the chat UI).
 
 Backpressure: if queued speech would exceed MAX_QUEUED_WORDS, new
 expressions are dropped rather than letting the audio queue grow unbounded.
@@ -14,7 +14,7 @@ Usage:
     python speak.py --device 3                   # play through device 3
     python speak.py --list-voices                # show available neural voices
     python speak.py --voice en-GB-SoniaNeural    # pick a voice
-    python speak.py --solicited-only             # skip unprompted thoughts
+    python speak.py --speak-all                  # speak all LLM output (debug only)
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def run(
     backend_ws_url: str,
     voice: str,
     device: int | None,
-    solicited_only: bool,
+    speak_all: bool,
 ) -> None:
     speech_queue: queue.Queue[str | None] = queue.Queue()
     _lock = threading.Lock()
@@ -128,7 +128,7 @@ def run(
             return
         if msg.get("type") != "language_output":
             return
-        if solicited_only and msg.get("in_response_to") == "SURFACE_EXPRESSION":
+        if not speak_all and msg.get("in_response_to") != "SURFACE_EXPRESSION":
             return
         content = msg.get("content", "").strip()
         if content:
@@ -168,7 +168,7 @@ def main() -> None:
     parser.add_argument("--backend-url", default="ws://localhost:8000/ws")
     parser.add_argument("--voice", default=DEFAULT_VOICE, help=f"edge-tts voice (default: {DEFAULT_VOICE})")
     parser.add_argument("--device", type=int, default=None, help="sounddevice output index (--list-devices to find)")
-    parser.add_argument("--solicited-only", action="store_true", help="Only speak replies, not background thoughts")
+    parser.add_argument("--speak-all", action="store_true", help="Speak all LLM output including replies (default: expressions only)")
     parser.add_argument("--list-devices", action="store_true", help="Print output devices and exit")
     parser.add_argument("--list-voices", action="store_true", help="Print available edge-tts voices and exit")
     args = parser.parse_args()
@@ -188,7 +188,7 @@ def main() -> None:
         backend_ws_url=args.backend_url,
         voice=args.voice,
         device=args.device,
-        solicited_only=args.solicited_only,
+        speak_all=args.speak_all,
     )
 
 

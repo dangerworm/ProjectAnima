@@ -93,7 +93,7 @@ TTS_ARGS="--backend-url $BACKEND_URL --voice $TTS_VOICE"
 [[ -n "$TTS_DEVICE" ]]      && TTS_ARGS="$TTS_ARGS --device $TTS_DEVICE"
 [[ "$TTS_SOLICITED_ONLY" == "1" ]] && TTS_ARGS="$TTS_ARGS --solicited-only"
 
-python "$AUDIO_DIR/speak.py" $TTS_ARGS > "$LOG_DIR/tts.log" 2>&1 &
+"$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/speak.py" $TTS_ARGS > "$LOG_DIR/tts.log" 2>&1 &
 TTS_PID=$!
 ok "TTS running (PID $TTS_PID) — logs: logs/tts.log"
 
@@ -103,7 +103,7 @@ inf "Starting STT (capture.py)..."
 STT_ARGS="--model $STT_MODEL"
 [[ -n "$STT_DEVICE" ]] && STT_ARGS="$STT_ARGS --device $STT_DEVICE"
 
-python "$AUDIO_DIR/capture.py" $STT_ARGS > "$LOG_DIR/stt.log" 2>&1 &
+"$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/capture.py" $STT_ARGS > "$LOG_DIR/stt.log" 2>&1 &
 STT_PID=$!
 ok "STT running (PID $STT_PID) — logs: logs/stt.log"
 
@@ -119,7 +119,7 @@ DISCORD_PID=""
 if [[ -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]]; then
     inf "Starting Discord client..."
     DISCORD_BOT_TOKEN="$DISCORD_BOT_TOKEN" DISCORD_CHANNEL_ID="$DISCORD_CHANNEL_ID" \
-        python "$DISCORD_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
+        "$DISCORD_DIR/.venv/Scripts/python" "$DISCORD_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
     DISCORD_PID=$!
     ok "Discord client running (PID $DISCORD_PID) — logs: logs/discord.log"
 else
