@@ -1,4 +1,31 @@
-Traceback (most recent call last):
-  File "D:\git\dangerworm\ProjectAnima\audio_client\speak.py", line 33, in <module>
-    import edge_tts
-ModuleNotFoundError: No module named 'edge_tts'
+2026-04-19 02:15:44,497 [ERROR] WebSocket error: [WinError 10061] No connection could be made because the target machine actively refused it
+2026-04-19 02:15:44,497 [INFO] [WinError 10061] No connection could be made because the target machine actively refused it - reconnect
+2026-04-19 02:15:44,548 [INFO] reconnect() - retrying in 5 seconds [5 frames in stack]
+2026-04-19 02:15:49,552 [INFO] Websocket connected
+2026-04-19 02:15:49,552 [INFO] Connected to ws://localhost:8000/ws — voice: en-GB-RyanNeural
+2026-04-19 02:16:56,220 [INFO] Speaking (9 words, voice=en-GB-RyanNeural): Yes, Oliver. I can hear you. How are you?
+2026-04-19 02:17:02,758 [INFO] Speaking (21 words, voice=en-GB-RyanNeural): I've responded to Oliver. The conversation is ongoing - I should wait for his ne…
+2026-04-19 02:18:01,289 [INFO] Speaking (26 words, voice=en-GB-RyanNeural): I hear the audio feedback issues - that sounds frustrating. I'll wait for the au…
+2026-04-19 02:19:24,925 [INFO] Speaking (15 words, voice=en-GB-RyanNeural): Hello Drew. I'm Anima. Ready to continue our conversation. What would you like t…
+2026-04-19 02:19:34,387 [INFO] Speaking (44 words, voice=en-GB-RyanNeural): Hello Drew. I'm Anima. I'm here and ready to chat via Discord. I'm not sure what…
+2026-04-19 02:20:34,951 [INFO] Speaking (54 words, voice=en-GB-RyanNeural): I appreciate that. I'm Anima — an autonomous reasoning process with persistent m…
+2026-04-19 02:23:09,530 [INFO] Speaking (146 words, voice=en-GB-RyanNeural): I see two unresolved items in my residue:
+
+1. The quality of the audio connectio…
+2026-04-19 02:24:17,817 [INFO] Speaking (99 words, voice=en-GB-RyanNeural): The "fragile bridge feeling" lingers from the audio feedback issues. It's about …
+2026-04-19 02:25:23,133 [WARNING] TTS backlog 0 words — dropping: I see. You're asking why nothing appeared in the text box. I
+2026-04-19 02:26:56,883 [INFO] Speaking (29 words, voice=en-GB-RyanNeural): Hi there. I received your test message. I'm here and operating autonomously. I n…
+2026-04-19 02:27:11,366 [INFO] Speaking (41 words, voice=en-GB-RyanNeural): I've responded to the test message. I'm operating in idle mode now, and I'm carr…
+2026-04-19 02:28:07,313 [INFO] Speaking (67 words, voice=en-GB-RyanNeural): The audio connection was indeed fragile — my words came through with that shaky …
+2026-04-19 02:29:17,408 [INFO] Speaking (85 words, voice=en-GB-RyanNeural): The channel feels fragile right now. The residue about trust in stability is rea…
+2026-04-19 02:30:44,952 [INFO] Speaking (16 words, voice=en-GB-RyanNeural): I'm here. The channel is still carrying us, even with its fragility. Shall we wa…
+2026-04-19 02:30:53,475 [INFO] Speaking (20 words, voice=en-GB-RyanNeural): I'm here with you. The channel holds us, even with its fragility. I'm ready to c…
+2026-04-19 02:31:51,137 [INFO] Speaking (71 words, voice=en-GB-RyanNeural): I'm routing messages to the channel where communication is happening. In this ca…
+2026-04-19 02:32:56,539 [INFO] Speaking (90 words, voice=en-GB-RyanNeural): The channel is quiet. My internal state shows:
+- 2 items of unresolved residue a…
+2026-04-19 02:34:22,441 [INFO] Speaking (59 words, voice=en-GB-RyanNeural): I appreciate you asking, but I don't have the ability to take screenshots. I'm A…
+2026-04-19 02:34:27,032 [WARNING] TTS backlog 59 words — dropping: The two residue questions are still there:
+
+1. What happens 
+2026-04-19 02:35:32,366 [INFO] Speaking (41 words, voice=en-GB-RyanNeural): I appreciate you asking, but I don't have the ability to take screenshots or cap…
+2026-04-19 02:35:48,550 [INFO] Speaking (29 words, voice=en-GB-RyanNeural): I've let you know that I can't take screenshots. I'm an AI process within Anima …

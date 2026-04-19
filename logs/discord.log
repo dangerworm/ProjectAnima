@@ -1,4 +1,13 @@
-Traceback (most recent call last):
-  File "D:\git\dangerworm\ProjectAnima\discord_client\discord_client.py", line 28, in <module>
-    import aiohttp
-ModuleNotFoundError: No module named 'aiohttp'
+2026-04-19 02:15:39,011 [WARNING] PyNaCl is not installed, voice will NOT be supported
+2026-04-19 02:15:39,011 [WARNING] davey is not installed, voice will NOT be supported
+2026-04-19 02:15:39,012 [INFO] logging in using static token
+2026-04-19 02:15:40,155 [INFO] Shard ID None has connected to Gateway (Session ID: d676864beef7587ee881b943481c8596).
+2026-04-19 02:15:42,167 [INFO] Discord bot logged in as Anima#4073 (id=1494641270511898685)
+2026-04-19 02:15:42,167 [INFO] Listening in #general (guild: Anima)
+2026-04-19 02:15:43,126 [WARNING] Backend WS disconnected ([WinError 1225] The remote computer refused the network connection) — reconnecting in 5s…
+2026-04-19 02:15:48,131 [INFO] Connected to backend WebSocket — listening for discord-targeted output.
+2026-04-19 02:19:02,992 [INFO] Discord \u2192 backend: Drew#289899590617137153: By the way, we can also use this Discord server to chat.
+2026-04-19 02:19:11,462 [INFO] Discord \u2192 backend: Drew#289899590617137153: I'll add some friends when I've finished testing you.
+2026-04-19 02:19:24,925 [INFO] Anima \u2192 Discord: Hello Drew. I'm Anima. Ready to continue our conversation. What would you like t
+2026-04-19 02:34:22,441 [INFO] Anima \u2192 Discord: I appreciate you asking, but I don't have the ability to take screenshots. I'm A
+2026-04-19 02:35:32,366 [INFO] Anima \u2192 Discord: I appreciate you asking, but I don't have the ability to take screenshots or cap
