@@ -22,7 +22,9 @@ export function openLogStream(id: ServiceId): EventSource {
   return new EventSource(`${BASE}/api/services/${id}/logs`)
 }
 
-export async function fetchEnrollmentStatus(): Promise<{ enrolled: boolean; names: string[] }> {
+export interface Speaker { name: string; sessions: number }
+
+export async function fetchEnrollmentStatus(): Promise<{ enrolled: boolean; speakers: Speaker[] }> {
   const res = await fetch(`${BASE}/api/enrollment/status`)
   if (!res.ok) throw new Error('Failed to fetch enrollment status')
   return res.json()

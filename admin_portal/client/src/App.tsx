@@ -13,6 +13,7 @@ export default function App() {
   const [services, setServices] = useState<ServiceInfo[]>([])
   const [pending, setPending] = useState<Set<ServiceId>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [selectedLog, setSelectedLog] = useState<ServiceId>('docker')
 
   const poll = useCallback(async () => {
     try {
@@ -31,6 +32,7 @@ export default function App() {
   }, [poll])
 
   const handleStart = async (id: ServiceId) => {
+    setSelectedLog(id)
     setPending(p => new Set(p).add(id))
     try {
       await startService(id)
@@ -83,6 +85,7 @@ export default function App() {
                       pending={pending.has(svc.id)}
                       onStart={() => handleStart(svc.id)}
                       onStop={() => handleStop(svc.id)}
+                      onFocus={() => setSelectedLog(svc.id)}
                       index={i}
                     />
                   ))}
@@ -94,7 +97,7 @@ export default function App() {
 
         <div className="right-panel">
           <EnrollmentCard />
-          <LogPanel services={services} />
+          <LogPanel services={services} selected={selectedLog} onSelect={setSelectedLog} />
         </div>
       </div>
     </div>

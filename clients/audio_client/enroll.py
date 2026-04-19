@@ -1,18 +1,19 @@
 """
 Voice enrollment for Project Anima speaker identification.
 
-Extracts a speaker embedding from a WAV file and saves it to
-enrollments/{name}_embedding.npy alongside this script.
+Extracts a speaker embedding from a WAV file and blends it into the stored
+mean embedding for that name. Each call is one enrollment session; subsequent
+sessions refine the centroid rather than replacing it.
 
 Usage:
     python enroll.py --name drew --wav <path/to/recording.wav>
 
-The WAV file should be 8-30 s of clean speech (no background music, minimal noise).
 Requires HF_TOKEN environment variable set to a Hugging Face access token with
 access to pyannote/embedding (accept usage conditions at huggingface.co/pyannote/embedding).
 """
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -48,21 +49,33 @@ def extract_embedding(wav_path: Path) -> np.ndarray:
         audio = audio.mean(axis=1)  # stereo to mono
     waveform = torch.from_numpy(audio.astype(np.float32)).unsqueeze(0)  # (1, T)
     embedding = inference({"waveform": waveform, "sample_rate": sr})
-    vec = np.squeeze(embedding)
+    return np.squeeze(embedding)
 
-    print(f"Embedding extracted: dim={vec.shape[0]}")
-    return vec
+
+def accumulate(name: str, new_vec: np.ndarray) -> int:
+    """Blend new_vec into the stored mean for name. Returns the new session count."""
+    ENROLLMENTS_DIR.mkdir(exist_ok=True)
+    emb_path  = ENROLLMENTS_DIR / f"{name}_embedding.npy"
+    meta_path = ENROLLMENTS_DIR / f"{name}_meta.json"
+
+    if emb_path.exists() and meta_path.exists():
+        old_vec = np.load(emb_path)
+        n = json.loads(meta_path.read_text())["sessions"]
+        mean_vec = (old_vec * n + new_vec) / (n + 1)
+        sessions = n + 1
+    else:
+        mean_vec = new_vec
+        sessions = 1
+
+    np.save(emb_path, mean_vec)
+    meta_path.write_text(json.dumps({"sessions": sessions}))
+    return sessions
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Enroll a speaker for Anima voice identification")
     parser.add_argument("--name", required=True, help="Speaker name (alphanumeric, hyphens, underscores)")
-    parser.add_argument("--wav", required=True, help="Path to WAV recording (8-30 s of speech)")
-    parser.add_argument(
-        "--output",
-        default=None,
-        help="Override output path for the .npy embedding",
-    )
+    parser.add_argument("--wav", required=True, help="Path to WAV recording")
     args = parser.parse_args()
 
     if not _SAFE_NAME.match(args.name):
@@ -74,16 +87,11 @@ def main() -> None:
         print(f"ERROR: file not found: {wav_path}", file=sys.stderr)
         sys.exit(1)
 
-    embedding = extract_embedding(wav_path)
+    vec = extract_embedding(wav_path)
+    print(f"Embedding extracted: dim={vec.shape[0]}")
 
-    if args.output:
-        output_path = Path(args.output)
-    else:
-        ENROLLMENTS_DIR.mkdir(exist_ok=True)
-        output_path = ENROLLMENTS_DIR / f"{args.name}_embedding.npy"
-
-    np.save(output_path, embedding)
-    print(f"Saved enrollment embedding -> {output_path}")
+    sessions = accumulate(args.name, vec)
+    print(f"Enrollment updated for '{args.name}' (session {sessions})")
 
 
 if __name__ == "__main__":

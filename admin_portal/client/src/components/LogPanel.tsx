@@ -4,6 +4,8 @@ import { openLogStream } from '../api/client'
 
 interface Props {
   services: ServiceInfo[]
+  selected: ServiceId
+  onSelect: (id: ServiceId) => void
 }
 
 type LogClass = 'default' | 'info' | 'warning' | 'error'
@@ -18,8 +20,7 @@ function classifyLine(line: string): LogClass {
 
 const MAX_LINES = 500
 
-export function LogPanel({ services }: Props) {
-  const [selected, setSelected] = useState<ServiceId>('docker')
+export function LogPanel({ services, selected, onSelect }: Props) {
   const [lines, setLines] = useState<string[]>([])
   const [pinned, setPinned] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -80,12 +81,13 @@ export function LogPanel({ services }: Props) {
           <button
             key={svc.id}
             className={`log-tab ${svc.status} ${selected === svc.id ? 'active' : ''}`}
-            onClick={() => setSelected(svc.id)}
+            onClick={() => onSelect(svc.id)}
           >
             <span className="log-tab-dot" />
             {svc.label}
           </button>
         ))}
+        <button className="log-clear-btn" onClick={() => setLines([])}>Clear</button>
       </div>
 
       <div

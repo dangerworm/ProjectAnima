@@ -1,10 +1,26 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { fetchEnrollmentStatus, uploadEnrollmentWav } from '../api/client'
+import { fetchEnrollmentStatus, uploadEnrollmentWav, type Speaker } from '../api/client'
 
 type Phase = 'idle' | 'countdown' | 'recording' | 'processing' | 'done' | 'error'
 
-const RECORD_SECS = 10
+const MAX_RECORD_SECS = 60
 const COUNTDOWN_SECS = 3
+
+function playTone(startHz: number, endHz: number, durationMs: number, volume = 0.18) {
+  const ctx = new AudioContext()
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.connect(gain)
+  gain.connect(ctx.destination)
+  osc.type = 'sine'
+  osc.frequency.setValueAtTime(startHz, ctx.currentTime)
+  osc.frequency.linearRampToValueAtTime(endHz, ctx.currentTime + durationMs / 1000)
+  gain.gain.setValueAtTime(volume, ctx.currentTime)
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000)
+  osc.start(ctx.currentTime)
+  osc.stop(ctx.currentTime + durationMs / 1000)
+  osc.onended = () => ctx.close()
+}
 
 // Decode browser audio (WebM/Opus) via AudioContext and re-encode as 16-bit
 // PCM WAV at 16 kHz so soundfile can read it without needing ffmpeg.
@@ -43,17 +59,17 @@ async function decodeToWav(blob: Blob): Promise<Blob> {
 }
 
 const PROMPTS = [
-  'The quick brown fox jumps over the lazy dog.',
-  'Good morning. I have been thinking about what it means to remember.',
-  'Project Anima is learning to recognise the people it talks with.',
+  'What did you do last weekend?',
+  'Describe somewhere you\'ve visited that you\'d recommend to a friend.',
+  'What\'s something you\'ve been thinking about recently?',
 ]
 
 export function EnrollmentCard() {
-  const [enrolledNames, setEnrolledNames] = useState<string[] | null>(null)
+  const [speakers, setSpeakers] = useState<Speaker[] | null>(null)
   const [name, setName] = useState('')
   const [phase, setPhase] = useState<Phase>('idle')
   const [countdown, setCountdown] = useState(COUNTDOWN_SECS)
-  const [progress, setProgress] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const [message, setMessage] = useState('')
 
   const mediaRef = useRef<MediaRecorder | null>(null)
@@ -62,10 +78,10 @@ export function EnrollmentCard() {
 
   const checkStatus = useCallback(async () => {
     try {
-      const { names } = await fetchEnrollmentStatus()
-      setEnrolledNames(names)
+      const { speakers: s } = await fetchEnrollmentStatus()
+      setSpeakers(s)
     } catch {
-      setEnrolledNames([])
+      setSpeakers([])
     }
   }, [])
 
@@ -116,14 +132,15 @@ export function EnrollmentCard() {
     }
 
     recorder.start()
+    playTone(880, 1320, 120)
     setPhase('recording')
-    setProgress(0)
+    setElapsed(0)
 
-    let elapsed = 0
+    let secs = 0
     timerRef.current = setInterval(() => {
-      elapsed += 0.1
-      setProgress(Math.min(elapsed / RECORD_SECS, 1))
-      if (elapsed >= RECORD_SECS) {
+      secs += 0.1
+      setElapsed(secs)
+      if (secs >= MAX_RECORD_SECS) {
         clearTimer()
         recorder.stop()
       }
@@ -149,27 +166,38 @@ export function EnrollmentCard() {
     clearTimer()
     if (mediaRef.current?.state === 'recording') {
       mediaRef.current.stream.getTracks().forEach(t => t.stop())
+      mediaRef.current.ondataavailable = null
+      mediaRef.current.onstop = null
       mediaRef.current.stop()
     }
     setPhase('idle')
-    setProgress(0)
+    setElapsed(0)
+  }
+
+  const stopRecording = () => {
+    clearTimer()
+    if (mediaRef.current?.state === 'recording') {
+      playTone(880, 660, 200)
+      mediaRef.current.stop()
+    }
   }
 
   const reset = () => {
     setPhase('idle')
-    setProgress(0)
+    setElapsed(0)
     setMessage('')
   }
 
-  const enrolled = enrolledNames !== null && enrolledNames.length > 0
-  const statusDot = enrolledNames === null ? 'stopped' : enrolled ? 'running' : 'stopped'
-  const statusText = enrolledNames === null
+  const enrolled = speakers !== null && speakers.length > 0
+  const statusDot = speakers === null ? 'stopped' : enrolled ? 'running' : 'stopped'
+  const statusText = speakers === null
     ? 'Checking…'
     : enrolled
-      ? enrolledNames.join(', ')
+      ? speakers.map(s => `${s.name} (${s.sessions})`).join(', ')
       : 'None enrolled'
 
   const nameValid = /^[a-zA-Z0-9_-]+$/.test(name.trim())
+  const existingSpeaker = speakers?.find(s => s.name === name.trim())
 
   return (
     <div className="enrollment-card">
@@ -200,14 +228,14 @@ export function EnrollmentCard() {
             onClick={startRecording}
             disabled={!nameValid}
           >
-            {enrolledNames?.includes(name.trim()) ? 'Re-enroll' : 'Enroll voice'}
+            {existingSpeaker ? `Add session (${existingSpeaker.sessions} recorded)` : 'Enroll voice'}
           </button>
         </div>
       )}
 
       {(phase === 'countdown' || phase === 'recording') && (
         <div className="enrollment-script">
-          <div className="enrollment-script-label">Read aloud:</div>
+          <div className="enrollment-script-label">Answer out loud:</div>
           {PROMPTS.map((p, i) => (
             <div key={i} className="enrollment-script-line">{p}</div>
           ))}
@@ -224,12 +252,13 @@ export function EnrollmentCard() {
       {phase === 'recording' && (
         <div className="enrollment-recording">
           <div className="enrollment-progress-bar">
-            <div className="enrollment-progress-fill" style={{ width: `${progress * 100}%` }} />
+            <div className="enrollment-progress-fill" style={{ width: `${Math.min(elapsed / MAX_RECORD_SECS, 1) * 100}%` }} />
           </div>
           <div className="enrollment-recording-label">
-            Recording… {Math.ceil(RECORD_SECS - progress * RECORD_SECS)}s remaining
+            <span>Recording… {Math.floor(elapsed)}s</span>
+            {elapsed >= MAX_RECORD_SECS - 5 && <span>Max {MAX_RECORD_SECS}s</span>}
           </div>
-          <button className="enrollment-btn-cancel" onClick={cancel}>Stop early</button>
+          <button className="enrollment-btn" onClick={stopRecording}>Stop recording</button>
         </div>
       )}
 

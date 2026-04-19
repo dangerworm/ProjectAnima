@@ -376,12 +376,19 @@ _SAFE_NAME_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 @app.get("/api/enrollment/status")
 def enrollment_status() -> dict:
     if not ENROLLMENTS_DIR.exists():
-        return {"enrolled": False, "names": []}
-    names = [
-        f.stem.replace("_embedding", "")
-        for f in sorted(ENROLLMENTS_DIR.glob("*_embedding.npy"))
-    ]
-    return {"enrolled": bool(names), "names": names}
+        return {"enrolled": False, "speakers": []}
+    speakers = []
+    for f in sorted(ENROLLMENTS_DIR.glob("*_embedding.npy")):
+        name = f.stem.replace("_embedding", "")
+        meta_path = ENROLLMENTS_DIR / f"{name}_meta.json"
+        sessions = 1
+        if meta_path.exists():
+            try:
+                sessions = json.loads(meta_path.read_text())["sessions"]
+            except Exception:
+                pass
+        speakers.append({"name": name, "sessions": sessions})
+    return {"enrolled": bool(speakers), "speakers": speakers}
 
 
 @app.post("/api/enrollment/record")

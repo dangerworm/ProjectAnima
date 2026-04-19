@@ -6,10 +6,11 @@ interface Props {
   pending: boolean
   onStart: () => void
   onStop: () => void
+  onFocus: () => void
   index: number
 }
 
-export function ServiceCard({ service, pending, onStart, onStop, index }: Props) {
+export function ServiceCard({ service, pending, onStart, onStop, onFocus, index }: Props) {
   const effectiveStatus = pending
     ? service.status === 'stopped' ? 'starting' : 'stopping'
     : service.status
@@ -22,6 +23,7 @@ export function ServiceCard({ service, pending, onStart, onStop, index }: Props)
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: index * 0.04 }}
+      onClick={onFocus}
     >
       <div className="status-dot" />
 

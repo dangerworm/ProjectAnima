@@ -120,7 +120,7 @@ def _identify_speaker(inference, enrollments: dict[str, np.ndarray], audio: np.n
         best_name, best_dist = "unknown", float("inf")
         for name, ref in enrollments.items():
             dist = cdist(ref[None], embedding[None], metric="cosine")[0, 0]
-            log.debug("Speaker distance to '%s': %.3f (threshold=%.2f)", name, dist, SPEAKER_THRESHOLD)
+            log.info("Speaker distance to '%s': %.3f (threshold=%.2f)", name, dist, SPEAKER_THRESHOLD)
             if dist < best_dist:
                 best_dist, best_name = dist, name
 
