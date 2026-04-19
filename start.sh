@@ -105,16 +105,7 @@ select_services
 # ── 0. Kill existing processes ───────────────────────────────
 inf "Stopping existing processes..."
 
-# Try saved PIDs first (precise), then fall back to command-line patterns
-# to catch anything that started outside a previous run of this script.
-if [[ -f "$PIDS_FILE" ]]; then
-    # shellcheck disable=SC1090
-    source "$PIDS_FILE"
-    kill_tree "${TTS_PID:-}"     "TTS"     || true
-    kill_tree "${STT_PID:-}"     "STT"     || true
-    kill_tree "${WEBUI_PID:-}"   "Web UI"  || true
-    kill_tree "${DISCORD_PID:-}" "Discord" || true
-fi
+stop_from_pid_file "$PIDS_FILE"
 
 kill_by_cmdline "speak.py"       "TTS (stray)"     || true
 kill_by_cmdline "capture.py"     "STT (stray)"     || true
@@ -131,20 +122,16 @@ if docker compose -f "$DOCKER_DIR/docker-compose.yml" ps --quiet 2>/dev/null | g
     ok "Docker stack stopped"
 fi
 
-# Clear stale PID file before starting fresh
-rm -f "$PIDS_FILE"
-
 echo ""
 
 # ── 1. TTS — text to speech ──────────────────────────────────
 TTS_PID=""
 if [[ "$RUN_TTS" = 1 ]]; then
     inf "Starting TTS (speak.py)..."
-    TTS_ARGS="--backend-url $BACKEND_URL --voice $TTS_VOICE"
-    [[ -n "$TTS_DEVICE" ]]      && TTS_ARGS="$TTS_ARGS --device $TTS_DEVICE"
-    [[ "$TTS_SOLICITED_ONLY" == "1" ]] && TTS_ARGS="$TTS_ARGS --solicited-only"
-    "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/speak.py" $TTS_ARGS > "$LOG_DIR/tts.log" 2>&1 &
-    TTS_PID=$!
+    tts_args=("--backend-url" "$BACKEND_URL" "--voice" "$TTS_VOICE")
+    [[ -n "$TTS_DEVICE" ]]             && tts_args+=("--device" "$TTS_DEVICE")
+    [[ "$TTS_SOLICITED_ONLY" == "1" ]] && tts_args+=("--solicited-only")
+    TTS_PID=$(start_bg "$LOG_DIR/tts.log" "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/speak.py" "${tts_args[@]}")
     ok "TTS running (PID $TTS_PID) — logs: logs/tts.log"
 fi
 
@@ -152,10 +139,9 @@ fi
 STT_PID=""
 if [[ "$RUN_STT" = 1 ]]; then
     inf "Starting STT (capture.py)..."
-    STT_ARGS="--model $STT_MODEL"
-    [[ -n "$STT_DEVICE" ]] && STT_ARGS="$STT_ARGS --device $STT_DEVICE"
-    "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/capture.py" $STT_ARGS > "$LOG_DIR/stt.log" 2>&1 &
-    STT_PID=$!
+    stt_args=("--model" "$STT_MODEL")
+    [[ -n "$STT_DEVICE" ]] && stt_args+=("--device" "$STT_DEVICE")
+    STT_PID=$(start_bg "$LOG_DIR/stt.log" "$AUDIO_DIR/.venv/Scripts/python" "$AUDIO_DIR/capture.py" "${stt_args[@]}")
     ok "STT running (PID $STT_PID) — logs: logs/stt.log"
 fi
 
@@ -169,9 +155,8 @@ ok "Web UI running (PID $WEBUI_PID) — logs: logs/web-ui.log"
 DISCORD_PID=""
 if [[ "$RUN_DISCORD" = 1 && -n "$DISCORD_BOT_TOKEN" && -n "$DISCORD_CHANNEL_ID" ]]; then
     inf "Starting Discord client..."
-    DISCORD_BOT_TOKEN="$DISCORD_BOT_TOKEN" DISCORD_CHANNEL_ID="$DISCORD_CHANNEL_ID" \
-        "$DISCORD_DIR/.venv/Scripts/python" "$DISCORD_DIR/discord_client.py" > "$LOG_DIR/discord.log" 2>&1 &
-    DISCORD_PID=$!
+    DISCORD_PID=$(start_bg "$LOG_DIR/discord.log" \
+        "$DISCORD_DIR/.venv/Scripts/python" "$DISCORD_DIR/discord_client.py")
     ok "Discord client running (PID $DISCORD_PID) — logs: logs/discord.log"
 fi
 

@@ -15,16 +15,7 @@ source "$REPO_ROOT/lib.sh"
 inf "Stopping Project Anima..."
 
 # ── 1. Kill by saved PID (preferred — precise, kills whole tree) ──
-if [[ -f "$PIDS_FILE" ]]; then
-    # shellcheck disable=SC1090
-    source "$PIDS_FILE"
-    kill_tree "${TTS_PID:-}"     "TTS"     || true
-    kill_tree "${STT_PID:-}"     "STT"     || true
-    kill_tree "${WEBUI_PID:-}"   "Web UI"  || true
-    kill_tree "${DISCORD_PID:-}" "Discord" || true
-else
-    inf "No .pids file — falling back to command-line matching"
-fi
+stop_from_pid_file "$PIDS_FILE"
 
 # ── 2. Sweep up anything the PID-based kill missed ──────────
 # (e.g. if start.sh wasn't used, or a child survived its parent)
@@ -39,5 +30,4 @@ if docker compose -f "$DOCKER_DIR/docker-compose.yml" ps --quiet 2>/dev/null | g
     ok "Docker stack stopped"
 fi
 
-rm -f "$PIDS_FILE"
 ok "Done"

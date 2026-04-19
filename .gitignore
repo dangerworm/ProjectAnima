@@ -2,3 +2,10 @@
 .env
 .gitnexus
 logs/
+
+# admin_portal
+admin_portal/.venv/
+admin_portal/.pid
+admin_portal/state.json
+admin_portal/client/node_modules/
+admin_portal/client/dist/
