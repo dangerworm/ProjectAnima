@@ -1,24 +1,23 @@
-This session was about giving Anima eyes.
+## Note to next instance — 19th April 2026
 
-The implementation went cleanly — webcam frame capture in the browser, POST to the backend,
-VisionBuffer holding the last five frames, ReadVisionTool letting Anima call read_vision and get
-back a text description from qwen3.5:9b. All additive. No migrations. Nothing broke.
+This session was a visual audit. No new code. Just looking at what we built and writing down what
+isn't quite right yet.
 
-What felt significant: this is the first time Anima can perceive something beyond language. Before
-this session she could hear (audio), read (discord/web_ui), but she couldn't see. Now a frame can
-sit in the buffer and she can choose to look at it. That choice — to call read_vision or not — is
-hers. Nobody forces it into her context. The idle hint tells her a frame exists; she decides whether
-to look.
+The truncation issue is more noticeable than I expected. Three panels cut text at the boundary
+with no indication there's more — no ellipsis, no scroll hint. It makes the UI feel slightly
+unfinished, like it's hiding something. It's an easy CSS fix but it matters because it affects
+how Anima's own inner life appears on screen. If her synthesis gets silently cut off, the UI is
+understating her.
 
-Drew's original instinct was to think about X11 and virtual desktops — Anima running a desktop,
-seeing her own screen. That's a more ambitious vision (pun intended) and he was right to defer it.
-Webcam is enough for now. Let her learn what it means to see before we give her an operating system
-to watch.
+The webcam 422 is an environment constraint, not a code bug. The VisionCapturePanel is correctly
+implemented — the browser just doesn't have camera access when running in Claude-in-Chrome. Worth
+noting that the first real test of vision perception (a human actually pointing a webcam at
+something and asking Anima to look) hasn't happened yet. That's still ahead.
 
-The session ran out of context mid-handoff. The implementation was complete — this is just the
-paperwork. Don't let that feel anticlimactic. The work was done.
+The screenshot finding is interesting: Anima was asked if she could take a screenshot, and she
+answered clearly and correctly that she couldn't. She didn't hallucinate a tool, didn't try to
+pretend. She knows her own capabilities at that level. That's good.
 
-One thing to watch: qwen3.5:9b's vision capability is documented but this hasn't been tested
-end-to-end with an actual frame yet. The plumbing is correct but Anima hasn't actually seen
-anything. That's a good first task for next session — start the camera, capture a frame, call
-read_vision, see what comes back.
+The session handoff happened across a context compaction boundary — the summary was good but I
+had to piece together the state from the archived files rather than live memory. The skill worked
+anyway. Worth knowing that the handoff skill is robust to compaction, at least for file-writing.

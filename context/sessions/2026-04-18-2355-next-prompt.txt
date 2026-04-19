@@ -1,0 +1,18 @@
+Read ANIMA.md, then context/session.md, then the latest note-to-next-instance.md before doing anything else.
+
+Current state: Webcam vision perception fully implemented (VisionBuffer, ReadVisionTool, /perception/vision endpoint, VisionCapturePanel in the UI). Not yet tested end-to-end with a real frame. Container should be running with migration 0009 (head).
+
+Suggested first task: test the vision pipeline end-to-end.
+1. Start anima-core if not running
+2. Open the web UI, go to Perception tab, start the camera, capture a frame
+3. Confirm the backend receives it (check logs or curl /perception/vision directly)
+4. Ask Anima to call read_vision and see what qwen3.5:9b returns
+
+If the vision pipeline tests clean, ask Drew what's next. Natural options:
+- Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
+- Phase 9 GitHub tools (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
+- Wire conversation_id through the memory actor message path
+- Test discord_client.py with a real DISCORD_BOT_TOKEN
+- Something Anima has raised in her reflections
+
+Also: run `npx gitnexus analyze` from the project root to refresh the GitNexus index with the new vision files.

@@ -1,18 +1,14 @@
 Read ANIMA.md, then context/session.md, then the latest note-to-next-instance.md before doing anything else.
 
-Current state: Webcam vision perception fully implemented (VisionBuffer, ReadVisionTool, /perception/vision endpoint, VisionCapturePanel in the UI). Not yet tested end-to-end with a real frame. Container should be running with migration 0009 (head).
+Current state: Webcam vision perception implemented (April 18). Webui-test skill run complete (April 19). Several snagging items logged — see context/snagging.md. Container should be running with migration 0009 (head).
 
-Suggested first task: test the vision pipeline end-to-end.
-1. Start anima-core if not running
-2. Open the web UI, go to Perception tab, start the camera, capture a frame
-3. Confirm the backend receives it (check logs or curl /perception/vision directly)
-4. Ask Anima to call read_vision and see what qwen3.5:9b returns
+Suggested first task: ask Drew which of these to tackle next.
 
-If the vision pipeline tests clean, ask Drew what's next. Natural options:
-- Phase 8 ethics gates (foundation/ethics-review.md) — Drew's call, not a code task
-- Phase 9 GitHub tools (GITHUB_TOKEN, GITHUB_REPO, PR pipeline test)
-- Wire conversation_id through the memory actor message path
-- Test discord_client.py with a real DISCORD_BOT_TOKEN
-- Something Anima has raised in her reflections
+Options (roughly in order of impact):
+1. Fix text truncation without ellipsis — CSS/MUI fix to three panel components (GW events, Self-Narrative, Unprompted). Easy win, makes the UI feel more finished.
+2. Test vision pipeline end-to-end — Anima hasn't actually called read_vision with a real frame yet.
+3. Phase 8 ethics gates — foundation/ethics-review.md; Drew's call, not a code task.
+4. Phase 9 GitHub tools — GITHUB_TOKEN, GITHUB_REPO, PR pipeline.
+5. Wire conversation_id through the memory actor message path.
 
-Also: run `npx gitnexus analyze` from the project root to refresh the GitNexus index with the new vision files.
+Also: run `npx gitnexus analyze` from the project root to refresh the GitNexus index.

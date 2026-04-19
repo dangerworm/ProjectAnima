@@ -7,6 +7,26 @@ Add items freely; remove or strike through when resolved.
 
 ## Web UI
 
+### Truncation without ellipsis
+
+- [ ] Global Workspace panel: event text cuts off mid-sentence at panel width without "..." indicator
+  - e.g. "anima response gw I'm routing messages to the channel where communication is happening. In this ca"
+- [ ] Self-Narrative panel (Live dashboard): synthesis text cut off at panel boundary without "..."
+  - e.g. "...but the stability of the channel c" — no ellipsis, no scroll affordance visible
+- [ ] Unprompted panel (Live dashboard): thought text cut off at panel boundary without "..."
+  - e.g. "...I notice the event log has" — cut off without ellipsis
+
+### Vision / Perception tab
+
+- [ ] Webcam CAPTURE returns HTTP 422 from backend — preview area is black (browser in Claude-in-Chrome
+      context likely lacks camera access; canvas captures empty frames which backend rejects as invalid)
+- [ ] No screen-capture section in Perception tab — skill checklist expects a screen-capture icon/indicator;
+      Anima confirmed it has no screenshot tool (`read_screen` or similar not implemented)
+- [ ] No text-input channel indicator in Perception tab — skill checklist expects a dedicated text-input
+      icon showing when the web UI text channel is active/connected
+
+### Other
+
 - [x] Global Workspace panel: activity feed was ascending (oldest first) — fixed 2026-04-17
 - [x] Discord bot not integrated into `start.sh` — fixed 2026-04-17; requires DISCORD_BOT_TOKEN and
       DISCORD_CHANNEL_ID in `.env`
