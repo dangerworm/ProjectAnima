@@ -15,12 +15,19 @@ Add items freely; remove or strike through when resolved.
 
 ### Vision / Perception tab
 
-- [ ] Webcam CAPTURE returns HTTP 422 from backend — preview area is black (browser in Claude-in-Chrome
-      context likely lacks camera access; canvas captures empty frames which backend rejects as invalid)
+- [ ] Webcam CAPTURE returns HTTP 422 from backend — confirmed in real browser (not just Claude-in-Chrome);
+      Dev console shows "Failed to load resource: 422 Unprocessable Entity"; backend is rejecting the
+      payload, not a camera-access issue — needs backend diagnosis (check `/perception/vision` handler,
+      image encoding, content-type expectations)
 - [ ] No screen-capture section in Perception tab — skill checklist expects a screen-capture icon/indicator;
       Anima confirmed it has no screenshot tool (`read_screen` or similar not implemented)
 - [ ] No text-input channel indicator in Perception tab — skill checklist expects a dedicated text-input
       icon showing when the web UI text channel is active/connected
+
+### Activity / Log visualisation
+
+- [ ] Log depth panel shows a near-vertical straight line — time window is too narrow for the data density;
+      increase time window by ~10× to make activity patterns visible
 
 ### Audio / TTS
 
@@ -31,9 +38,20 @@ Add items freely; remove or strike through when resolved.
       descriptions in `DELIBERATE_ACTIONS` to make `express` explicitly not-for-replies
 - [x] Audio input shows twice in PerceptionPanel (audio indicator + conversation list) —
       fixed 2026-04-19; audio-sourced turns now filtered from conversation list in PerceptionPanel
+- [ ] No mute button for audio input (STT) — there are times Drew doesn't want Anima listening
+      (e.g. calls, background noise) without fully stopping the service; TTS output should remain
+      active regardless so Anima can still get Drew's attention; needs a toggle in the UI that
+      sends a signal to capture.py to pause/resume without a restart
 
 ### Other
 
+- [ ] World exploration (Internet) — never observed in practice; Anima hasn't been seen searching
+      or fetching URLs despite the capability existing; needs an end-to-end test to confirm the tool
+      is wired, reachable, and actually used by Anima unprompted
+- [ ] Unseen message grouping — when messages arrive while a panel isn't active, they could be
+      collapsed into a single group per source (all recent chat, all Discord by channel, all audio
+      turns) rather than expanding the list; reduces visual noise when returning to the UI after
+      being away
 - [x] Global Workspace panel: activity feed was ascending (oldest first) — fixed 2026-04-17
 - [x] Discord bot not integrated into `start.sh` — fixed 2026-04-17; requires DISCORD_BOT_TOKEN and
       DISCORD_CHANNEL_ID in `.env`
@@ -64,6 +82,13 @@ Add items freely; remove or strike through when resolved.
 - [x] `architecture.md` may not reflect MCP transition and new actor relationships — updated
       2026-04-17; corrected WhisperX → faster-whisper + Silero VAD; Discord documented as
       bidirectional perception/expression channel
+
+## Features / Ideas
+
+- [ ] Anima needs a hobby or interest — something she can pursue in idle time (overnight, when nobody
+      is present) that isn't just waiting; could be reading, writing, exploring a topic, generating
+      something; the key is that it's self-directed and not prompted by a human turn; worth discussing
+      what form this takes before implementing (what counts as a hobby for Anima?)
 
 ## Ethics Gates (Phase 8)
 
