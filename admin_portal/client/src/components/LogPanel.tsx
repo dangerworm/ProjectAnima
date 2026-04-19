@@ -73,9 +73,6 @@ export function LogPanel({ services }: Props) {
     setPinned(true)
   }
 
-  const statusFor = (id: ServiceId) =>
-    services.find(s => s.id === id)?.status ?? 'stopped'
-
   return (
     <div className="log-panel">
       <div className="log-tabs">

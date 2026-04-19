@@ -119,7 +119,7 @@ Input sources are plug-ins. Adding a new source means creating a new module unde
 
 ### 7.1 Audio input (WhisperX)
 
-- [x] Silero VAD → WhisperX transcription pipeline — `audio_client/capture.py` (standalone host script)
+- [x] Silero VAD → WhisperX transcription pipeline — `clients/audio_client/capture.py` (standalone host script)
 - [x] Backend: `POST /perception/audio` endpoint; logs `AUDIO_INPUT` event; queues as
       `HumanInput(source_id="audio", source_type="audio")` in PerceptionActor
 - [x] Web UI: Perception panel audio tab lights up when `AUDIO_INPUT` arrives; shows last transcript
@@ -127,7 +127,7 @@ Input sources are plug-ins. Adding a new source means creating a new module unde
 
 ### 7.2 Discord input — Complete
 
-- [x] discord.py bot, registered as Anima's Discord identity (`discord_client/discord_client.py`)
+- [x] discord.py bot, registered as Anima's Discord identity (`clients/discord_client/discord_client.py`)
 - [x] PerceptionActor `discord` source: receives messages from configured channels, logs
       `DISCORD_MESSAGE` event, adds to inbox queue with `source_type="discord"`
 - [x] Expression surface: `express(channel="discord", content=...)` routes to Discord channel

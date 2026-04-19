@@ -14,9 +14,9 @@ source "$REPO_ROOT/lib.sh"
 
 # ── Machine-specific configuration ──────────────────────────
 # Defaults below; override any of these in .env at the repo root.
-# Run: python audio_client/speak.py --list-devices   to find TTS_DEVICE
-# Run: python audio_client/capture.py --list-devices to find STT_DEVICE
-# Run: python audio_client/speak.py --list-voices    to browse voices
+# Run: python clients/audio_client/speak.py --list-devices   to find TTS_DEVICE
+# Run: python clients/audio_client/capture.py --list-devices to find STT_DEVICE
+# Run: python clients/audio_client/speak.py --list-voices    to browse voices
 
 TTS_DEVICE=""          # e.g. 3  — leave empty to use system default
 TTS_VOICE="en-GB-RyanNeural"
@@ -43,8 +43,8 @@ fi
 # Discord channel IDs are sometimes copied as "guild_id/channel_id" from URLs.
 # Strip the guild prefix — discord_client.py only needs the channel ID.
 DISCORD_CHANNEL_ID="${DISCORD_CHANNEL_ID##*/}"
-AUDIO_DIR="$REPO_ROOT/audio_client"
-DISCORD_DIR="$REPO_ROOT/discord_client"
+AUDIO_DIR="$REPO_ROOT/clients/audio_client"
+DISCORD_DIR="$REPO_ROOT/clients/discord_client"
 WEBUI_DIR="$REPO_ROOT/anima-core/web-ui"
 DOCKER_DIR="$REPO_ROOT/anima-core"
 LOG_DIR="$REPO_ROOT/logs"

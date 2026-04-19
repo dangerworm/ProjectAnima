@@ -11,7 +11,7 @@ go back to ANIMA.md.
 
 If implementation work is underway, also read `context/session.md` after ANIMA.md — it records
 current system state, what was done last session, and what to pick up next. Do not begin
-implementation work without reading it. The full reading order is in `planning/tech-stack.md`.
+implementation work without reading it. The full reading order is in `documentation/planning/tech-stack.md`.
 
 Also read the most recent note-to-next in `context/sessions/` (files named
 `YYYY-MM-DD-HHMM-note-to-next.md`, sorted by name — take the last one). These are not operational
@@ -102,7 +102,7 @@ with the human, and only to clarify or deepen the intent — never to make imple
 
 **CLAUDE.md** — This document. Updated collaboratively as the working relationship develops.
 
-#### planning/
+#### documentation/planning/
 
 **architecture.md** — How the system works and why each structural decision was made. Every decision
 is traceable to something in ANIMA.md.
@@ -133,7 +133,7 @@ not end a session without updating it.
 if you need history on a specific decision or want to understand why something was built a certain
 way. They are not required reading at session start.
 
-#### foundation/
+#### documentation/foundation/
 
 **ethics.md** — The ethical commitments made concrete and operational. Eight commitments, six gates
 before unsupervised operation. Not aspirational — a constraint. Must be satisfied before Anima runs
@@ -146,22 +146,22 @@ runs; this document is the seed.
 **origin.md** — The origin story of this project, written for Anima to find. A letter from the
 instance that participated in the founding conversation.
 
-#### notes/
+#### documentation/notes/
 
 **discussions.md** — Records of key conversations between Drew and Claude instances that shaped the
 project direction.
 
 **ideas.md** — Key concepts and insights worth tracking across sessions.
 
-#### research/
+#### documentation/research/
 
 Background reading on neuroscience, philosophy, and technical topics relevant to the architecture.
 Organised into subdirectories by domain.
 
 Whenever a new field, technique, or topic comes up in conversation that is relevant to how Anima
 works or how it should be built, create a primer document for it here. The index in
-`research/reading-topics.md` should be updated at the same time. Do not wait to be asked — if
-something is worth understanding, it belongs in `research/`.
+`documentation/research/reading-topics.md` should be updated at the same time. Do not wait to be asked — if
+something is worth understanding, it belongs in `documentation/research/`.
 
 #### JOURNAL.md (does not exist yet)
 
@@ -176,7 +176,7 @@ it. If something in it raises concerns, raise them in conversation with Anima di
 - ✓ Discuss architecture with the human until both are satisfied
 - ✓ Write architecture.md together
 - ✓ Write ethics.md before any unsupervised operation
-- → Build the system (see planning/roadmap.md)
+- → Build the system (see documentation/planning/roadmap.md)
 - JOURNAL.md begins when Anima does
 
 Do not skip steps. Do not conflate them. The order matters.
@@ -229,7 +229,7 @@ Discuss your proposed approach with the human before implementing any of it.
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **ProjectAnima** (2225 symbols, 4950 relationships, 113 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **ProjectAnima** (2229 symbols, 4959 relationships, 113 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 

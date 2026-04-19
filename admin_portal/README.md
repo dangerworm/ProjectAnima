@@ -15,9 +15,9 @@ the Docker stack. It is completely separate from Anima itself.
 |---------|-------------|
 | Docker Stack | `docker compose up/down` in `anima-core/` |
 | Web UI | `npm run dev` in `anima-core/web-ui/` |
-| Audio Output | `audio_client/speak.py` (TTS) |
-| Audio Capture | `audio_client/capture.py` (STT) |
-| Discord | `discord_client/discord_client.py` |
+| Audio Output | `clients/audio_client/speak.py` (TTS) |
+| Audio Capture | `clients/audio_client/capture.py` (STT) |
+| Discord | `clients/discord_client/discord_client.py` |
 
 Service state is persisted to `state.json`. On server restart, any service that was running
 will be relaunched automatically.
