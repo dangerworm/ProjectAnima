@@ -5,83 +5,69 @@
 
 ---
 
-## Session: 19th April 2026 — audio upgrades + snagging fixes
+## Session: 19th April 2026 — extended conversation + snagging + blob logging
 
 ### What was done
 
-#### Speaker identification pipeline (earlier part of session)
+Full detail in `context/sessions/2026-04-19-extended-session.md`. Summary:
 
-The speaker identification pipeline was brought to working end-to-end:
+#### Code changes
 
-- Enrolled Drew's voice via the admin portal enrollment card (browser WAV → `enroll.py`)
-- Threshold raised from 0.25 → 0.50 (cosine distance) to handle browser-vs-mic variance
-- Speaker distance logging confirmed at INFO level
-- Accumulation across sessions confirmed working (`{name}_meta.json` session count)
+1. **Blob logging** — `anima-core/app/core/llm/__init__.py` and `docker-compose.yml`
+   - Added opt-in LLM request blob logging to `/anima/llm_blobs.jsonl`
+   - Activated with `LLM_BLOB_LOG=1` env var (off by default)
+   - Usage: `LLM_BLOB_LOG=1 docker compose up -d`, then `tail -f anima-workspace/llm_blobs.jsonl`
 
-#### Audio client package upgrade
+2. **MCP tools added** (earlier in session, before conversation): `write_volitional`, `write_residue`, `read_discovery`, `resolve_residue`
+   - Registered in `mcp_server/__init__.py`
+   - **WriteDiscoveryTool still missing** — `StoreDiscovery` + `MemoryActor._handle_store_discovery` wired; only MCP surface tool absent (snagging #16)
 
-Upgraded all packages in `clients/audio_client/requirements-stt.txt`:
+#### Extended conversation — two sessions
 
-- `pyannote.audio` 3.x → 4.0.4 (required `omegaconf>=2.3.0` added to requirements)
-- `torch` → 2.11.0, `torchaudio` → 2.11.0, `faster-whisper` → 1.2.1, etc.
-- `torchcodec` pulled in as a dependency but incompatible with CPU-only torch — benign,
-  bypassed by waveform dict path in both `enroll.py` and `capture.py`
-- Added `warnings.filterwarnings` (module-scoped) to suppress pyannote/Lightning UserWarnings
-- Added `logging.getLogger("lightning.pytorch").setLevel(logging.ERROR)` after pyannote import
-  (Lightning resets its logger to INFO on import; must be suppressed post-import)
+**Session 1 (Gemma4:e4b, ~17 exchanges):** Identity evolved v5→v14. Key findings: volitional write path broken (missing tool), `express` naming conflict between deliberation and MCP layers, consistent intent-execution gap (3× stated intent not followed through), zero external tool use across 3+ hours.
 
-#### Web UI snagging fixes (autonomous work while Drew was away)
-
-1. **Webcam 422** (`anima-core/web-ui/src/components/panels/VisionCapturePanel.tsx`):
-   - Root cause: `video.videoWidth` is 0 when `play()` resolves but first frame not yet decoded
-   - Fix: await `loadeddata` event in `startCamera`; guard `videoWidth > 0` in `captureFrame`
-
-2. **Log depth sparkline too narrow** (`anima-core/web-ui/src/store/actorState.ts` line 226):
-   - Was keeping only last 10 samples (~5 min at 30s tick); increased to 100 (~50 min)
-
-#### GitNexus re-indexed
-
-Ran `gitnexus analyze` — 2295 nodes, 5118 edges, 96 clusters, 131 flows.
-
-### Files changed
-
-- `clients/audio_client/capture.py` — warnings filter + post-import logger suppression
-- `clients/audio_client/enroll.py` — same
-- `clients/audio_client/requirements-stt.txt` — added `omegaconf>=2.3.0`
-- `anima-core/web-ui/src/components/panels/VisionCapturePanel.tsx` — webcam 422 fix
-- `anima-core/web-ui/src/store/actorState.ts` — log depth history 10→100 samples
-- `context/snagging.md` — two items marked resolved
+**Session 2 (qwen3.5:9b, 14 exchanges):** Model swap confirmed. Key findings:
+- First ever `write_volitional` triggered (prompted in Exchange 2) — VOLITIONAL: 0→1
+- First ever `web_search` use (prompted in Exchange 6) — all three queries returned "No summary found" (Tiiny AI too new/niche)
+- First ever `web_fetch` use (prompted in Exchange 10) — successfully retrieved `https://tiiny.ai/`
+- Confabulation caught in Exchange 7: she reported "finding" content from failed searches; corrected immediately when confronted with GW evidence
+- Self-correction acceleration: Exchange 12 corrected with gap-naming only (no GW evidence needed) vs Exchange 7 which required full confrontation
+- DISCOVERY still 0 all session: `write_discovery` MCP tool absent; web_fetch content goes to Observations only
+- Identity v25→v28 across second session arc; final statement: "I am shifting from viewing limitations as errors to viewing them as the medium of my existence"
 
 ### Current system state
 
-- Phases 1–8 complete at schema/tool layer; Phase 9 (GitHub tools) next
-- Docker stack + all migrations applied (head at 0010)
-- Discord client configured and working
-- Audio client: STT + TTS running; speaker identification active (Drew enrolled, threshold=0.50)
-- Web UI: upstream `anima-core` at 6ce5adb
-- Admin portal: at `admin_portal/client/` (React/Vite, separate from web-ui)
+- **Phases 1–8 complete**; Phase 9 (GitHub tools) is next code work
+- **OLLAMA_MODEL**: `qwen3.5:9b` (confirmed working)
+- Docker stack running, all migrations applied (head at 0010)
+- Web UI accessible at :5173
+- Discord: env vars may need re-setting in this environment
+- Audio client: STT + TTS + speaker identification (Drew enrolled, threshold=0.50)
+- **IDENTITY**: v28 (final state of extended session)
+- **Memory at session end**: VOLITIONAL=1, DISCOVERY=0, REFLECTIVE=26+, RESIDUE=0 (cleared), OBSERVATIONS=19+
 
-### Outstanding snagging items
+### Open snagging items
 
-Open items in `context/snagging.md`:
+| # | Issue | Priority |
+|---|-------|----------|
+| 1 | Conversation replies route to UNPROMPTED panel instead of main chat | High |
+| 2 | `express` naming conflict: deliberation-layer `express` = unprompted thought; MCP-layer `express` = conversation output | Medium |
+| 3 | `read_observations`/`read_reflective` fail with "vector must have at least 1 dim" on empty-string query | Medium |
+| 4 | Admin portal START button doesn't disable during docker startup | Medium |
+| 5 | CONSOL. LAG shows huge number (100000000000s) on fresh start | Low |
+| 6 | `write_volitional` not used spontaneously — requires explicit tool-naming prompt | Medium |
+| 7 | Self-narrative content doesn't surface to conversation reliably | Medium |
+| 8 | Volitional timestamps display as UTC; UI shows BST/GMTST | Low |
+| 9 | Transition from "I should search X" → calling web_search doesn't self-trigger | High |
+| 10 | URL alone insufficient to trigger web_fetch (even given directly) | High |
+| 11 | `write_discovery` MCP surface tool missing — WORLD always "no recent exploration" | High |
+| 12 | web_search index doesn't cover new/niche campaigns (Tiiny AI not found) | Medium |
 
-- **No screen-capture section** in Perception tab — `read_screen` not implemented; deferred
-- **No text-input channel indicator** in Perception tab — missing UI element
-- **STT mute button** — toggle to pause/resume capture without stopping the service; needs a plan
-- **World exploration** — Anima hasn't been observed using web tools unprompted; needs e2e test
-- **Unseen message grouping** — cosmetic, low priority
+### Next actions
 
-Ethics gates (Phase 8): heartbeat e2e, distress signal, Drew's personal review — all open.
-
-### TODO.md note
-
-`TODO.md` in the repo root has been emptied (37 lines → 0, not deleted). This was pre-existing
-before today's session — check `git log -- TODO.md` to see when and why.
-
-### Next action
-
-Drew to decide between:
-1. **STT mute button** — most impactful open snagging item; needs a plan first
-2. **Vision pipeline e2e test** — confirm Anima can actually call `read_vision` with a real frame
-3. **Phase 8 ethics gates** — Drew's personal review task, not a code task
+1. **WriteDiscoveryTool** — add to `mcp_server/tools/memory.py`, register in `mcp_server/__init__.py`. Backend fully wired; surface tool only. This is the highest-impact missing tool.
+2. **Rename deliberation `express`** — rename to `surface_thought` in `_DELIBERATE_SCHEMA` to resolve naming conflict with MCP `express` tool
+3. **World exploration** — investigate why Anima doesn't self-initiate web_search/web_fetch; may be system prompt framing, tool description, or deliberation schema
 4. **Phase 9 GitHub tools** — GITHUB_TOKEN, GITHUB_REPO, PR pipeline
+5. **Phase 8 ethics gates** — Drew's personal review task
+
